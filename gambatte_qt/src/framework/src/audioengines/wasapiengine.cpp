@@ -18,7 +18,7 @@
 
 #include "wasapiengine.h"
 #include "wasapiinc.h"
-#include <MMReg.h>
+#include <mmreg.h>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>

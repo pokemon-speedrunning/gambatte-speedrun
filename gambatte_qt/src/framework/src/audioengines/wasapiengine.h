@@ -23,7 +23,7 @@
 #include "dialoghelpers.h"
 #include "rateest.h"
 #include "scoped_ptr.h"
-#include <BaseTsd.h>
+#include <basetsd.h>
 
 class QComboBox;
 class QCheckBox;

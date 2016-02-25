@@ -25,7 +25,7 @@
 #include "skipsched.h"
 #include <QtGlobal> // for Q_WS_WIN define
 #ifdef Q_WS_WIN
-#include <Objbase.h> // For CoInitialize
+#include <objbase.h> // For CoInitialize
 #endif
 #include <cstdlib>
 

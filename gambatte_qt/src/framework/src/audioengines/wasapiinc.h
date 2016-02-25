@@ -14,11 +14,6 @@ enum AUDCLNT_SHAREMODE { AUDCLNT_SHAREMODE_SHARED, AUDCLNT_SHAREMODE_EXCLUSIVE }
 enum DeviceShareMode { DeviceShared, DeviceExclusive };
 enum AudioSessionState { AudioSessionStateInactive, AudioSessionStateActive, AudioSessionStateExpired };
 
-struct PROPERTYKEY {
-	GUID fmtid;
-	DWORD pid;
-};
-
 #define AUDCLNT_STREAMFLAGS_CROSSPROCESS   0x00010000
 #define AUDCLNT_STREAMFLAGS_LOOPBACK       0x00020000
 #define AUDCLNT_STREAMFLAGS_EVENTCALLBACK  0x00040000
