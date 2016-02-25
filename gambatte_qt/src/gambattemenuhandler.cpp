@@ -603,19 +603,25 @@ void GambatteMenuHandler::about() {
 	QMessageBox::about(
 		&mw_,
 		"About Gambatte",
-		"<h3>Gambatte Qt"
+		"<h3>Gambatte-Speedrun "
 #ifdef GAMBATTE_QT_VERSION_STR
 		" (" GAMBATTE_QT_VERSION_STR ")"
 #endif
 		"</h3>"
 		"<p>"
 			"<b>Homepage:</b> "
+			"<a href=\"https://github.com/Dabomstew/gambatte-speedrun\">"
+				"https://github.com/Dabomstew/gambatte-speedrun"
+			"</a>"
+		"</p>"
+"<p>"
+			"<b>Forked from:</b> "
 			"<a href=\"https://github.com/sinamas/gambatte\">"
 				"https://github.com/sinamas/gambatte"
 			"</a>"
 		"</p>"
 		"<p>"
-			"A portable, open-source Game Boy Color emulator."
+			"A portable, open-source Game Boy Color emulator with speedrunning-related fixes/optimizations."
 		"</p>"
 	);
 }

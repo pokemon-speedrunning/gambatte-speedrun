@@ -448,7 +448,7 @@ private:
 	unsigned char rambank_;
 	bool enableRam_;
 
-	static unsigned adjustedRombank(unsigned bank) { return bank ? bank : 1; }
+	static unsigned adjustedRombank(unsigned bank) { return bank; }
 
 	void setRambank() const {
 		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0,
