@@ -25,6 +25,7 @@ CONFIG += warn_on \
 QMAKE_CFLAGS   += -fomit-frame-pointer
 QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
 TARGET = gambatte_qt
+# RC_FILE = gambatteicon.rc
 macx:TARGET = "Gambatte Qt"
 DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include

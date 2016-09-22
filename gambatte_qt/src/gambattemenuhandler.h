@@ -140,7 +140,6 @@ private:
 	QAction *pauseAction_;
 	QAction *syncFrameRateAction_;
 	QAction *gbaCgbAction_;
-	QAction *forceDmgAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
 	PaletteDialog *globalPaletteDialog_;

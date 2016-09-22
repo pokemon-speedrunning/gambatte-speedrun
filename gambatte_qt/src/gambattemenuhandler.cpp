@@ -287,7 +287,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , pauseAction_()
 , syncFrameRateAction_()
 , gbaCgbAction_()
-, forceDmgAction_()
 , fsAct_()
 , recentMenu_()
 , globalPaletteDialog_()
@@ -401,18 +400,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addSeparator();
 	gbaCgbAction_ = settingsm->addAction(tr("GB&A CGB Mode"));
 	gbaCgbAction_->setCheckable(true);
-	gbaCgbAction_->setChecked(QSettings().value("gbacgb", true).toBool());
-	forceDmgAction_ = settingsm->addAction(tr("Force &DMG Mode"));
-	forceDmgAction_->setCheckable(true);
-
-	{
-		QMenu *const palm = settingsm->addMenu(tr("DMG &Palette"));
-		palm->addAction(tr("&Global..."), this, SLOT(execGlobalPaletteDialog()));
-
-		QAction *romPaletteAct = palm->addAction(tr("Current &ROM..."), this, SLOT(execRomPaletteDialog()));
-		romPaletteAct->setEnabled(false);
-		connect(this, SIGNAL(dmgRomLoaded(bool)), romPaletteAct, SLOT(setEnabled(bool)));
-	}
+	gbaCgbAction_->setChecked(QSettings().value("gbacgb-sr", true).toBool());
 
 	settingsm->addAction(tr("Select Bios Image..."), this, SLOT(openBios()));
 
@@ -421,8 +409,8 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	fsAct_->setCheckable(true);
 	cmdactions += settingsm->actions();
 
-	romLoadedActions->addAction(mw.menuBar()->addMenu(tr("&Tools"))->addAction(tr("&Cheats..."),
-	                            cheatDialog_, SLOT(exec())));
+	//romLoadedActions->addAction(mw.menuBar()->addMenu(tr("&Tools"))->addAction(tr("&Cheats..."),
+	//                            cheatDialog_, SLOT(exec())));
 	romLoadedActions->setEnabled(false);
 	mw.menuBar()->addSeparator();
 
@@ -498,7 +486,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
-	settings.setValue("gbacgb", gbaCgbAction_->isChecked());
+	settings.setValue("gbacgb-sr", gbaCgbAction_->isChecked());
 }
 
 void GambatteMenuHandler::updateRecentFileActions() {
@@ -556,7 +544,6 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	if (gambatte::LoadRes const error =
 			source_.load(fileName.toLocal8Bit().constData(),
 			               gbaCgbAction_->isChecked()     * gambatte::GB::GBA_CGB
-			             + forceDmgAction_->isChecked()   * gambatte::GB::FORCE_DMG
 			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT)) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
