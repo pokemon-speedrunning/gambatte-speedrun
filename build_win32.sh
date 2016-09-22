@@ -8,6 +8,8 @@ scons -c
 scons
 
 cd ../gambatte_qt
+rm -f Makefile
+rm -f src/Makefile*
 ~/mxe/usr/i686-w64-mingw32.static/qt/bin/qmake
 make clean
 make
