@@ -90,7 +90,7 @@ public:
 	virtual BufferState bufferState() const;
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 
 private:
 	Array<qint16> buf_;
@@ -112,7 +112,7 @@ void OpenAlEngine::deleteProcessedBufs() const {
 	}
 }
 
-long OpenAlEngine::doInit(long const rate, int latency) {
+long OpenAlEngine::doInit(long const rate, int latency, int const volume) {
 	device_.reset(alcOpenDevice(0));
 	if (!device_) {
 		std::fprintf(stderr, "alcOpenDevice error\n");

@@ -128,7 +128,7 @@ OSStatus CoreAudioEngine::renderProc(void *refCon,
  	return 0;
 }
 
-long CoreAudioEngine::doInit(long const rate, int const latency) {
+long CoreAudioEngine::doInit(long const rate, int const latency, int const volume) {
 	{
 		ComponentDescription desc;
 		desc.componentType = kAudioUnitType_Output;

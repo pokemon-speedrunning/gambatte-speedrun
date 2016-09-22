@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <math.h>
 
 Q_DECLARE_METATYPE(GUID *)
 
@@ -118,7 +119,7 @@ void DirectSoundEngine::rejectSettings() const {
 	deviceSelector->setCurrentIndex(deviceIndex);
 }
 
-long DirectSoundEngine::doInit(long const rate, int const latency) {
+long DirectSoundEngine::doInit(long const rate, int const latency, int const volume) {
 	if (DirectSoundCreate(deviceSelector->itemData(deviceIndex).value<GUID *>(), &lpDS, 0) != DS_OK) {
 		lpDS = 0;
 		std::cerr << "DirectSoundCreate failed" << std::endl;
@@ -133,7 +134,7 @@ long DirectSoundEngine::doInit(long const rate, int const latency) {
 		DSBUFFERDESC dsbd;
 		std::memset(&dsbd, 0, sizeof dsbd);
 		dsbd.dwSize = sizeof dsbd;
-		dsbd.dwFlags = DSBCAPS_GETCURRENTPOSITION2
+		dsbd.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME
 		             | (primaryBuf ? DSBCAPS_PRIMARYBUFFER : 0)
 		             | (useGlobalBuf && !primaryBuf ? DSBCAPS_GLOBALFOCUS : 0);
 
@@ -185,6 +186,25 @@ long DirectSoundEngine::doInit(long const rate, int const latency) {
 		bufSzDiff = primaryBuf && desiredBufSz < bufSize
 		          ? bufSize - desiredBufSz
 		          : 0;
+		
+		{
+			int result;
+			long adjustedVolume;
+			adjustedVolume = (volume==0) ? -10000 : static_cast<long>(std::max(log2f(100.0f/volume)*-1000, -10000.0f));
+			if((result = lpDSB->SetVolume(adjustedVolume)) != DS_OK) {
+				if(result == DSERR_CONTROLUNAVAIL)
+					std::cerr << "VolumeSet failed controlunavail" << std::endl;
+				else if(result == DSERR_GENERIC)
+					std::cerr << "VolumeSet failed generic" << std::endl;
+				else if(result == DSERR_INVALIDPARAM)
+					std::cerr << "VolumeSet failed invalid" << std::endl;
+				else if(result == DSERR_PRIOLEVELNEEDED)
+					std::cerr << "VolumeSet failed prio" << std::endl;
+				else
+					std::cerr << "VolumeSet failed unknown" << std::endl;
+				return -1;
+			}
+		}
 	}
 
 	// set offset for meaningful initial bufferState() results.

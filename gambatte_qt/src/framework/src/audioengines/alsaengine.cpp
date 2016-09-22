@@ -64,7 +64,7 @@ public:
 	virtual void rejectSettings() const { conf_.rejectSettings(); }
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 	virtual void doAcceptSettings() { conf_.acceptSettings(); }
 
 private:
@@ -88,7 +88,7 @@ static transfer_ptr<snd_pcm_t, PcmDeleter> openPcm(CustomDevConf const &conf) {
 	return transfer_ptr<snd_pcm_t, PcmDeleter>(p);
 }
 
-long AlsaEngine::doInit(long const inrate, int const latency) {
+long AlsaEngine::doInit(long const inrate, int const latency, int const volume) {
 	unsigned rate = inrate;
 	transfer_ptr<snd_pcm_t, PcmDeleter> pcm = openPcm(conf_);
 	if (!pcm)

@@ -30,6 +30,7 @@ class QCheckBox;
 class IAudioClient;
 class IAudioRenderClient;
 class IAudioClock;
+class IAudioStreamVolume;
 
 class WasapiEngine: public AudioEngine {
 public:
@@ -47,7 +48,7 @@ public:
 	virtual void rejectSettings() const;
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 	virtual void doAcceptSettings();
 
 private:
@@ -57,6 +58,7 @@ private:
 	IAudioClient *pAudioClient;
 	IAudioRenderClient *pRenderClient;
 	IAudioClock *pAudioClock;
+	IAudioStreamVolume *pStreamVolume;
 	void *eventHandle_;
 	UINT32 pos_;
 	UINT32 posFrames;

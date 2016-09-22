@@ -112,9 +112,11 @@ SoundDialog::SoundDialog(MainWindow const &mw, QWidget *const parent)
 , resamplerSelector_("sound/resamplerNum", createResamplerBox(mw, this))
 , rateBox_(createRateBox(this))
 , latencyBox_(new QSpinBox(this))
+, volumeBox_(new QSpinBox(this))
 , engineWidget_()
 , rate_(0)
 , latency_(68)
+, volume_(100)
 {
 	setWindowTitle(tr("Sound Settings"));
 
@@ -148,6 +150,13 @@ SoundDialog::SoundDialog(MainWindow const &mw, QWidget *const parent)
 	}
 
 	{
+		QHBoxLayout *const hLayout = addLayout(topLayout, new QHBoxLayout);
+		hLayout->addWidget(new QLabel(tr("Volume:")));
+		volumeBox_->setRange(0, 100);
+		hLayout->addWidget(volumeBox_);
+	}
+
+	{
 		QHBoxLayout *const hLayout = addLayout(mainLayout, new QHBoxLayout,
 		                                       Qt::AlignBottom | Qt::AlignRight);
 		QPushButton *const okButton = addWidget(hLayout, new QPushButton(tr("OK")));
@@ -165,6 +174,9 @@ SoundDialog::SoundDialog(MainWindow const &mw, QWidget *const parent)
 	latency_ = filterValue(settings.value("sound/latency", latency_).toInt(),
 	                       latencyBox_->maximum() + 1, latencyBox_->minimum(), latency_);
 	latencyBox_->setValue(latency_);
+	volume_ = filterValue(settings.value("sound/volume", volume_).toInt(),
+	                       volumeBox_->maximum() + 1, volumeBox_->minimum(), volume_);
+	volumeBox_->setValue(volume_);
 
 	engineChange(engineSelector_.index());
 	connect(engineSelector_.box(), SIGNAL(currentIndexChanged(int)),
@@ -176,6 +188,7 @@ SoundDialog::~SoundDialog() {
 	QSettings settings;
 	settings.setValue("sound/rate", rate_);
 	settings.setValue("sound/latency", latency_);
+	settings.setValue("sound/volume", volume_);
 }
 
 void SoundDialog::engineChange(int const index) {
@@ -210,6 +223,7 @@ void SoundDialog::store() {
 	resamplerSelector_.accept();
 	rate_ = rateBox_->itemData(rateBox_->currentIndex()).toInt();
 	latency_ = latencyBox_->value();
+	volume_ = volumeBox_->value();
 }
 
 void SoundDialog::restore() {
@@ -220,6 +234,7 @@ void SoundDialog::restore() {
 	resamplerSelector_.reject();
 	setRate(rateBox_, rate_);
 	latencyBox_->setValue(latency_);
+	volumeBox_->setValue(volume_);
 }
 
 void SoundDialog::accept() {
@@ -236,5 +251,5 @@ void applySettings(MainWindow &mw, SoundDialog const &sd) {
 	for (std::size_t i = 0, n = mw.numAudioEngines(); i < n; ++i)
 		mw.audioEngineConf(i).acceptSettings();
 
-	mw.setAudioOut(sd.engineIndex(), sd.rate(), sd.latency(), sd.resamplerNo());
+	mw.setAudioOut(sd.engineIndex(), sd.rate(), sd.latency(), sd.volume(), sd.resamplerNo());
 }

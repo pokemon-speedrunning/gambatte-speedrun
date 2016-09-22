@@ -44,7 +44,7 @@ public:
 	virtual void rejectSettings() const;
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 	virtual void doAcceptSettings();
 
 private:

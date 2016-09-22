@@ -85,7 +85,7 @@ public:
 	virtual void rejectSettings() const { conf_.rejectSettings(); }
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 	virtual void doAcceptSettings() { conf_.acceptSettings(); }
 
 private:
@@ -99,7 +99,7 @@ private:
 	int write(void *buffer, std::size_t samples, BufferState const &bstate);
 };
 
-long OssEngine::doInit(long rate, int const latency) {
+long OssEngine::doInit(long rate, int const latency, int const volume) {
 	if ((fd_ = open(conf_.device().toLocal8Bit().data(), O_WRONLY, 0)) == -1) {
 		std::perror(conf_.device().toLocal8Bit().data());
 		return -1;

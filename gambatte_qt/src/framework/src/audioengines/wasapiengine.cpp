@@ -57,6 +57,11 @@ static IID const IID_IAudioClock = {
 	{ 0x81, 0x2C, 0xEF, 0x96, 0x35, 0x87, 0x28, 0xE7 }
 };
 
+static IID const IID_IAudioStreamVolume = {
+	0x93014887, 0x242D, 0x4068,
+	{ 0x8A, 0x15, 0xCF, 0x5E, 0x93, 0xB9, 0x0F, 0xE3 }
+};
+
 static PROPERTYKEY const PKEY_Device_FriendlyName = {
 	{ 
 		0xa45c254e, 0xdf1c, 0x4efd,
@@ -201,7 +206,7 @@ void WasapiEngine::rejectSettings() const {
 	deviceSelector->setCurrentIndex(deviceIndex);
 }
 
-long WasapiEngine::doInit(long rate, int const latency) {
+long WasapiEngine::doInit(long rate, int const latency, int volume) {
 	{
 		IMMDevice *pDevice = 0;
 		IMMDeviceEnumerator *pEnumerator = 0;
@@ -306,6 +311,23 @@ long WasapiEngine::doInit(long rate, int const latency) {
 	                                    reinterpret_cast<void **>(&pAudioClock)))) {
 		std::cerr << "pAudioClient->GetService failed" << std::endl;
 		return -1;
+	}
+
+	if (FAILED(pAudioClient->GetService(IID_IAudioStreamVolume,
+	                                    reinterpret_cast<void **>(&pStreamVolume)))) {
+		std::cerr << "pAudioClient->GetService failed" << std::endl;
+		return -1;
+	}
+
+	{
+		int k;
+		UINT32 numChannels = 0;
+		pStreamVolume->GetChannelCount(&numChannels);
+		float* volumes = (float*) malloc(sizeof(float)*numChannels);
+		for(k=0;k<numChannels;k++)
+			volumes[k] = volume/100.0f;
+		pStreamVolume->SetAllVolumes(numChannels, volumes);
+		free(volumes);
 	}
 
 	{

@@ -93,8 +93,8 @@ void MainWindow::setVideoBlitter(std::size_t blitterNo) { w_->setVideoBlitter(bl
 void MainWindow::setAspectRatio(QSize const &ar) { w_->setAspectRatio(ar); }
 void MainWindow::setScalingMethod(ScalingMethod smet) { w_->setScalingMethod(smet); }
 
-void MainWindow::setAudioOut(std::size_t engineNo, long srateHz, int msecLatency, std::size_t resamplerNo) {
-	w_->setAudioOut(engineNo, srateHz, msecLatency, resamplerNo);
+void MainWindow::setAudioOut(std::size_t engineNo, long srateHz, int msecLatency, int volume, std::size_t resamplerNo) {
+	w_->setAudioOut(engineNo, srateHz, msecLatency, volume, resamplerNo);
 }
 
 void MainWindow::setFrameTime(long num, long denom) { w_->setFrameTime(num, denom); }

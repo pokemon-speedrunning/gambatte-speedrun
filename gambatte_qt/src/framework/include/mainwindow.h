@@ -196,7 +196,7 @@ public:
 	  * The sampling rate does not need to match the sampling rate of the audio content produced
 	  * by the source, as the input will be converted to match the output rate.
 	  */
-	void setAudioOut(std::size_t engineNo, long srateHz, int msecLatency, std::size_t resamplerNo);
+	void setAudioOut(std::size_t engineNo, long srateHz, int msecLatency, int volume, std::size_t resamplerNo);
 
 	/** Pause does not take effect immediately. Call this to wait until the worker thread is paused.
 	  * Meant as a tool to simplify thread safety.

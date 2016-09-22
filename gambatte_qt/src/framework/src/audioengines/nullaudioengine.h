@@ -27,7 +27,7 @@ public:
 	virtual int write(void */*buffer*/, std::size_t /*samples*/) { return 0; }
 
 protected:
-	virtual long doInit(long rate, int /*latency*/) { return rate; }
+	virtual long doInit(long rate, int /*latency*/, int /*volume*/) { return rate; }
 };
 
 #endif

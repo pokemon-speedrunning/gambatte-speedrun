@@ -15,3 +15,6 @@ gambatte_qt/src/release/
 gambatte_qt/bin/
 test/testrunner
 *.cpp~
+*.h~
+*.c~
+*.sh~

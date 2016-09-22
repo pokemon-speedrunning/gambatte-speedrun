@@ -46,7 +46,7 @@ public:
 		virtual ~Callback() {}
 	};
 
-	MediaWorker(MediaSource &source, AudioEngine &ae, long aerate, int aelatency,
+	MediaWorker(MediaSource &source, AudioEngine &ae, long aerate, int aelatency, int aevolume,
 	            std::size_t resamplerNo, Callback &callback, QObject *parent = 0);
 	MediaSource & source() const { return sourceUpdater_.source(); }
 	SyncVar & waitingForSync() { return waitingForSync_; }
@@ -60,7 +60,7 @@ public:
 	bool paused() const { return pauseVar_.waitingForUnpause(); }
 
 	void resetAudio();
-	void setAudioOut(AudioEngine &newAe, long rate, int latency, std::size_t resamplerNo);
+	void setAudioOut(AudioEngine &newAe, long rate, int latency, int volume, std::size_t resamplerNo);
 	void setFrameTime(Rational ft);
 	void setSamplesPerFrame(Rational spf);
 	void setFrameTimeEstimate(long ftest) { AtomicVar<long>::Locked(frameTimeEst_).set(ftest); }

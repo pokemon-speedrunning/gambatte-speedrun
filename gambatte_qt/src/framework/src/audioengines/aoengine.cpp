@@ -41,13 +41,13 @@ public:
 	}
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 
 private:
 	ao_device *aoDevice_;
 };
 
-long AoEngine::doInit(long const rate, int /*latency*/) {
+long AoEngine::doInit(long const rate, int /*latency*/, int /*volume*/) {
 	ao_initialize();
 
 	ao_sample_format sampleFormat = { 16, int(rate), 2, AO_FMT_NATIVE, 0 };

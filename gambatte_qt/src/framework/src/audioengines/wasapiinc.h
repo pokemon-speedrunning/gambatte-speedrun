@@ -95,4 +95,13 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE UnregisterEndpointNotificationCallback(IMMNotificationClient *pClient) = 0;
 };
 
+class IAudioStreamVolume : public IUnknown {
+public:
+	virtual HRESULT STDMETHODCALLTYPE GetChannelCount(UINT32 *pdwCount) = 0;
+	virtual HRESULT STDMETHODCALLTYPE SetChannelVolume(UINT32 dwIndex, const float fLevel) = 0;
+	virtual HRESULT STDMETHODCALLTYPE GetChannelVolume(UINT32 dwIndex, float* pfLevel) = 0;
+	virtual HRESULT STDMETHODCALLTYPE SetAllVolumes(UINT32 dwCount, const float *pfVolumes) = 0;
+	virtual HRESULT STDMETHODCALLTYPE GetAllVolumes(UINT32 dwCount, float* pfVolumes) = 0;
+};
+
 #endif /* WASAPIINC_H */

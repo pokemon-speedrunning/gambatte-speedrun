@@ -38,9 +38,9 @@ public:
 	long rate() const { return rate_; }
 	void acceptSettings() { QMutexLocker l(&mut_); doAcceptSettings(); }
 
-	long init(long rate, int msLatency) {
+	long init(long rate, int msLatency, int volume) {
 		QMutexLocker l(&mut_);
-		rate_ = rate = doInit(rate, msLatency);
+		rate_ = rate = doInit(rate, msLatency, volume);
 		if (rate < 0)
 			uninit();
 
@@ -82,7 +82,7 @@ protected:
 	{
 	}
 
-	virtual long doInit(long rate, int msLatency) = 0;
+	virtual long doInit(long rate, int msLatency, int volume) = 0;
 	virtual void doAcceptSettings() {}
 
 private:

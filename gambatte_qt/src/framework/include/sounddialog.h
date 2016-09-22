@@ -37,6 +37,7 @@ public:
 	std::size_t resamplerNo() const { return resamplerSelector_.index(); }
 	int rate() const { return rate_; }
 	int latency() const { return latency_; };
+	int volume() const { return volume_; };
 
 public slots:
 	virtual void accept();
@@ -50,9 +51,11 @@ private:
 	PersistComboBox resamplerSelector_;
 	QComboBox *const rateBox_;
 	QSpinBox *const latencyBox_;
+	QSpinBox *const volumeBox_;
 	QWidget *engineWidget_;
 	int rate_;
 	int latency_;
+	int volume_;
 
 	void store();
 	void restore();

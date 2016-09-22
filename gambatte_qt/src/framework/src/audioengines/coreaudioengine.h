@@ -37,7 +37,7 @@ public:
 	virtual void pause();
 
 protected:
-	virtual long doInit(long rate, int latency);
+	virtual long doInit(long rate, int latency, int volume);
 
 private:
 	enum { unit_closed = 0, unit_opened, unit_inited };
