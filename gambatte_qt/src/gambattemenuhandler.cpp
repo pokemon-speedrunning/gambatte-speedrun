@@ -388,7 +388,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	}
 
 	QMenu *const settingsm = mw.menuBar()->addMenu(tr("&Settings"));
-	settingsm->addAction(tr("Select Bios Image..."), this, SLOT(openBios()));
 	settingsm->addAction(tr("&Input..."), this, SLOT(execInputDialog()));
 	settingsm->addAction(tr("&Miscellaneous..."), this, SLOT(execMiscDialog()));
 	settingsm->addAction(tr("&Sound..."), this, SLOT(execSoundDialog()));
@@ -410,6 +409,8 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		romPaletteAct->setEnabled(false);
 		connect(this, SIGNAL(dmgRomLoaded(bool)), romPaletteAct, SLOT(setEnabled(bool)));
 	}
+
+	settingsm->addAction(tr("Select Bios Image..."), this, SLOT(openBios()));
 
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
@@ -542,7 +543,9 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		QMessageBox::critical(
 			&mw_,
 			tr("Bios Load Error"),
-			(tr("Could not load GBC bios.")));
+			(tr("Could not load GBC bios.\n") + 
+			"Gambatte-Speedrun requires a GBC bios to function.\n" +
+			"Please use Settings > Select Bios Image to specify the location of such a file."));
 		return;
 	}
 
@@ -582,7 +585,23 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	          << "header checksum: " << (pak.headerChecksumOk() ? "ok" : "bad") << '\n'
 	          << "cgb: " << source_.isCgb() << std::endl;
 
-	mw_.setWindowTitle(strippedName(fileName) + (pak.headerChecksumOk() ? "" : " [bad]") + " - Gambatte");
+	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English RBY!!!
+	bool goodRom = false;
+	if(romTitle.toStdString() == "POKEMON RED" && pak.crc() == 0x9F7FDD53) {
+		goodRom = true;
+	}
+	if(romTitle.toStdString() == "POKEMON BLUE" && pak.crc() == 0xD6DA8A1A) {
+		goodRom = true;
+	}
+	if(romTitle.toStdString() == "POKEMON YELLOW" && pak.crc() == 0x7D527D62) {
+		goodRom = true;
+	}
+
+	QString revision = QString("interim");
+	#ifdef GAMBATTE_QT_VERSION_STR
+	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
+	#endif
+	mw_.setWindowTitle(strippedName(fileName)+(goodRom ? " <PSR>" : "")+" - Gambatte-SR "+revision);
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
@@ -623,7 +642,8 @@ void GambatteMenuHandler::openBios() {
 			QMessageBox::critical(
 				&mw_,
 				tr("Bios Load Error"),
-				(tr("Could not load new GBC bios.")));
+				(tr("Could not load new GBC bios.\n") +
+				"Please check that the file is a valid GBC bios file and not DMG/SGB."));
 			return;
 		}
 		else {
@@ -633,7 +653,8 @@ void GambatteMenuHandler::openBios() {
 			QMessageBox::information(
 				&mw_,
 				tr("Loaded Bios Successfully"),
-				(tr("Loaded a new bios path for future runs successfully.")));
+				(tr("Loaded the GBC BIOS file successfully.\n") +
+				"Its path has also been saved for future use."));
 			return;
 		}
 	}

@@ -22,6 +22,7 @@
 #include "pakinfo_internal.h"
 #include <cstring>
 #include <fstream>
+#include <zlib.h>
 
 namespace gambatte {
 
@@ -761,9 +762,12 @@ void Cartridge::setGameGenie(std::string const &codes) {
 
 PakInfo const Cartridge::pakInfo(bool const multipakCompat) const {
 	if (loaded()) {
+		unsigned crc = 0L;
 		unsigned const rombs = rombanks(memptrs_);
+		crc = crc32(crc, memptrs_.romdata(), rombs*0x4000ul);
 		return PakInfo(multipakCompat && presumedMulti64Mbc1(memptrs_.romdata(), rombs),
 		               rombs,
+			       crc,
 		               memptrs_.romdata());
 	}
 

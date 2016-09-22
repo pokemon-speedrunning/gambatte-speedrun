@@ -26,15 +26,15 @@ unsigned numRambanksFromH14x(unsigned char h147, unsigned char h149) {
 }
 
 PakInfo::PakInfo()
-: flags_(), rombanks_()
+: flags_(), rombanks_(), crc_()
 {
 	std::memset(h144x_, 0 , sizeof h144x_);
 }
 
-PakInfo::PakInfo(bool multipak, unsigned rombanks, unsigned char const romheader[])
+PakInfo::PakInfo(bool multipak, unsigned rombanks, unsigned crc, unsigned char const romheader[])
 : flags_(  multipak * flag_multipak
          + isHeaderChecksumOk(romheader) * flag_header_checksum_ok),
-  rombanks_(rombanks)
+  rombanks_(rombanks), crc_(crc)
 {
 	std::memcpy(h144x_, romheader + 0x144, sizeof h144x_);
 }
@@ -88,5 +88,6 @@ std::string const PakInfo::mbc() const {
 
 unsigned PakInfo::rambanks() const { return numRambanksFromH14x(h144x_[3], h144x_[5]); }
 unsigned PakInfo::rombanks() const { return rombanks_; }
+unsigned PakInfo::crc() const { return crc_; }
 
 }
