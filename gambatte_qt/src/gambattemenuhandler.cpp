@@ -296,7 +296,11 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , windowSizeMenu_(mw, *videoDialog_)
 , pauseInc_(4)
 {
-	mw.setWindowTitle("Gambatte");
+	QString revision = QString("interim");
+	#ifdef GAMBATTE_QT_VERSION_STR
+	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
+	#endif
+	mw.setWindowTitle("Gambatte-Speedrun "+revision);
 	source.inputDialog()->setParent(&mw, source.inputDialog()->windowFlags());
 
 	{
