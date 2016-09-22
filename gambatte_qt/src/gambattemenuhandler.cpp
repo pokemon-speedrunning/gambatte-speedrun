@@ -601,7 +601,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	#ifdef GAMBATTE_QT_VERSION_STR
 	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
 	#endif
-	mw_.setWindowTitle(strippedName(fileName)+(goodRom ? " <PSR>" : "")+" - Gambatte-SR "+revision);
+	mw_.setWindowTitle(strippedName(fileName)+(goodRom ? " <PSR>" : "")+" - Gambatte-Speedrun "+revision);
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
