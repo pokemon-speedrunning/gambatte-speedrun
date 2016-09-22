@@ -1548,6 +1548,7 @@ void PPU::saveState(SaveState &ss) const {
 	saveSpriteList(p_, ss);
 	ss.ppu.state = p_.nextCallPtr->id;
 	ss.ppu.lastM0Time = p_.now - p_.lastM0Time;
+	ss.ppu.isCgb = p_.cgb;
 }
 
 namespace {
@@ -1678,6 +1679,7 @@ void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 	p_.weMaster = ss.ppu.weMaster;
 	p_.winDrawState = ss.ppu.winDrawState & (win_draw_start | win_draw_started);
 	p_.lastM0Time = p_.now - ss.ppu.lastM0Time;
+	p_.cgb = ss.ppu.isCgb;
 	loadSpriteList(p_, ss);
 
 	if (m3loopState && videoCycles < 144 * 456L && p_.xpos < 168

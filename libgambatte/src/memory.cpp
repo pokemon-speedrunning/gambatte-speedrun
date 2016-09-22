@@ -62,6 +62,9 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.dmaSource = dmaSource_;
 	state.mem.dmaDestination = dmaDestination_;
 	state.mem.oamDmaPos = oamDmaPos_;
+	state.mem.biosMode = biosMode_;
+	state.mem.cgbSwitching = cgbSwitching_;
+	state.mem.agbMode = agbMode_;
 
 	intreq_.saveState(state);
 	cart_.saveState(state);
@@ -77,6 +80,9 @@ static int serialCntFrom(unsigned long cyclesUntilDone, bool cgbFast) {
 }
 
 void Memory::loadState(SaveState const &state) {
+	biosMode_ = state.mem.biosMode;
+	cgbSwitching_ = state.mem.cgbSwitching;
+	agbMode_ = state.mem.agbMode;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -269,6 +275,10 @@ unsigned long Memory::event(unsigned long cc) {
 		}
 
 		break;
+	case intevent_biosclock:
+		ackClockReq(intreq_);
+		cc += 8;
+		break;
 	case intevent_tima:
 		tima_.doIrqEvent(TimaInterruptRequester(intreq_));
 		break;
@@ -277,7 +287,7 @@ unsigned long Memory::event(unsigned long cc) {
 		break;
 	case intevent_interrupts:
 		if (halted()) {
-			if (isCgb())
+			//if (isCgb())
 				cc += 4;
 
 			intreq_.unhalt();
@@ -899,6 +909,11 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x4B:
 		lcd_.wxChange(data, cc);
 		break;
+	case 0x4C:
+		if(biosMode_) {
+			flagClockReq(intreq_);
+		}
+		break;
 
 	case 0x4D:
 		if (isCgb())
@@ -911,6 +926,13 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 			ioamhram_[0x14F] = 0xFE | data;
 		}
 
+		return;
+	case 0x50:
+		biosMode_ = false;
+		if(cgbSwitching_) {
+			lcd_.copyCgbPalettesToDmg();
+			lcd_.setCgb(false);
+		}
 		return;
 	case 0x51:
 		dmaSource_ = data << 8 | (dmaSource_ & 0xFF);
@@ -979,8 +1001,8 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		if (isCgb())
-			ioamhram_[0x16C] = data | 0xFE;
+		ioamhram_[0x16C] = data | 0xFE;
+		cgbSwitching_ = true;
 
 		return;
 	case 0x70:

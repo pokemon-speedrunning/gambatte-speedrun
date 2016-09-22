@@ -22,6 +22,7 @@
 #include "savestate.h"
 #include "state_osd_elements.h"
 #include "statesaver.h"
+#include "file/file.h"
 #include <cstring>
 #include <sstream>
 
@@ -112,6 +113,27 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 
 	return loadres;
 }
+
+unsigned int GB::loadBios(std::string const &biosfile) {
+	scoped_ptr<File> const bios(newFileInstance(biosfile));
+	char newBiosBuffer[0x900];
+	int i;
+	if (bios->fail())
+		return -1;
+	if (bios->size() != 0x900)
+		return -2;
+	bios->read(newBiosBuffer, 0x900);
+	if (bios->fail())
+		return -1;
+	for(i=0x100;i<0x200;i++) {
+		if(newBiosBuffer[i] != 0x00) {
+			return -3;
+		}
+	}
+	memcpy(p_->cpu.getBiosBuffer(), newBiosBuffer, 0x900);
+	return 0;
+}
+
 
 bool GB::isCgb() const {
 	return p_->cpu.isCgb();

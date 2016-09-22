@@ -33,6 +33,7 @@ enum IntEventId { intevent_unhalt,
                   intevent_oam,
                   intevent_dma,
                   intevent_tima,
+		  intevent_biosclock,
                   intevent_video,
                   intevent_interrupts, intevent_last = intevent_interrupts };
 
@@ -88,7 +89,9 @@ private:
 
 inline void flagHdmaReq(InterruptRequester &intreq) { intreq.setEventTime<intevent_dma>(0); }
 inline void flagGdmaReq(InterruptRequester &intreq) { intreq.setEventTime<intevent_dma>(1); }
+inline void flagClockReq(InterruptRequester &intreq) { intreq.setEventTime<intevent_biosclock>(0); }
 inline void ackDmaReq(InterruptRequester &intreq) { intreq.setEventTime<intevent_dma>(disabled_time); }
+inline void ackClockReq(InterruptRequester &intreq) { intreq.setEventTime<intevent_biosclock>(disabled_time); }
 inline bool hdmaReqFlagged(InterruptRequester const &intreq) { return intreq.eventTime(intevent_dma) == 0; }
 inline bool gdmaReqFlagged(InterruptRequester const &intreq) { return intreq.eventTime(intevent_dma) == 1; }
 

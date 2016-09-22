@@ -135,6 +135,7 @@ public:
 	void speedChange(unsigned long cycleCounter);
 	unsigned long * spPalette() { return p_.spPalette; }
 	void update(unsigned long cc);
+	void setCgb(bool cgb) { p_.cgb = cgb; }
 
 private:
 	PPUPriv p_;

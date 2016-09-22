@@ -19,6 +19,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+static unsigned char const agbOverride[0xD] = { 0xFF, 0x00, 0xCD, 0x03, 0x35, 0xAA, 0x31, 0x90, 0x94, 0x00, 0x00, 0x00, 0x00 };
+
 #include "mem/cartridge.h"
 #include "interrupter.h"
 #include "pakinfo.h"
@@ -65,12 +67,22 @@ public:
 	void halt() { intreq_.halt(); }
 	void ei(unsigned long cycleCounter) { if (!ime()) { intreq_.ei(cycleCounter); } }
 	void di() { intreq_.di(); }
+	
+	unsigned readBios(unsigned p) {
+		if(agbMode_ && p >= 0xF3 && p < 0x100) {
+			return (agbOverride[p-0xF3] + bios[p]) & 0xFF;
+		}
+		return bios[p];
+	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
 		return p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
+		if(biosMode_ && p < 0x900 && (p < 0x100 || p >= 0x200)) {
+			return readBios(p);
+		}
 		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
 	}
 
@@ -109,9 +121,12 @@ public:
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
 	void updateInput();
 
+	unsigned char* getBiosBuffer() { return (unsigned char*) bios; }
+
 private:
 	Cartridge cart_;
 	unsigned char ioamhram_[0x200];
+	unsigned char bios[0x900];
 	InputGetter *getInput_;
 	unsigned long divLastUpdate_;
 	unsigned long lastOamDmaUpdate_;
@@ -125,6 +140,9 @@ private:
 	unsigned char oamDmaPos_;
 	unsigned char serialCnt_;
 	bool blanklcd_;
+	bool biosMode_;
+	bool cgbSwitching_;
+	bool agbMode_;
 
 	void decEventCycles(IntEventId eventId, unsigned long dec);
 	void oamDmaInitSetup();

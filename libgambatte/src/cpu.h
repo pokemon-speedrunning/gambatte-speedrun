@@ -70,6 +70,7 @@ public:
 
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }
+	unsigned char* getBiosBuffer() { return mem_.getBiosBuffer(); }
 
 private:
 	Memory mem_;

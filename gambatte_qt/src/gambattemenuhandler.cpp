@@ -388,6 +388,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	}
 
 	QMenu *const settingsm = mw.menuBar()->addMenu(tr("&Settings"));
+	settingsm->addAction(tr("Select Bios Image..."), this, SLOT(openBios()));
 	settingsm->addAction(tr("&Input..."), this, SLOT(execInputDialog()));
 	settingsm->addAction(tr("&Miscellaneous..."), this, SLOT(execMiscDialog()));
 	settingsm->addAction(tr("&Sound..."), this, SLOT(execSoundDialog()));
@@ -397,7 +398,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addSeparator();
 	gbaCgbAction_ = settingsm->addAction(tr("GB&A CGB Mode"));
 	gbaCgbAction_->setCheckable(true);
-	gbaCgbAction_->setChecked(QSettings().value("gbacgb", false).toBool());
+	gbaCgbAction_->setChecked(QSettings().value("gbacgb", true).toBool());
 	forceDmgAction_ = settingsm->addAction(tr("Force &DMG Mode"));
 	forceDmgAction_->setCheckable(true);
 
@@ -532,6 +533,19 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	pauseChange();
 	mw_.waitUntilPaused();
 
+	QSettings settings;
+	QString biosFilename = settings.value("biosFilename", "").toString();
+	if(biosFilename.isEmpty() || source_.loadBios(biosFilename.toLocal8Bit().constData()) != 0) {
+		mw_.stop();
+		emit dmgRomLoaded(false);
+		emit romLoaded(false);
+		QMessageBox::critical(
+			&mw_,
+			tr("Bios Load Error"),
+			(tr("Could not load GBC bios.")));
+		return;
+	}
+
 	if (gambatte::LoadRes const error =
 			source_.load(fileName.toLocal8Bit().constData(),
 			               gbaCgbAction_->isChecked()     * gambatte::GB::GBA_CGB
@@ -587,6 +601,42 @@ void GambatteMenuHandler::open() {
 		tr("Game Boy ROM Images (*.dmg *.gb *.gbc *.sgb *.zip *.gz);;All Files (*)"));
 	if (!fileName.isEmpty())
 		loadFile(fileName);
+
+	// giving back focus after getOpenFileName seems to fail at times, which
+	// can be problematic with current exclusive mode handling.
+	mw_.setFocus();
+}
+
+void GambatteMenuHandler::openBios() {
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	QString const &fileName = QFileDialog::getOpenFileName(
+		&mw_, tr("Open"), "",
+		tr("GBC Bios Images (*.bin *.gbc);;All Files (*)"));
+	if (!fileName.isEmpty()) {
+		mw_.stop();
+		emit dmgRomLoaded(false);
+		emit romLoaded(false);
+		int result = source_.loadBios(fileName.toLocal8Bit().constData());
+		if(result != 0) {
+			QMessageBox::critical(
+				&mw_,
+				tr("Bios Load Error"),
+				(tr("Could not load new GBC bios.")));
+			return;
+		}
+		else {
+			// Store new GBC bios path
+			QSettings settings;
+			settings.setValue("biosFilename", fileName);
+			QMessageBox::information(
+				&mw_,
+				tr("Loaded Bios Successfully"),
+				(tr("Loaded a new bios path for future runs successfully.")));
+			return;
+		}
+	}
 
 	// giving back focus after getOpenFileName seems to fail at times, which
 	// can be problematic with current exclusive mode handling.

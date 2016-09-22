@@ -52,6 +52,8 @@ public:
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
 
+	unsigned int loadBios(std::string const &biosfile);
+
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
 	  * supplied audio buffer, or until a video frame has been drawn.

@@ -1167,18 +1167,21 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 		0x83, 0x40, 0x0B, 0x77
 	};
 
-	state.cpu.cycleCounter = cgb ? 0x102A0 : 0x102A0 + 0x8D2C;
-	state.cpu.pc = 0x100;
-	state.cpu.sp = 0xFFFE;
-	state.cpu.a = cgb * 0x10 | 0x01;
-	state.cpu.b = cgb & gbaCgbMode;
-	state.cpu.c = 0x13;
-	state.cpu.d = 0x00;
-	state.cpu.e = 0xD8;
-	state.cpu.f = 0xB0;
-	state.cpu.h = 0x01;
-	state.cpu.l = 0x4D;
+	state.cpu.cycleCounter = 0;
+	state.cpu.pc = 0;
+	state.cpu.sp = 0;
+	state.cpu.a = 0;
+	state.cpu.b = 0;
+	state.cpu.c = 0;
+	state.cpu.d = 0;
+	state.cpu.e = 0;
+	state.cpu.f = 0;
+	state.cpu.h = 0;
+	state.cpu.l = 0;
 	state.cpu.skip = false;
+	state.mem.biosMode = true;
+	state.mem.cgbSwitching = false;
+	state.mem.agbMode = gbaCgbMode;
 
 	std::memset(state.mem.sram.ptr, 0xFF, state.mem.sram.size());
 
@@ -1192,8 +1195,8 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 		setInitialDmgIoamhram(state.mem.ioamhram.ptr);
 	}
 
-	state.mem.ioamhram.ptr[0x104] = 0x1C;
-	state.mem.ioamhram.ptr[0x140] = 0x91;
+	state.mem.ioamhram.ptr[0x104] = 0;
+	state.mem.ioamhram.ptr[0x140] = 0;
 	state.mem.ioamhram.ptr[0x144] = 0x00;
 
 	state.mem.divLastUpdate = 0;
@@ -1235,7 +1238,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	std::memset(state.ppu.spAttribList, 0, sizeof state.ppu.spAttribList);
 	std::memset(state.ppu.spByte0List, 0, sizeof state.ppu.spByte0List);
 	std::memset(state.ppu.spByte1List, 0, sizeof state.ppu.spByte1List);
-	state.ppu.videoCycles = cgb ? 144*456ul + 164 : 153*456ul + 396;
+	state.ppu.videoCycles = 0;
 	state.ppu.enableDisplayM0Time = state.cpu.cycleCounter;
 	state.ppu.winYPos = 0xFF;
 	state.ppu.xpos = 0;
@@ -1258,6 +1261,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.ppu.nextM0Irq = 0;
 	state.ppu.oldWy = state.mem.ioamhram.get()[0x14A];
 	state.ppu.pendingLcdstatIrq = false;
+	state.ppu.isCgb = true;
 
 	// spu.cycleCounter >> 12 & 7 represents the frame sequencer position.
 	state.spu.cycleCounter = (cgb ? 0x1E00 : 0x2400) | (state.cpu.cycleCounter >> 1 & 0x1FF);

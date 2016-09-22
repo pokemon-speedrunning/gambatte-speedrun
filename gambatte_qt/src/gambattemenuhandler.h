@@ -160,6 +160,7 @@ signals:
 
 private slots:
 	void open();
+	void openBios();
 	void openRecentFile();
 	void about();
 	void globalPaletteChange();
