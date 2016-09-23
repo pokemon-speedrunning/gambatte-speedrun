@@ -761,8 +761,8 @@ void GambatteMenuHandler::cheatDialogChange() {
 			gameSharkCodes += s.toStdString() + ';';
 	}
 
-	source_.setGameGenie(gameGenieCodes);
-	source_.setGameShark(gameSharkCodes);
+	//source_.setGameGenie(gameGenieCodes);
+	//source_.setGameShark(gameSharkCodes);
 }
 
 void GambatteMenuHandler::reconsiderSyncFrameRateActionEnable() {

@@ -110,6 +110,7 @@ private:
 	void emitNextStateSlot() { emit nextStateSlot(); }
 	void emitSaveState() { emit saveStateSignal(); }
 	void emitLoadState() { emit loadStateSignal(); }
+	void emitReset() { emit reset(); }
 	void emitQuit() { emit quit(); }
 };
 

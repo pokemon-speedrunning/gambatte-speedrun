@@ -46,6 +46,7 @@ static ButtonInfo const buttonInfoDecFrameRate = { "Decrease frame rate", "Play"
 static ButtonInfo const buttonInfoIncFrameRate = { "Increase frame rate", "Play", Qt::Key_F3, 0, 0 };
 static ButtonInfo const buttonInfoResetFrameRate = { "Reset frame rate", "Play", Qt::Key_F4, 0, 0 };
 static ButtonInfo const buttonInfoFastFwd = { "Fast forward", "Play", Qt::Key_Tab, 0, 0 };
+static ButtonInfo const buttonInfoReset = { "Hard reset", "Play", 0, 0, 0 };
 static ButtonInfo const buttonInfoSaveState = { "Save state", "State", Qt::Key_F5, 0, 0 };
 static ButtonInfo const buttonInfoLoadState = { "Load state", "State", Qt::Key_F8, 0, 0 };
 static ButtonInfo const buttonInfoPrevState = { "Previous state slot", "State", Qt::Key_F6, 0, 0 };
@@ -175,6 +176,7 @@ InputDialog * GambatteSource::createInputDialog() {
 	addButton(v, &buttonInfoIncFrameRate, &GambatteSource::emitIncFrameRate, this);
 	addButton(v, &buttonInfoResetFrameRate, &GambatteSource::emitResetFrameRate, this);
 	addButton(v, &buttonInfoFastFwd, CallSetterAct<&GambatteSource::emitSetTurbo>(this));
+	addButton(v, &buttonInfoReset, &GambatteSource::emitReset, this);
 	addButton(v, &buttonInfoSaveState, &GambatteSource::emitSaveState, this);
 	addButton(v, &buttonInfoLoadState, &GambatteSource::emitLoadState, this);
 	addButton(v, &buttonInfoPrevState, &GambatteSource::emitPrevStateSlot, this);
