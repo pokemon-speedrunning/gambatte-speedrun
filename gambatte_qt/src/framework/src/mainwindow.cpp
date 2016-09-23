@@ -21,6 +21,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QLayout>
+#include <QSettings>
 #include <QtGlobal> // for Q_WS_WIN define
 
 MainWindow::FrameBuffer::Locked::Locked(FrameBuffer fb)
@@ -151,6 +152,8 @@ bool MainWindow::hasDwmCapability() { return DwmControl::hasDwmCapability(); }
 bool MainWindow::isDwmCompositionEnabled() { return DwmControl::isCompositingEnabled(); }
 
 void MainWindow::closeEvent(QCloseEvent *) {
+	QSettings settings;
+	settings.setValue("windowPos", pos());
 	w_->stop();
 	emit closing();
 // 	w_->setFullMode(false); // avoid misleading auto-minimize on close focusOut event.
@@ -164,6 +167,26 @@ void MainWindow::showEvent(QShowEvent *) {
 	// some window managers get upset (xfwm4 breaks, metacity complains) if fixed window size is set too early.
 	if (!fullscreen_)
 		doSetWindowSize(winSize_);
+
+	QSettings settings;
+	QPoint pos = settings.value("windowPos", QPoint(99999, 99999)).toPoint();
+	if(pos.x() != 99999 && pos.y() != 99999) {
+		int const screen = QApplication::desktop()->screenNumber(pos);
+		QRect const &rect = QApplication::desktop()->screenGeometry(screen);
+
+		if (pos.x() > rect.right()-5)
+			pos.setX(rect.right()-5);
+		else if (pos.x() < rect.left())
+			pos.setX(rect.left());
+
+		if (pos.y() > rect.bottom()-5)
+			pos.setY(rect.bottom()-5);
+		else if (pos.y() < rect.top())
+			pos.setY(rect.top());
+
+		settings.setValue("windowPos", pos);
+		move(pos);
+	}
 
 	w_->showEvent(this);
 }
