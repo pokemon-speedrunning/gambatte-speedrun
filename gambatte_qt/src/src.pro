@@ -35,7 +35,7 @@ LIBS += -L../../libgambatte -lgambatte -lz
 win32 {
 	LIBS += -lole32
 }
-unix {
+unix:!macx {
 	QT += x11extras
 }
 exists(../../.git) {
