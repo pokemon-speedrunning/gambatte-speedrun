@@ -29,6 +29,9 @@
 #include <QFileInfo>
 #include <QSettings>
 #include <QtGui>
+#if QT_VERSION >= 0x050000
+#include <QtWidgets>
+#endif
 #include <iostream>
 
 namespace {
@@ -925,7 +928,7 @@ void GambatteMenuHandler::frameStep() {
 }
 
 void GambatteMenuHandler::escPressed() {
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 	if (fsAct_->isChecked())
 		fsAct_->trigger();
 #else

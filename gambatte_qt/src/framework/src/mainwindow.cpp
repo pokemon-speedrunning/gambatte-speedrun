@@ -22,7 +22,7 @@
 #include <QDesktopWidget>
 #include <QLayout>
 #include <QSettings>
-#include <QtGlobal> // for Q_WS_WIN define
+#include <QtGlobal> // for Q_OS_WIN define
 
 MainWindow::FrameBuffer::Locked::Locked(FrameBuffer fb)
 : mw_(), pb_()
@@ -110,7 +110,7 @@ void MainWindow::setFullScreenMode(std::size_t screenNo, std::size_t resIndex, s
 		if (w_->isFullMode() && screenNo == w_->currentScreen()) {
 			w_->parentExclusiveEvent(false);
 			w_->setMode(screenNo, resIndex, rateIndex);
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 			showNormal();
 			showFullScreen();
 #endif
@@ -212,8 +212,9 @@ void MainWindow::setPauseOnFocusOut(unsigned bitmask) { w_->setPauseOnFocusOut(b
 void MainWindow::keyPressEvent(QKeyEvent *e) { w_->keyPressEvent(e); }
 void MainWindow::keyReleaseEvent(QKeyEvent *e) { w_->keyReleaseEvent(e); }
 
-#ifdef Q_WS_WIN
-bool MainWindow::winEvent(MSG *msg, long *) {
+#ifdef Q_OS_WIN
+bool MainWindow::nativeEvent(const QByteArray&, void *message, long *) {
+	MSG* msg = reinterpret_cast<MSG*>(message);
 	if (w_->winEvent(msg))
 		emit dwmCompositionChange();
 
@@ -248,7 +249,7 @@ void MainWindow::doShowFullScreen() {
 
 	showFullScreen();
 	correctFullScreenGeometry();
-#ifdef Q_WS_MAC // work around annoying random non-updating OpenGL on Mac OS X after full screen.
+#ifdef Q_OS_MAC // work around annoying random non-updating OpenGL on Mac OS X after full screen.
 	centralWidget()->hide();
 	centralWidget()->show();
 #endif

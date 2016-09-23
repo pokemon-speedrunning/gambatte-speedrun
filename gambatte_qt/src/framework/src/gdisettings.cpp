@@ -19,6 +19,10 @@
 #include "gdisettings.h"
 #include <QtGlobal>
 
+#if QT_VERSION >= 0x050000
+#define QT_WA(unicode, ansi) unicode
+#endif
+
 GdiSettings::GdiSettings()
 : user32handle()
 , getMonitorInfo()

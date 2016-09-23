@@ -9,8 +9,6 @@ env = Environment(CPPPATH = ['src', 'include', '../common'],
                   CFLAGS = global_cflags + global_defines,
                   CXXFLAGS = global_cxxflags + global_defines,
                   variables = vars)
-env['CXX'] = '/home/dabomstew/mxe/usr/bin/i686-w64-mingw32.static-g++'
-env['CC'] = '/home/dabomstew/mxe/usr/bin/i686-w64-mingw32.static-gcc'
 
 sourceFiles = Split('''
 			src/bitmap_font.cpp

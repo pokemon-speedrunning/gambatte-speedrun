@@ -20,14 +20,14 @@
 #define MMPRIORITY_H_
 
 #include "uncopyable.h"
-#include <QtGlobal> // Q_WS_WIN define
+#include <QtGlobal> // Q_OS_WIN define
 
 class SetThreadPriorityAudio : Uncopyable {
 public:
 	SetThreadPriorityAudio();
 	~SetThreadPriorityAudio();
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 private:
 	void *const handle_;
 #endif

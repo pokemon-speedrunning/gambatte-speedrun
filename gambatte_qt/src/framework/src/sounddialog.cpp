@@ -36,7 +36,7 @@ static QComboBox * createRateBox(QWidget *parent) {
 	enum { custom_rate_min =   8000,
 	       custom_rate_max = 192000 };
 	static int const rates[] = {
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 		44100, 48000, 96000,
 #else
 		48000, 44100, 96000,
@@ -208,7 +208,7 @@ void SoundDialog::rateIndexChange(int const index) {
 		QSize const size = rateBox_->itemData(index).toSize();
 		int const currentRate = rate_;
 		bool ok = false;
-		int r = QInputDialog::getInteger(this, tr("Set Sample Rate"),
+		int r = QInputDialog::getInt(this, tr("Set Sample Rate"),
 		                                 tr("Sample rate (Hz):"), currentRate,
 		                                 size.width(), size.height(), 1, &ok);
 		if (!ok)

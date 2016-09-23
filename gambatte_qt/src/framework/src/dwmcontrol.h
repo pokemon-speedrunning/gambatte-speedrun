@@ -20,8 +20,12 @@
 #define DWMCONTROL_H_
 
 #include <QWidget>
-#include <QtGlobal> // Q_WS_WIN define
+#include <QtGlobal> // Q_OS_WIN define
 #include <vector>
+
+#ifdef Q_OS_WIN
+HWND getWidgetHWND(QWidget* widget);
+#endif
 
 class BlitterWidget;
 
@@ -39,7 +43,7 @@ public:
 	static bool hasDwmCapability();
 	static bool isCompositingEnabled();
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 private:
 	std::vector<BlitterWidget *> const blitters_;
 	int refreshCnt_;

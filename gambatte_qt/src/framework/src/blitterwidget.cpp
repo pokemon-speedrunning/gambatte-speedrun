@@ -18,7 +18,7 @@
 
 #include "blitterwidget.h"
 #include "adaptivesleep.h"
-#include <QtGlobal> // for Q_WS_WIN define
+#include <QtGlobal> // for Q_OS_WIN define
 #include <algorithm>
 #include <cstdlib>
 
@@ -61,7 +61,7 @@ void FtEst::update(usec_t const t) {
 	last_ = t;
 }
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 
 #include <windows.h>
 
@@ -113,7 +113,7 @@ void usecsleep(usec_t usecs) {
 	nanosleep(&tspec, 0);
 }
 
-#endif /*Q_WS_WIN*/
+#endif /*Q_OS_WIN*/
 
 BlitterWidget::BlitterWidget(VideoBufferLocker vbl,
                              QString const &name,

@@ -254,8 +254,8 @@ protected:
 	virtual void focusInEvent(QFocusEvent *);
 	virtual void keyPressEvent(QKeyEvent *);
 	virtual void keyReleaseEvent(QKeyEvent *);
-#ifdef Q_WS_WIN
-	virtual bool winEvent(MSG *msg, long *result);
+#ifdef Q_OS_WIN
+	virtual bool nativeEvent(const QByteArray & eventType, void * message, long *result);
 #endif
 
 private:

@@ -20,9 +20,9 @@
 #include "../audioengine.h"
 #include "array.h"
 #include "scoped_ptr.h"
-#include <QtGlobal> // for Q_WS_ define
+#include <QtGlobal> // for Q_OS_ define
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 #include <OpenAL/alc.h>
 #include <OpenAL/al.h>
 #else
@@ -30,7 +30,7 @@
 #include <AL/al.h>
 #endif
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 #include <windows.h>
 #else
 #include <time.h>
@@ -174,7 +174,7 @@ int OpenAlEngine::write(void *const data, std::size_t const samples) {
 		if (getSourcei(source_, AL_BUFFERS_QUEUED) >= buffers_) {
 			while (getSourcei(source_, AL_BUFFERS_PROCESSED) < 1
 					&& getSourcei(source_, AL_SOURCE_STATE) == AL_PLAYING) {
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 				Sleep(1);
 #else
 				timespec tspec = { 0, 500000 };

@@ -30,10 +30,10 @@
 #include <QKeyEvent>
 #include <QMutexLocker>
 #include <QCoreApplication>
-#include <QtGlobal> // for Q_WS_WIN define
+#include <QtGlobal> // for Q_OS_WIN define
 #include <algorithm>
 
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 #include <windows.h> // for timeBeginPeriod, timeEndPeriod
 #endif
 
@@ -302,7 +302,7 @@ void MediaWidget::run() {
 		return;
 
 	running_ = true;
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 	timeBeginPeriod(1);
 #endif
 
@@ -330,7 +330,7 @@ void MediaWidget::stop() {
 
 	blitterContainer_->blitter()->uninit();
 	blitterContainer_->blitter()->setVisible(false);
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 	timeEndPeriod(1);
 #endif
 }
@@ -385,7 +385,7 @@ void MediaWidget::customEvent(QEvent *ev) {
 
 void MediaWidget::resizeEvent(QWidget const *parent) {
 	fullModeToggler_->setScreen(parent);
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
 	// Events are blocked while resizing on windows. Workaround.
 	workerCallback_->consumeBlitRequest();
 #endif
@@ -396,7 +396,7 @@ void MediaWidget::focusOutEvent() {
 
 // Minimize is ugly on mac (especially full screen windows) and there does not seem to
 // be a "qApp->hide()" which would be more appropriate.
-// #ifndef Q_WS_MAC
+// #ifndef Q_OS_MAC
 // 	if (isFullScreen() && fullModeToggler_->isFullMode()
 // 			&& !qApp->activeWindow()/* && QApplication::desktop()->numScreens() == 1*/) {
 // 		fullModeToggler_->setFullMode(false);

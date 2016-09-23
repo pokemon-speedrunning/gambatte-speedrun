@@ -20,4 +20,4 @@ test/testrunner
 *.sh~
 *.pro~
 *.rc~
-
+gambatte_qt/src/gambatte_qt_plugin_import.cpp
