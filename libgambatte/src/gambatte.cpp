@@ -81,6 +81,7 @@ void GB::reset() {
 		setInitState(state, p_->cpu.isCgb(), p_->loadflags & GBA_CGB);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
+		p_->cpu.setOsdElement(newResetElement(GB::pakInfo().crc()));
 	}
 }
 

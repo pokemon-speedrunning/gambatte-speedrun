@@ -31,6 +31,7 @@ namespace text {
 using namespace bitmapfont;
 static const char stateLoaded[] = { S,t,a,t,e,SPC,N0,SPC,l,o,a,d,e,d,0 };
 static const char stateSaved[]  = { S,t,a,t,e,SPC,N0,SPC,s,a,v,e,d,0 };
+static const char reset[] = {R,e,s,e,t,SPC,N0,N0,N0,N0,N0,N0,N0,N0,0};
 static const std::size_t stateLoadedWidth = getWidth(stateLoaded);
 static const std::size_t stateSavedWidth  = getWidth(stateSaved);
 }
@@ -161,6 +162,22 @@ transfer_ptr<OsdElement> newStateSavedOsdElement(unsigned stateNo) {
 	bitmapfont::utoa(stateNo, txt + 6);
 
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(text::stateSavedWidth, txt));
+}
+
+transfer_ptr<OsdElement> newResetElement(unsigned checksum) {
+	unsigned checksumPart;
+	char txt[sizeof text::reset];
+	std::memcpy(txt, text::reset, sizeof txt);
+	for(int p=0;p<8;p++) {
+		checksumPart = (checksum >> (28-p*4)) & 0x0F;
+		if(checksumPart < 0x0A) {
+			txt[p+6] = (char) (bitmapfont::N0 + checksumPart);
+		}
+		else {
+			txt[p+6] = (char) (bitmapfont::A + (checksumPart-0x0A));
+		}
+	}
+	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(bitmapfont::getWidth(txt), txt));
 }
 
 transfer_ptr<OsdElement> newSaveStateOsdElement(const std::string &fileName, unsigned stateNo) {
