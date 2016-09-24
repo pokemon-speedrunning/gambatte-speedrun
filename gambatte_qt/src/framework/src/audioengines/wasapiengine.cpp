@@ -31,6 +31,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <math.h>
 
 static CLSID const CLSID_MMDeviceEnumerator = {
 	0xBCDE0395, 0xE52F, 0x467C,
@@ -320,12 +321,12 @@ long WasapiEngine::doInit(long rate, int const latency, int volume) {
 	}
 
 	{
-		int k;
+		UINT32 k;
 		UINT32 numChannels = 0;
 		pStreamVolume->GetChannelCount(&numChannels);
 		float* volumes = (float*) malloc(sizeof(float)*numChannels);
 		for(k=0;k<numChannels;k++)
-			volumes[k] = volume/100.0f;
+			volumes[k] = pow(10, (log2(volume) - log2(100.0))/2.0);
 		pStreamVolume->SetAllVolumes(numChannels, volumes);
 		free(volumes);
 	}

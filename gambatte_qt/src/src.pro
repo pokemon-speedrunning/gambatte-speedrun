@@ -25,7 +25,7 @@ CONFIG += warn_on \
 QMAKE_CFLAGS   += -fomit-frame-pointer
 QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti -fpermissive
 TARGET = gambatte_qt
-# RC_FILE = gambatteicon.rc
+
 macx:TARGET = "Gambatte Qt"
 DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include
@@ -34,6 +34,7 @@ QT += widgets gui-private
 LIBS += -L../../libgambatte -lgambatte -lz
 win32 {
 	LIBS += -lole32
+	#RC_FILE = gambatteicon.rc
 }
 unix:!macx {
 	QT += x11extras
