@@ -631,6 +631,16 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	if(romTitle.toStdString() == "POKEMON YELLOW" && pak.crc() == 0x7D527D62) {
 		goodRom = true;
 	}
+	if(romTitle.toStdString() == "POKEMON_GLDAAUE" && pak.crc() == 0x6BDE3C3E) {
+		goodRom = true;
+	}
+	if(romTitle.toStdString() == "POKEMON_SLVAAXE" && pak.crc() == 0x8AD48636) {
+		goodRom = true;
+	}
+	if(romTitle.toStdString() == "PM_CRYSTAL" && (pak.crc() == 0xEE6F5188 || pak.crc() == 0x3358E30A)) {
+		goodRom = true;
+	}
+	
 
 	QString revision = QString("interim");
 	#ifdef GAMBATTE_QT_VERSION_STR
