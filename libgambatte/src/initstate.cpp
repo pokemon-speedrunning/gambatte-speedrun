@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cstring>
 #include <ctime>
+#include <iostream>
 
 namespace {
 
@@ -1167,7 +1168,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 		0x83, 0x40, 0x0B, 0x77
 	};
 
-	state.cpu.cycleCounter = 0;
+	state.cpu.cycleCounter = 8;
 	state.cpu.pc = 0;
 	state.cpu.sp = 0;
 	state.cpu.a = 0;
@@ -1216,6 +1217,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.mem.enableRam = false;
 	state.mem.rambankMode = false;
 	state.mem.hdmaTransfer = false;
+	state.mem.gbIsCgb = cgb;
 
 
 	for (int i = 0x00; i < 0x40; i += 0x02) {
@@ -1261,7 +1263,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.ppu.nextM0Irq = 0;
 	state.ppu.oldWy = state.mem.ioamhram.get()[0x14A];
 	state.ppu.pendingLcdstatIrq = false;
-	state.ppu.isCgb = true;
+	state.ppu.isCgb = cgb;
 
 	// spu.cycleCounter >> 12 & 7 represents the frame sequencer position.
 	state.spu.cycleCounter = 0;

@@ -82,6 +82,7 @@ struct SaveState {
 		unsigned char /*bool*/ biosMode;
 		unsigned char /*bool*/ cgbSwitching;
 		unsigned char /*bool*/ agbMode;
+		unsigned char /*bool*/ gbIsCgb;
 	} mem;
 
 	struct PPU {

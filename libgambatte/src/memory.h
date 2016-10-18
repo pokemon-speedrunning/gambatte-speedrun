@@ -69,10 +69,13 @@ public:
 	void di() { intreq_.di(); }
 	
 	unsigned readBios(unsigned p) {
-		if(agbMode_ && p >= 0xF3 && p < 0x100) {
-			return (agbOverride[p-0xF3] + bios[p]) & 0xFF;
+		if(gbIsCgb_) {
+			if(agbMode_ && p >= 0xF3 && p < 0x100) {
+				return (agbOverride[p-0xF3] + cgbBios[p]) & 0xFF;
+			}
+			return cgbBios[p];
 		}
-		return bios[p];
+		return dmgBios[p];
 	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
@@ -80,7 +83,7 @@ public:
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
-		if(biosMode_ && p < 0x900 && (p < 0x100 || p >= 0x200)) {
+		if(biosMode_ && ((!gbIsCgb_ && p < 0x100) || (gbIsCgb_ && p < 0x900 && (p < 0x100 || p >= 0x200)))) {
 			return readBios(p);
 		}
 		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
@@ -121,12 +124,15 @@ public:
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
 	void updateInput();
 
-	unsigned char* getBiosBuffer() { return (unsigned char*) bios; }
+	unsigned char* cgbBiosBuffer() { return (unsigned char*) cgbBios; }
+	unsigned char* dmgBiosBuffer() { return (unsigned char*) dmgBios; }
+	bool gbIsCgb() { return gbIsCgb_; }
 
 private:
 	Cartridge cart_;
 	unsigned char ioamhram_[0x200];
-	unsigned char bios[0x900];
+	unsigned char cgbBios[0x900];
+	unsigned char dmgBios[0x100];
 	InputGetter *getInput_;
 	unsigned long divLastUpdate_;
 	unsigned long lastOamDmaUpdate_;
@@ -143,6 +149,7 @@ private:
 	bool biosMode_;
 	bool cgbSwitching_;
 	bool agbMode_;
+	bool gbIsCgb_;
 
 	void decEventCycles(IntEventId eventId, unsigned long dec);
 	void oamDmaInitSetup();

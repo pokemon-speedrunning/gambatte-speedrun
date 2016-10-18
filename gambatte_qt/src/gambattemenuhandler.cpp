@@ -290,6 +290,9 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , pauseAction_()
 , syncFrameRateAction_()
 , gbaCgbAction_()
+#ifdef DMG_SUPPORT
+, dmgModeAction_()
+#endif
 , fsAct_()
 , recentMenu_()
 , globalPaletteDialog_()
@@ -405,7 +408,16 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	gbaCgbAction_->setCheckable(true);
 	gbaCgbAction_->setChecked(QSettings().value("gbacgb-sr", true).toBool());
 
-	settingsm->addAction(tr("Select Bios Image..."), this, SLOT(openBios()));
+	settingsm->addAction(tr("Select GBC Bios Image..."), this, SLOT(openGBCBios()));
+	
+#ifdef DMG_SUPPORT
+	settingsm->addSeparator();
+	dmgModeAction_ = settingsm->addAction(tr("DMG Mode"));
+	dmgModeAction_->setCheckable(true);
+	dmgModeAction_->setChecked(QSettings().value("dmgmode-sr", false).toBool());
+	
+	settingsm->addAction(tr("Select DMG Bios Image..."), this, SLOT(openDMGBios()));
+#endif
 
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
@@ -490,6 +502,9 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
 	settings.setValue("gbacgb-sr", gbaCgbAction_->isChecked());
+#ifdef DMG_SUPPORT
+	settings.setValue("dmgmode-sr", dmgModeAction_->isChecked());
+#endif
 }
 
 void GambatteMenuHandler::updateRecentFileActions() {
@@ -530,23 +545,49 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	mw_.waitUntilPaused();
 
 	QSettings settings;
-	QString biosFilename = settings.value("biosFilename", "").toString();
-	if(biosFilename.isEmpty() || source_.loadBios(biosFilename.toLocal8Bit().constData()) != 0) {
-		mw_.stop();
-		emit dmgRomLoaded(false);
-		emit romLoaded(false);
-		QMessageBox::critical(
-			&mw_,
-			tr("Bios Load Error"),
-			(tr("Could not load GBC bios.\n") + 
-			"Gambatte-Speedrun requires a GBC bios to function.\n" +
-			"Please use Settings > Select Bios Image to specify the location of such a file."));
-		return;
+	bool dmgMode;
+#ifdef DMG_SUPPORT
+	dmgMode = dmgModeAction_->isChecked();
+#else
+	dmgMode = false;
+#endif
+	if(dmgMode) {
+		QString biosFilename = settings.value("biosFilenameDMG", "").toString();
+		if(biosFilename.isEmpty() || source_.loadDMGBios(biosFilename.toLocal8Bit().constData()) != 0) {
+			mw_.stop();
+			emit dmgRomLoaded(false);
+			emit romLoaded(false);
+			QMessageBox::critical(
+				&mw_,
+				tr("Bios Load Error"),
+				(tr("Could not load DMG bios.\n") + 
+				"Gambatte-Speedrun requires a DMG bios to function when DMG mode is on.\n" +
+				"Please use Settings > Select DMG Bios Image to specify the location of such a file."));
+			return;
+		}
 	}
+	else {
+		QString biosFilename = settings.value("biosFilename", "").toString();
+		if(biosFilename.isEmpty() || source_.loadGBCBios(biosFilename.toLocal8Bit().constData()) != 0) {
+			mw_.stop();
+			emit dmgRomLoaded(false);
+			emit romLoaded(false);
+			QMessageBox::critical(
+				&mw_,
+				tr("Bios Load Error"),
+				(tr("Could not load GBC bios.\n") + 
+				"Gambatte-Speedrun requires a GBC bios to function.\n" +
+				"Please use Settings > Select GBC Bios Image to specify the location of such a file."));
+			return;
+		}
+	}
+	
+	std::cout << "Loading rom..." << std::endl;
 
 	if (gambatte::LoadRes const error =
 			source_.load(fileName.toLocal8Bit().constData(),
 			               gbaCgbAction_->isChecked()     * gambatte::GB::GBA_CGB
+					     + dmgMode                        * gambatte::GB::FORCE_DMG
 			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT)) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
@@ -620,7 +661,7 @@ void GambatteMenuHandler::open() {
 	mw_.setFocus();
 }
 
-void GambatteMenuHandler::openBios() {
+void GambatteMenuHandler::openGBCBios() {
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -631,7 +672,7 @@ void GambatteMenuHandler::openBios() {
 		mw_.stop();
 		emit dmgRomLoaded(false);
 		emit romLoaded(false);
-		int result = source_.loadBios(fileName.toLocal8Bit().constData());
+		int result = source_.loadGBCBios(fileName.toLocal8Bit().constData());
 		if(result != 0) {
 			QMessageBox::critical(
 				&mw_,
@@ -657,6 +698,46 @@ void GambatteMenuHandler::openBios() {
 	// can be problematic with current exclusive mode handling.
 	mw_.setFocus();
 }
+
+#ifdef DMG_SUPPORT
+void GambatteMenuHandler::openDMGBios() {
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	QString const &fileName = QFileDialog::getOpenFileName(
+		&mw_, tr("Open"), "",
+		tr("DMG Bios Images (*.bin *.gb);;All Files (*)"));
+	if (!fileName.isEmpty()) {
+		mw_.stop();
+		emit dmgRomLoaded(false);
+		emit romLoaded(false);
+		int result = source_.loadDMGBios(fileName.toLocal8Bit().constData());
+		if(result != 0) {
+			QMessageBox::critical(
+				&mw_,
+				tr("Bios Load Error"),
+				(tr("Could not load new DMG bios.\n") +
+				"Please check that the file is a valid DMG bios file and not GBC."));
+			return;
+		}
+		else {
+			// Store new GBC bios path
+			QSettings settings;
+			settings.setValue("biosFilenameDMG", fileName);
+			QMessageBox::information(
+				&mw_,
+				tr("Loaded Bios Successfully"),
+				(tr("Loaded the DMG BIOS file successfully.\n") +
+				"Its path has also been saved for future use."));
+			return;
+		}
+	}
+
+	// giving back focus after getOpenFileName seems to fail at times, which
+	// can be problematic with current exclusive mode handling.
+	mw_.setFocus();
+}
+#endif
 
 void GambatteMenuHandler::openRecentFile() {
 	if (QAction const *action = qobject_cast<QAction *>(sender()))

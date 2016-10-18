@@ -125,7 +125,7 @@ SaveStateOsdElement::SaveStateOsdElement(const std::string &fileName, unsigned s
 	std::ifstream file(fileName.c_str(), std::ios_base::binary);
 
 	if (file) {
-		file.ignore(5);
+		file.ignore(6);
 		file.read(reinterpret_cast<char*>(pixels), sizeof pixels);
 	} else {
 		std::memset(pixels, 0, sizeof pixels);

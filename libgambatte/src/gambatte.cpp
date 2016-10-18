@@ -78,7 +78,7 @@ void GB::reset() {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
-		setInitState(state, p_->cpu.isCgb(), p_->loadflags & GBA_CGB);
+		setInitState(state, !(p_->loadflags & FORCE_DMG), p_->loadflags & GBA_CGB);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 		p_->cpu.setOsdElement(newResetElement(GB::pakInfo().crc()));
@@ -104,7 +104,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
-		setInitState(state, p_->cpu.isCgb(), flags & GBA_CGB);
+		setInitState(state, !(flags & FORCE_DMG), flags & GBA_CGB);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 
@@ -115,23 +115,51 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 	return loadres;
 }
 
-unsigned int GB::loadBios(std::string const &biosfile) {
+unsigned int GB::loadGBCBios(std::string const &biosfile) {
 	scoped_ptr<File> const bios(newFileInstance(biosfile));
 	char newBiosBuffer[0x900];
-	int i;
+	int i, sz;
+	
 	if (bios->fail())
 		return -1;
-	if (bios->size() != 0x900)
+	
+	sz = bios->size();
+	if (sz != 0x900)
 		return -2;
-	bios->read(newBiosBuffer, 0x900);
+	
+	bios->read(newBiosBuffer, sz);
 	if (bios->fail())
 		return -1;
+	
 	for(i=0x100;i<0x200;i++) {
 		if(newBiosBuffer[i] != 0x00) {
 			return -3;
 		}
 	}
-	memcpy(p_->cpu.getBiosBuffer(), newBiosBuffer, 0x900);
+	
+	memcpy(p_->cpu.cgbBiosBuffer(), newBiosBuffer, sz);
+	
+	return 0;
+}
+
+unsigned int GB::loadDMGBios(std::string const &biosfile) {
+	scoped_ptr<File> const bios(newFileInstance(biosfile));
+	char newBiosBuffer[0x100];
+	int i, sz;
+	
+	if (bios->fail())
+		return -1;
+	
+	sz = bios->size();
+	if (sz != 0x100)
+		return -2;
+	
+	bios->read(newBiosBuffer, sz);
+	if (bios->fail())
+		return -1;
+	
+	memcpy(p_->cpu.dmgBiosBuffer(), newBiosBuffer, sz);
+	
 	return 0;
 }
 
@@ -160,7 +188,7 @@ bool GB::loadState(std::string const &filepath) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 
-		if (StateSaver::loadState(state, filepath)) {
+		if (StateSaver::loadState(state, filepath, true, p_->cpu.gbIsCgb() ? 1 : 0)) {
 			p_->cpu.loadState(state);
 			return true;
 		}

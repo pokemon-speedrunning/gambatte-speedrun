@@ -140,6 +140,9 @@ private:
 	QAction *pauseAction_;
 	QAction *syncFrameRateAction_;
 	QAction *gbaCgbAction_;
+#ifdef DMG_SUPPORT
+	QAction *dmgModeAction_;
+#endif
 	QAction *fsAct_;
 	QMenu *recentMenu_;
 	PaletteDialog *globalPaletteDialog_;
@@ -159,7 +162,10 @@ signals:
 
 private slots:
 	void open();
-	void openBios();
+	void openGBCBios();
+#ifdef DMG_SUPPORT
+	void openDMGBios();
+#endif
 	void openRecentFile();
 	void about();
 	void globalPaletteChange();

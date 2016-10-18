@@ -611,7 +611,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		}*/
 
 		rambanks = numRambanksFromH14x(header[0x147], header[0x149]);
-		cgb = true;
+		cgb = !forceDmg;
 	}
 
 	std::size_t const filesize = rom->size();

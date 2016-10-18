@@ -25,6 +25,8 @@
 #include <vector>
 #include <cstring>
 
+#define SAVE_VERSION 0x01
+
 namespace {
 
 using namespace gambatte;
@@ -247,6 +249,7 @@ SaverList::SaverList() {
 	{ static char const label[] = { b,i,o,s,       NUL }; ADD(mem.biosMode); }
 	{ static char const label[] = { a,g,b,m,o,d,e, NUL }; ADD(mem.agbMode); }
 	{ static char const label[] = { c,g,b,s,w,     NUL }; ADD(mem.cgbSwitching); }
+	{ static char const label[] = { b,i,o,s,c,g,b, NUL }; ADD(mem.gbIsCgb); }
 	{ static char const label[] = { b,g,p,         NUL }; ADDPTR(ppu.bgpData); }
 	{ static char const label[] = { o,b,j,p,       NUL }; ADDPTR(ppu.objpData); }
 	{ static char const label[] = { s,p,o,s,b,u,f, NUL }; ADDPTR(ppu.oamReaderBuf); }
@@ -405,8 +408,11 @@ bool StateSaver::saveState(SaveState const &state,
 	std::ofstream file(filename.c_str(), std::ios_base::binary);
 	if (!file)
 		return false;
-
-	{ static char const ver[] = { 0, 1 }; file.write(ver, sizeof ver); }
+	
+	file.put(0xFF); // make sure original gambatte doesn't load our savestates
+	file.put(SAVE_VERSION);
+	file.put(state.mem.gbIsCgb ? 1 : 0);
+	
 	writeSnapShot(file, videoBuf, pitch);
 
 	for (SaverList::const_iterator it = list.begin(); it != list.end(); ++it) {
@@ -417,12 +423,22 @@ bool StateSaver::saveState(SaveState const &state,
 	return !file.fail();
 }
 
-bool StateSaver::loadState(SaveState &state, std::string const &filename) {
+bool StateSaver::loadState(SaveState &state, std::string const &filename, bool checkMode, int mode) {
 	std::ifstream file(filename.c_str(), std::ios_base::binary);
-	if (!file || file.get() != 0)
+	if (!file || file.get() != 0xFF)
 		return false;
+	
+	if(file.get() != SAVE_VERSION)
+		return false;
+	
+	if(checkMode) {
+		if(mode != file.get())
+			return false;
+	}
+	else {
+		file.get();
+	}
 
-	file.ignore();
 	file.ignore(get24(file));
 
 	Array<char> const labelbuf(list.maxLabelsize());

@@ -65,6 +65,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.biosMode = biosMode_;
 	state.mem.cgbSwitching = cgbSwitching_;
 	state.mem.agbMode = agbMode_;
+	state.mem.gbIsCgb = gbIsCgb_;
 
 	intreq_.saveState(state);
 	cart_.saveState(state);
@@ -83,6 +84,7 @@ void Memory::loadState(SaveState const &state) {
 	biosMode_ = state.mem.biosMode;
 	cgbSwitching_ = state.mem.cgbSwitching;
 	agbMode_ = state.mem.agbMode;
+	gbIsCgb_ = state.mem.gbIsCgb;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -275,10 +277,6 @@ unsigned long Memory::event(unsigned long cc) {
 		}
 
 		break;
-	case intevent_biosclock:
-		ackClockReq(intreq_);
-		cc += 8;
-		break;
 	case intevent_tima:
 		tima_.doIrqEvent(TimaInterruptRequester(intreq_));
 		break;
@@ -287,7 +285,7 @@ unsigned long Memory::event(unsigned long cc) {
 		break;
 	case intevent_interrupts:
 		if (halted()) {
-			//if (isCgb())
+			if (gbIsCgb_)
 				cc += 4;
 
 			intreq_.unhalt();
@@ -911,7 +909,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		break;
 	case 0x4C:
 		if(biosMode_) {
-			flagClockReq(intreq_);
+			//flagClockReq(intreq_);
 		}
 		break;
 

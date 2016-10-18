@@ -43,3 +43,11 @@ exists(../../.git) {
 	MY_GIT_REVNO = $$system(git rev-list HEAD --count)
 	!isEmpty(MY_GIT_REVNO):DEFINES += GAMBATTE_QT_VERSION_STR='\\"r$$MY_GIT_REVNO\\"'
 }
+
+# debug symbols
+#QMAKE_CXXFLAGS_RELEASE += -g
+#QMAKE_CFLAGS_RELEASE += -g
+#QMAKE_LFLAGS_RELEASE =
+
+# dmg support
+#DEFINES += DMG_SUPPORT

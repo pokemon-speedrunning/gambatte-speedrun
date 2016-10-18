@@ -35,7 +35,8 @@ public:
 	GambatteSource();
 	std::vector<VideoDialog::VideoSourceInfo> const generateVideoSourceInfos();
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) { return gb_.load(romfile, flags); }
-	unsigned int loadBios(std::string const &biosfile) { return gb_.loadBios(biosfile); }
+	unsigned int loadGBCBios(std::string const &biosfile) { return gb_.loadGBCBios(biosfile); }
+	unsigned int loadDMGBios(std::string const &biosfile) { return gb_.loadDMGBios(biosfile); }
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
 	void reset() { gb_.reset(); }

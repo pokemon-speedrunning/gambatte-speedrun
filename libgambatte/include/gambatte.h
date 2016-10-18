@@ -52,7 +52,8 @@ public:
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
 
-	unsigned int loadBios(std::string const &biosfile);
+	unsigned int loadGBCBios(std::string const &biosfile);
+	unsigned int loadDMGBios(std::string const &biosfile);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
