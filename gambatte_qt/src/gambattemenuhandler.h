@@ -139,7 +139,7 @@ private:
 	QAction *recentFileActs_[max_recent_files];
 	QAction *pauseAction_;
 	QAction *syncFrameRateAction_;
-	QAction *gbaCgbAction_;
+	QAction *cgbRngAction_;
 #ifdef DMG_SUPPORT
 	QAction *dmgModeAction_;
 #endif

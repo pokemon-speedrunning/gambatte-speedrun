@@ -289,7 +289,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , recentFileActs_()
 , pauseAction_()
 , syncFrameRateAction_()
-, gbaCgbAction_()
+, cgbRngAction_()
 #ifdef DMG_SUPPORT
 , dmgModeAction_()
 #endif
@@ -404,9 +404,9 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addSeparator();
 	settingsm->addMenu(windowSizeMenu_.menu());
 	settingsm->addSeparator();
-	gbaCgbAction_ = settingsm->addAction(tr("GB&A CGB Mode"));
-	gbaCgbAction_->setCheckable(true);
-	gbaCgbAction_->setChecked(QSettings().value("gbacgb-sr", true).toBool());
+	cgbRngAction_ = settingsm->addAction(tr("Origin&al GBC RNG"));
+	cgbRngAction_->setCheckable(true);
+	cgbRngAction_->setChecked(QSettings().value("gbcrng-sr", false).toBool());
 
 	settingsm->addAction(tr("Select GBC Bios Image..."), this, SLOT(openGBCBios()));
 	
@@ -501,7 +501,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
-	settings.setValue("gbacgb-sr", gbaCgbAction_->isChecked());
+	settings.setValue("gbcrng-sr", cgbRngAction_->isChecked());
 #ifdef DMG_SUPPORT
 	settings.setValue("dmgmode-sr", dmgModeAction_->isChecked());
 #endif
@@ -586,7 +586,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	if (gambatte::LoadRes const error =
 			source_.load(fileName.toLocal8Bit().constData(),
-			               gbaCgbAction_->isChecked()     * gambatte::GB::GBA_CGB
+			               !(cgbRngAction_->isChecked())  * gambatte::GB::GBA_CGB
 					     + dmgMode                        * gambatte::GB::FORCE_DMG
 			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT)) {
 		mw_.stop();
