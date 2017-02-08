@@ -90,7 +90,7 @@ public:
 	  * Reset to initial state.
 	  * Equivalent to reloading a ROM image, or turning a Game Boy Color off and on again.
 	  */
-	void reset();
+	void reset(std::string const &build);
 
 	/**
 	  * @param palNum 0 <= palNum < 3. One of BG_PALETTE, SP1_PALETTE and SP2_PALETTE.

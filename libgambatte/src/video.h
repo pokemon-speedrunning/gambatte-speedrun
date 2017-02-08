@@ -57,6 +57,7 @@ public:
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch);
 	void setCgb(bool cgb);
 	void copyCgbPalettesToDmg();
+    void blackScreen();
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) { osdElement_ = osdElement; }
 
 	void dmgBgPaletteChange(unsigned data, unsigned long cycleCounter) {

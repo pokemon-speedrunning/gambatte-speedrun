@@ -131,6 +131,7 @@ void CPU::loadState(SaveState const &state) {
 #define hl() ( h << 8 | l )
 
 #define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); cycleCounter += 4; } while (0)
+#define PEEK(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); } while (0)
 #define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
 #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
 
@@ -588,15 +589,24 @@ void CPU::process(unsigned long const cycles) {
 				// stop (4 cycles):
 				// Halt CPU and LCD display until button pressed:
 			case 0x10:
-				pc = (pc + 1) & 0xFFFF;
+                {
+                    unsigned char followingByte;
+                    PEEK(followingByte, pc);
+                    pc = (pc + 1) & 0xFFFF;
+                    
+                    if(followingByte != 0x00) {
+                        // corrupted stop
+                        mem_.di();
+                        mem_.blackScreen();
+                    }
 
-				cycleCounter = mem_.stop(cycleCounter);
+                    cycleCounter = mem_.stop(cycleCounter);
 
-				if (cycleCounter < mem_.nextEventTime()) {
-					unsigned long cycles = mem_.nextEventTime() - cycleCounter;
-					cycleCounter += cycles + (-cycles & 3);
-				}
-
+                    if (cycleCounter < mem_.nextEventTime()) {
+                        unsigned long cycles = mem_.nextEventTime() - cycleCounter;
+                        cycleCounter += cycles + (-cycles & 3);
+                    }
+                }
 				break;
 
 			case 0x11:

@@ -119,6 +119,10 @@ public:
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		lcd_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
+    
+    void blackScreen() {
+        lcd_.blackScreen();
+    }
 
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }

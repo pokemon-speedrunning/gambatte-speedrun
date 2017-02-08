@@ -31,7 +31,7 @@ namespace text {
 using namespace bitmapfont;
 static const char stateLoaded[] = { S,t,a,t,e,SPC,N0,SPC,l,o,a,d,e,d,0 };
 static const char stateSaved[]  = { S,t,a,t,e,SPC,N0,SPC,s,a,v,e,d,0 };
-static const char reset[] = {R,e,s,e,t,SPC,N0,N0,N0,N0,N0,N0,N0,N0,0};
+static const char reset[] = {R,e,s,e,t,SPC,r,N0,N0,N0,SPC,N0,N0,N0,N0,N0,N0,N0,N0,0};
 static const std::size_t stateLoadedWidth = getWidth(stateLoaded);
 static const std::size_t stateSavedWidth  = getWidth(stateSaved);
 }
@@ -164,19 +164,22 @@ transfer_ptr<OsdElement> newStateSavedOsdElement(unsigned stateNo) {
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(text::stateSavedWidth, txt));
 }
 
-transfer_ptr<OsdElement> newResetElement(unsigned checksum) {
+transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned checksum) {
 	unsigned checksumPart;
 	char txt[sizeof text::reset];
 	std::memcpy(txt, text::reset, sizeof txt);
 	for(int p=0;p<8;p++) {
 		checksumPart = (checksum >> (28-p*4)) & 0x0F;
 		if(checksumPart < 0x0A) {
-			txt[p+6] = (char) (bitmapfont::N0 + checksumPart);
+			txt[p+11] = (char) (bitmapfont::N0 + checksumPart);
 		}
 		else {
-			txt[p+6] = (char) (bitmapfont::A + (checksumPart-0x0A));
+			txt[p+11] = (char) (bitmapfont::A + (checksumPart-0x0A));
 		}
 	}
+    for(int b=1;b<4;b++) {
+        txt[b+6] = (char) (build[b] - 0x30 + bitmapfont::N0);
+    }
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(bitmapfont::getWidth(txt), txt));
 }
 

@@ -39,7 +39,7 @@ public:
 	unsigned int loadDMGBios(std::string const &biosfile) { return gb_.loadDMGBios(biosfile); }
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { gb_.reset(); }
+	void reset() { gb_.reset(GAMBATTE_QT_VERSION_STR); }
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
