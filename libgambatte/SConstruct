@@ -25,6 +25,7 @@ sourceFiles = Split('''
 			src/tima.cpp
 			src/video.cpp
 			src/mem/cartridge.cpp
+            src/mem/huc3.cpp
 			src/mem/memptrs.cpp
 			src/mem/pakinfo.cpp
 			src/mem/rtc.cpp

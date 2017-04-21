@@ -50,4 +50,4 @@ exists(../../.git) {
 #QMAKE_LFLAGS_RELEASE =
 
 # dmg support
-#DEFINES += DMG_SUPPORT
+DEFINES += DMG_SUPPORT
