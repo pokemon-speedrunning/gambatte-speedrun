@@ -40,17 +40,16 @@ HuC3Chip::HuC3Chip()
 void HuC3Chip::doLatch() {
 	std::time_t tmp = (halted_ ? haltTime_ : std::time(0)) - baseTime_;
 
-	while (tmp >= 0x10 * 365 * 24 * 60 * 60) {
+	while (tmp >= 0x10000 * 86400) {
 		baseTime_ += 0x10 * 365 * 24 * 60 * 60;
 		tmp -= 0x10 * 365 * 24 * 60 * 60;
 	}
     
     unsigned minute = (tmp / 60) % 1440;
-    unsigned day = (tmp / 86400) % 365;
-    unsigned char year = (tmp / 31536000) & 0x0F;
-    dataTime_ = (year << 24) | (day << 12) | minute;
+    unsigned day = tmp / 86400;
+    dataTime_ = (day << 12) | minute;
     
-    printf("[huc3] read time = min %d day %d year %d\n", minute, day, year);
+    printf("[huc3] read time = min %d day %d\n", minute, day);
 }
 
 void HuC3Chip::saveState(SaveState &state) const {
@@ -147,10 +146,9 @@ void HuC3Chip::write(unsigned p, unsigned data) {
 
 void HuC3Chip::updateTime() {
     unsigned minute = (writingTime_ & 0xFFF) % 1440;
-    unsigned day = ((writingTime_ & 0xFFF000) >> 12) % 365;
-    unsigned year = (writingTime_ & 0xF000000) >> 24;
-    printf("[huc3] write time = min %d day %d year %d\n", minute, day, year);
-    baseTime_ = std::time(0) - minute*60 - day*86400 - year*31536000;
+    unsigned day = (writingTime_ & 0xFFF000) >> 12;
+    printf("[huc3] write time = min %d day %d\n", minute, day);
+    baseTime_ = std::time(0) - minute*60 - day*86400;
     haltTime_ = baseTime_;
     
 }
