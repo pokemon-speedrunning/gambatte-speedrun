@@ -21,3 +21,4 @@ test/testrunner
 *.pro~
 *.rc~
 gambatte_qt/src/gambatte_qt_plugin_import.cpp
+gambatte_qt/.qmake.stash
