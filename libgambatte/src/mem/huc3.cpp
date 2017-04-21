@@ -41,10 +41,8 @@ void HuC3Chip::doLatch() {
 	std::time_t tmp = (halted_ ? haltTime_ : std::time(0)) - baseTime_;
     
     unsigned minute = (tmp / 60) % 1440;
-    unsigned day = (tmp / 86400) & 0xFFFF;
+    unsigned day = (tmp / 86400) & 0xFFF;
     dataTime_ = (day << 12) | minute;
-    
-    printf("[huc3] read time = min %d day %d\n", minute, day);
 }
 
 void HuC3Chip::saveState(SaveState &state) const {
@@ -75,14 +73,12 @@ unsigned char HuC3Chip::read(unsigned p) const {
         printf("[HuC3] error, hit huc3 read with ramflag=%02X\n", ramflag_);
         return 0xFF;
     }
-    //printf("[huc3] read p=%04X rf=%02X rb=%02X rv=%02X\n", p, ramflag_, rambank_, ramValue_);
     if(ramflag_ == 0x0D) return 1;
     else return ramValue_;
 }
 
 void HuC3Chip::write(unsigned p, unsigned data) {
     // as above
-    //printf("[huc3] write p=%04X d=%02X rf=%02X rb=%02X\n", p, data, ramflag_, rambank_);
     if(ramflag_ == 0x0B) {
         // command
         switch(data & 0xF0) {
@@ -142,7 +138,6 @@ void HuC3Chip::write(unsigned p, unsigned data) {
 void HuC3Chip::updateTime() {
     unsigned minute = (writingTime_ & 0xFFF) % 1440;
     unsigned day = (writingTime_ & 0xFFF000) >> 12;
-    printf("[huc3] write time = min %d day %d\n", minute, day);
     baseTime_ = std::time(0) - minute*60 - day*86400;
     haltTime_ = baseTime_;
     
