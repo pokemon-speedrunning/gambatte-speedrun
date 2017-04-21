@@ -39,14 +39,9 @@ HuC3Chip::HuC3Chip()
 
 void HuC3Chip::doLatch() {
 	std::time_t tmp = (halted_ ? haltTime_ : std::time(0)) - baseTime_;
-
-	while (tmp >= 0x10000 * 86400) {
-		baseTime_ += 0x10 * 365 * 24 * 60 * 60;
-		tmp -= 0x10 * 365 * 24 * 60 * 60;
-	}
     
     unsigned minute = (tmp / 60) % 1440;
-    unsigned day = tmp / 86400;
+    unsigned day = (tmp / 86400) & 0xFFFF;
     dataTime_ = (day << 12) | minute;
     
     printf("[huc3] read time = min %d day %d\n", minute, day);
