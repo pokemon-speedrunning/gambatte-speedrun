@@ -40,14 +40,14 @@ public:
 
 	void saveState(SaveState &state) const;
 	void loadState(SaveState const &state);
-    void setRamflag(unsigned char ramflag) { ramflag_ = ramflag; }
+    void setRamflag(unsigned char ramflag) { ramflag_ = ramflag; irReceivingPulse_ = false;  }
     bool isHuC3() const { return enabled_; }
 
 	void set(bool enabled) {
 		enabled_ = enabled;
 	}
     
-    unsigned char read(unsigned p) const;
+    unsigned char read(unsigned p, unsigned long const cc);
 	void write(unsigned p, unsigned data);
 
 private:
@@ -59,9 +59,11 @@ private:
     unsigned char shift_;
     unsigned char ramflag_;
     unsigned char modeflag_;
+    unsigned long irBaseCycle_;
 	bool enabled_;
 	bool lastLatchData_;
     bool halted_;
+    bool irReceivingPulse_;
 
 	void doLatch();
     void updateTime();

@@ -458,7 +458,7 @@ private:
         huc3_->setRamflag(ramflag_);
         
         unsigned flags;
-        if(ramflag_ >= 0x0B && ramflag_ < 0x0E) {
+        if(ramflag_ >= 0x0B && ramflag_ < 0x0F) {
             // System registers mode
             flags = MemPtrs::read_en | MemPtrs::write_en | MemPtrs::rtc_en;
         }

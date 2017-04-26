@@ -71,7 +71,7 @@ public:
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
     bool isHuC3() const { return huc3_.isHuC3(); }
-    unsigned char HuC3Read(unsigned p) const { return huc3_.read(p); }
+    unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
 	void HuC3Write(unsigned p, unsigned data) { huc3_.write(p, data); }
 
 private:

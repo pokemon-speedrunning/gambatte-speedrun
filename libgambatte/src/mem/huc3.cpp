@@ -31,9 +31,11 @@ HuC3Chip::HuC3Chip()
 , shift_(0)
 , ramflag_(0)
 , modeflag_(HUC3_NONE)
+, irBaseCycle_(0)
 , enabled_(false)
 , halted_(false)
 , lastLatchData_(false)
+, irReceivingPulse_(false)
 {
 }
 
@@ -67,8 +69,46 @@ void HuC3Chip::loadState(SaveState const &state) {
     writingTime_ = state.huc3.writingTime;
 }
 
-unsigned char HuC3Chip::read(unsigned p) const {
-    // should only reach here with ramflag = 0B-0D
+unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
+    // should only reach here with ramflag = 0B-0E
+    if(ramflag_ == 0x0E) {
+        // INFRARED
+        if(!irReceivingPulse_) {
+            irReceivingPulse_ = true;
+            irBaseCycle_ = cc;
+        }
+        unsigned long cyclesSinceStart = cc - irBaseCycle_;
+        unsigned char modulation = (cyclesSinceStart/105) & 1; // 4194304 Hz CPU, 40000 Hz remote signal
+        unsigned long timeUs = cyclesSinceStart*156/655;  // actually *1000000/4194304
+        // sony protocol
+        if(timeUs < 10000) {
+            // initialization allowance
+            return 0;
+        }
+        else if(timeUs < 10000 + 2400) {
+            // initial space
+            return modulation;
+        }
+        else if(timeUs < 10000 + 2400 + 600) {
+            // initial space
+            return 0;
+        }
+        else {
+            // send data
+            timeUs -= 13000;
+            // write 20 bits (any 20 seem to do)
+            unsigned int data = 0xFFFFF;
+            for(unsigned long mask = 1UL << (20-1); mask; mask >>= 1) {
+                unsigned int markTime = (data & mask) ? 1200 : 600;
+                if(timeUs < markTime) { return modulation; }
+                timeUs -= markTime;
+                if(timeUs < 600) { return 0; }
+                timeUs -= 600;
+            }
+            
+            return 0;
+        }
+    }
     if(ramflag_ < 0x0B || ramflag_ > 0x0D) {
         printf("[HuC3] error, hit huc3 read with ramflag=%02X\n", ramflag_);
         return 0xFF;
