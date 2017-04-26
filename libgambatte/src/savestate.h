@@ -204,10 +204,12 @@ struct SaveState {
         unsigned long haltTime;
         unsigned long dataTime;
         unsigned long writingTime;
+        unsigned long irBaseCycle;
         unsigned char /*bool*/ halted;
         unsigned char shift;
         unsigned char ramValue;
         unsigned char modeflag;
+        unsigned char /*bool*/ irReceivingPulse;
     } huc3;
 };
 

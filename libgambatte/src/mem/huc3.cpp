@@ -56,6 +56,8 @@ void HuC3Chip::saveState(SaveState &state) const {
     state.huc3.shift = shift_;
     state.huc3.halted = halted_;
     state.huc3.modeflag = modeflag_;
+    state.huc3.irBaseCycle = irBaseCycle_;
+    state.huc3.irReceivingPulse = irReceivingPulse_;
 }
 
 void HuC3Chip::loadState(SaveState const &state) {
@@ -67,6 +69,8 @@ void HuC3Chip::loadState(SaveState const &state) {
     halted_ = state.huc3.halted;
     modeflag_ = state.huc3.modeflag;
     writingTime_ = state.huc3.writingTime;
+    irBaseCycle_ = state.huc3.irBaseCycle;
+    irReceivingPulse_ = state.huc3.irReceivingPulse;
 }
 
 unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
@@ -86,7 +90,7 @@ unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
             return 0;
         }
         else if(timeUs < 10000 + 2400) {
-            // initial space
+            // initial mark
             return modulation;
         }
         else if(timeUs < 10000 + 2400 + 600) {

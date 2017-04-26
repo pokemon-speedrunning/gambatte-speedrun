@@ -341,6 +341,8 @@ SaverList::SaverList() {
     { static char const label[] = { h,NO3,s,h,f,t, NUL }; ADD(huc3.shift); }
     { static char const label[] = { h,NO3,r,v,     NUL }; ADD(huc3.ramValue); }
     { static char const label[] = { h,NO3,m,f,     NUL }; ADD(huc3.modeflag); }
+    { static char const label[] = { h,NO3,i,r,c,y, NUL }; ADD(huc3.irBaseCycle); }
+    { static char const label[] = { h,NO3,i,r,a,c, NUL }; ADD(huc3.irReceivingPulse); }
 
 #undef ADD
 #undef ADDPTR
