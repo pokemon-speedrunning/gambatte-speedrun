@@ -51,3 +51,6 @@ exists(../../.git) {
 
 # dmg support
 #DEFINES += DMG_SUPPORT
+
+# gbc rng option
+#DEFINES += CGB_RNG_OPTION

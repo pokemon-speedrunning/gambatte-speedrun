@@ -289,7 +289,9 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , recentFileActs_()
 , pauseAction_()
 , syncFrameRateAction_()
+#ifdef CGB_RNG_OPTION
 , cgbRngAction_()
+#endif
 #ifdef DMG_SUPPORT
 , dmgModeAction_()
 #endif
@@ -404,9 +406,11 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addSeparator();
 	settingsm->addMenu(windowSizeMenu_.menu());
 	settingsm->addSeparator();
+#ifdef CGB_RNG_OPTION
 	cgbRngAction_ = settingsm->addAction(tr("Origin&al GBC RNG"));
 	cgbRngAction_->setCheckable(true);
 	cgbRngAction_->setChecked(QSettings().value("gbcrng-sr", false).toBool());
+#endif
 
 	settingsm->addAction(tr("Select GBC Bios Image..."), this, SLOT(openGBCBios()));
 	
@@ -501,7 +505,9 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
+#ifdef CGB_RNG_OPTION
 	settings.setValue("gbcrng-sr", cgbRngAction_->isChecked());
+#endif
 #ifdef DMG_SUPPORT
 	settings.setValue("dmgmode-sr", dmgModeAction_->isChecked());
 #endif
@@ -545,11 +551,16 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	mw_.waitUntilPaused();
 
 	QSettings settings;
-	bool dmgMode;
+	bool dmgMode, cgbRng;
 #ifdef DMG_SUPPORT
 	dmgMode = dmgModeAction_->isChecked();
 #else
 	dmgMode = false;
+#endif
+#ifdef CGB_RNG_OPTION
+    cgbRng = cgbRngAction_->isChecked();
+#else
+    cgbRng = false;
 #endif
 	if(dmgMode) {
 		QString biosFilename = settings.value("biosFilenameDMG", "").toString();
@@ -586,7 +597,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	if (gambatte::LoadRes const error =
 			source_.load(fileName.toLocal8Bit().constData(),
-			               !(cgbRngAction_->isChecked())  * gambatte::GB::GBA_CGB
+			               (!cgbRng)                      * gambatte::GB::GBA_CGB
 					     + dmgMode                        * gambatte::GB::FORCE_DMG
 			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT)) {
 		mw_.stop();
@@ -620,7 +631,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	          << "header checksum: " << (pak.headerChecksumOk() ? "ok" : "bad") << '\n'
 	          << "cgb: " << source_.isCgb() << std::endl;
 
-	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English RBY!!!
+	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
 	bool goodRom = false;
 	if(romTitle.toStdString() == "POKEMON RED" && pak.crc() == 0x9F7FDD53) {
 		goodRom = true;
