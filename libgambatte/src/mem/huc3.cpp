@@ -83,7 +83,7 @@ unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
         }
         unsigned long cyclesSinceStart = cc - irBaseCycle_;
         unsigned char modulation = (cyclesSinceStart/105) & 1; // 4194304 Hz CPU, 40000 Hz remote signal
-        unsigned long timeUs = cyclesSinceStart*156/655;  // actually *1000000/4194304
+        unsigned long timeUs = cyclesSinceStart*36/151;  // actually *1000000/4194304
         // sony protocol
         if(timeUs < 10000) {
             // initialization allowance
