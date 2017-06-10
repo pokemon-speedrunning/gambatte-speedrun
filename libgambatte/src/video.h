@@ -143,6 +143,7 @@ public:
 	void update(unsigned long cycleCounter);
 	bool isCgb() const { return ppu_.cgb(); }
 	bool isDoubleSpeed() const { return ppu_.lyCounter().isDoubleSpeed(); }
+    bool isTrueColors() const { return ppu_.trueColors(); }
 
 private:
 	enum Event { event_mem,

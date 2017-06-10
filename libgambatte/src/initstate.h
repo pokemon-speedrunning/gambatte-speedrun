@@ -21,7 +21,7 @@
 
 namespace gambatte {
 
-void setInitState(struct SaveState &state, bool cgb, bool gbaCgbMode);
+void setInitState(struct SaveState &state, bool cgb, bool gbaCgbMode, bool trueColors);
 
 }
 

@@ -119,6 +119,7 @@ struct SaveState {
 		unsigned char /*bool*/ weMaster;
 		unsigned char /*bool*/ pendingLcdstatIrq;
 		unsigned char /*bool*/ isCgb;
+        unsigned char /*bool*/ trueColors;
 	} ppu;
 
 	struct SPU {

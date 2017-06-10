@@ -30,10 +30,13 @@ void LCD::setDmgPalette(unsigned long palette[], unsigned long const dmgColors[]
 	palette[3] = dmgColors[data >> 6 & 3];
 }
 
-static unsigned long gbcToRgb32(unsigned const bgr15) {
+static unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
 	unsigned long const r = bgr15       & 0x1F;
 	unsigned long const g = bgr15 >>  5 & 0x1F;
 	unsigned long const b = bgr15 >> 10 & 0x1F;
+    
+    if (trueColor)
+        return (r << 19) | (g << 11) | (b << 3);
 
 	return ((r * 13 + g * 2 + b) >> 1) << 16
 	     | (g * 3 + b) << 9
@@ -193,8 +196,8 @@ void LCD::loadState(SaveState const &state, unsigned char const *const oamram) {
 void LCD::refreshPalettes() {
 	if (ppu_.cgb()) {
 		for (unsigned i = 0; i < 8 * 8; i += 2) {
-			ppu_.bgPalette()[i >> 1] = gbcToRgb32( bgpData_[i] |  bgpData_[i + 1] << 8);
-			ppu_.spPalette()[i >> 1] = gbcToRgb32(objpData_[i] | objpData_[i + 1] << 8);
+			ppu_.bgPalette()[i >> 1] = gbcToRgb32( bgpData_[i] |  bgpData_[i + 1] << 8, isTrueColors());
+			ppu_.spPalette()[i >> 1] = gbcToRgb32(objpData_[i] | objpData_[i + 1] << 8, isTrueColors());
 		}
 	} else {
 		setDmgPalette(ppu_.bgPalette()    , dmgColorsRgb32_    ,  bgpData_[0]);
@@ -205,10 +208,10 @@ void LCD::refreshPalettes() {
 
 void LCD::copyCgbPalettesToDmg() {
 	for(unsigned i = 0; i < 4; i++) {
-		dmgColorsRgb32_[i] = gbcToRgb32(bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8);
+		dmgColorsRgb32_[i] = gbcToRgb32(bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8, isTrueColors());
 	}
 	for(unsigned i = 0; i < 8; i++) {
-		dmgColorsRgb32_[i + 4] = gbcToRgb32(objpData_[i * 2] | objpData_[i * 2 + 1] << 8);
+		dmgColorsRgb32_[i + 4] = gbcToRgb32(objpData_[i * 2] | objpData_[i * 2 + 1] << 8, isTrueColors());
 	}
 }
 
@@ -275,7 +278,7 @@ void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter) {
 	update(cycleCounter);
 
 	if (blanklcd && ppu_.frameBuf().fb()) {
-		unsigned long color = ppu_.cgb() ? gbcToRgb32(0xFFFF) : dmgColorsRgb32_[0];
+		unsigned long color = ppu_.cgb() ? gbcToRgb32(0xFFFF, isTrueColors()) : dmgColorsRgb32_[0];
 		clear(ppu_.frameBuf().fb(), color, ppu_.frameBuf().pitch());
 	}
 
@@ -420,7 +423,7 @@ static void doCgbColorChange(unsigned char *pdata,
 		unsigned long *palette, unsigned index, unsigned data) {
 	pdata[index] = data;
 	index >>= 1;
-	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] << 8);
+	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] << 8, isTrueColors());
 }
 
 void LCD::doCgbBgColorChange(unsigned index, unsigned data, unsigned long cc) {

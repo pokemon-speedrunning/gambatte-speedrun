@@ -1549,6 +1549,7 @@ void PPU::saveState(SaveState &ss) const {
 	ss.ppu.state = p_.nextCallPtr->id;
 	ss.ppu.lastM0Time = p_.now - p_.lastM0Time;
 	ss.ppu.isCgb = p_.cgb;
+    ss.ppu.trueColors = p_.trueColors;
 }
 
 namespace {
@@ -1655,6 +1656,7 @@ void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 	                 : videoCycles - ds * m2_ds_offset;
 	long const lineCycles = static_cast<unsigned long>(vcycs) % 456;
 
+    p_.trueColors = ss.ppu.trueColors;
 	p_.now = ss.cpu.cycleCounter;
 	p_.lcdc = ss.mem.ioamhram.get()[0x140];
 	p_.lyCounter.setDoubleSpeed(ds);

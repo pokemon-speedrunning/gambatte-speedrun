@@ -78,7 +78,7 @@ void GB::reset(std::string const &build) {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
-		setInitState(state, !(p_->loadflags & FORCE_DMG), p_->loadflags & GBA_CGB);
+		setInitState(state, !(p_->loadflags & FORCE_DMG), p_->loadflags & GBA_CGB, p_->loadflags & TRUE_COLOR);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 		p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -104,7 +104,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
-		setInitState(state, !(flags & FORCE_DMG), flags & GBA_CGB);
+		setInitState(state, !(flags & FORCE_DMG), flags & GBA_CGB, flags & TRUE_COLOR);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 
