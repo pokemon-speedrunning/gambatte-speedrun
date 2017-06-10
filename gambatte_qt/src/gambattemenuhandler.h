@@ -145,6 +145,7 @@ private:
 #ifdef DMG_SUPPORT
 	QAction *dmgModeAction_;
 #endif
+    QAction *trueColorsAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
 	PaletteDialog *globalPaletteDialog_;

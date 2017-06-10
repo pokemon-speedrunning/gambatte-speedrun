@@ -35,8 +35,9 @@ static unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
 	unsigned long const g = bgr15 >>  5 & 0x1F;
 	unsigned long const b = bgr15 >> 10 & 0x1F;
     
-    if (trueColor)
+    if (trueColor) {
         return (r << 19) | (g << 11) | (b << 3);
+    }
 
 	return ((r * 13 + g * 2 + b) >> 1) << 16
 	     | (g * 3 + b) << 9
@@ -420,23 +421,23 @@ bool LCD::cgbpAccessible(unsigned long const cc) {
 }
 
 static void doCgbColorChange(unsigned char *pdata,
-		unsigned long *palette, unsigned index, unsigned data) {
+		unsigned long *palette, unsigned index, unsigned data, bool trueColor) {
 	pdata[index] = data;
 	index >>= 1;
-	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] << 8, isTrueColors());
+	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] << 8, trueColor);
 }
 
 void LCD::doCgbBgColorChange(unsigned index, unsigned data, unsigned long cc) {
 	if (cgbpAccessible(cc)) {
 		update(cc);
-		doCgbColorChange(bgpData_, ppu_.bgPalette(), index, data);
+		doCgbColorChange(bgpData_, ppu_.bgPalette(), index, data, isTrueColors());
 	}
 }
 
 void LCD::doCgbSpColorChange(unsigned index, unsigned data, unsigned long cc) {
 	if (cgbpAccessible(cc)) {
 		update(cc);
-		doCgbColorChange(objpData_, ppu_.spPalette(), index, data);
+		doCgbColorChange(objpData_, ppu_.spPalette(), index, data, isTrueColors());
 	}
 }
 

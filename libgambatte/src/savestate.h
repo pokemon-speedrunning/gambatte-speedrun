@@ -36,9 +36,10 @@ struct SaveState {
 
 		friend class SaverList;
 		friend void setInitState(SaveState &, bool, bool);
+        T *ptr;
 
 	private:
-		T *ptr;
+		
 		std::size_t size_;
 	};
 

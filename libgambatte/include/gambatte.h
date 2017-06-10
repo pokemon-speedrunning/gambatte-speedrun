@@ -40,7 +40,7 @@ public:
 		GBA_CGB          = 2, /**< Use GBA intial CPU register values when in CGB mode. */
 		MULTICART_COMPAT = 4, /**< Use heuristics to detect and support some multicart
 		                           MBCs disguised as MBC1. */
-        TRUE_COLOR       = 8  /**< Use GBP color conversion instead of GBC-screen approximation */
+		TRUE_COLOR       = 8  /**< Use GBP color conversion instead of GBC-screen approximation */
 	};
 
 	 /*

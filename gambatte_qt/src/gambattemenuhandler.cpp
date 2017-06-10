@@ -423,6 +423,10 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addAction(tr("Select DMG Bios Image..."), this, SLOT(openDMGBios()));
 #endif
 
+    trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
+	trueColorsAction_->setCheckable(true);
+	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
+
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
 	fsAct_->setCheckable(true);
@@ -511,6 +515,7 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 #ifdef DMG_SUPPORT
 	settings.setValue("dmgmode-sr", dmgModeAction_->isChecked());
 #endif
+    settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
 void GambatteMenuHandler::updateRecentFileActions() {
@@ -599,7 +604,8 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 			source_.load(fileName.toLocal8Bit().constData(),
 			               (!cgbRng)                      * gambatte::GB::GBA_CGB
 					     + dmgMode                        * gambatte::GB::FORCE_DMG
-			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT)) {
+			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT
+                         + trueColorsAction_->isChecked()  * gambatte::GB::TRUE_COLOR)) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
 		emit romLoaded(false);
