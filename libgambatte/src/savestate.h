@@ -35,11 +35,10 @@ struct SaveState {
 		void set(T *p, std::size_t size) { ptr = p; size_ = size; }
 
 		friend class SaverList;
-		friend void setInitState(SaveState &, bool, bool);
-        T *ptr;
+		friend void setInitState(SaveState &, bool, bool, bool);
 
 	private:
-		
+		T *ptr;
 		std::size_t size_;
 	};
 
