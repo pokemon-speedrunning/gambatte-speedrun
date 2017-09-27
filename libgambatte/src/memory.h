@@ -35,7 +35,7 @@ class FilterInfo;
 
 class Memory {
 public:
-	explicit Memory(Interrupter const &interrupter);
+	explicit Memory(Interrupter const &interrupter, unsigned short &sp, unsigned short &pc);
 	bool loaded() const { return cart_.loaded(); }
 	char const * romTitle() const { return cart_.romTitle(); }
 	PakInfo const pakInfo(bool multicartCompat) const { return cart_.pakInfo(multicartCompat); }
@@ -154,6 +154,8 @@ private:
 	bool cgbSwitching_;
 	bool agbMode_;
 	bool gbIsCgb_;
+    unsigned short &sp_;
+	unsigned short &pc_;
 
 	void decEventCycles(IntEventId eventId, unsigned long dec);
 	void oamDmaInitSetup();

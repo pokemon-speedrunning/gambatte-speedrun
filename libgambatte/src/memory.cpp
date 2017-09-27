@@ -25,7 +25,7 @@
 
 namespace gambatte {
 
-Memory::Memory(Interrupter const &interrupter)
+Memory::Memory(Interrupter const &interrupter, unsigned short &sp, unsigned short &pc)
 : getInput_(0)
 , divLastUpdate_(0)
 , lastOamDmaUpdate_(disabled_time)
@@ -36,6 +36,8 @@ Memory::Memory(Interrupter const &interrupter)
 , oamDmaPos_(0xFE)
 , serialCnt_(0)
 , blanklcd_(false)
+, sp_(sp)
+, pc_(pc)
 {
 	intreq_.setEventTime<intevent_blit>(144 * 456ul);
 	intreq_.setEventTime<intevent_end>(0);
@@ -293,7 +295,20 @@ unsigned long Memory::event(unsigned long cc) {
 		}
 
 		if (ime()) {
-			unsigned const pendingIrqs = intreq_.pendingIrqs();
+            // non-atomic interrupt fix for yellow TIDs
+            cc += 8;
+            lcd_.update(cc);
+            sp_ = (sp_ - 2) & 0xFFFF;
+            write(sp_ + 1, pc_ >> 8, cc);
+            unsigned ie = intreq_.iereg();
+            
+            cc += 4;
+            lcd_.update(cc);
+            write(sp_, pc_ & 0xFF, cc);
+            unsigned const pendingIrqs = ie & intreq_.ifreg();
+            
+            cc += 8;
+            lcd_.update(cc);
 			unsigned const n = pendingIrqs & -pendingIrqs;
 			unsigned address;
 			if (n <= 4) {
@@ -303,7 +318,9 @@ unsigned long Memory::event(unsigned long cc) {
 				address = 0x50 + n;
 
 			intreq_.ackIrq(n);
-			cc = interrupter_.interrupt(address, cc, *this);
+			pc_ = address;
+            
+            // RIP vblank cheats LUL
 		}
 
 		break;
