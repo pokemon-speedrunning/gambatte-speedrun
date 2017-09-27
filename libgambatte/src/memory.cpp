@@ -296,7 +296,7 @@ unsigned long Memory::event(unsigned long cc) {
 
 		if (ime()) {
             // non-atomic interrupt fix for yellow TIDs
-            cc += 8;
+            cc += 12;
             lcd_.update(cc);
             sp_ = (sp_ - 2) & 0xFFFF;
             write(sp_ + 1, pc_ >> 8, cc);
@@ -307,7 +307,7 @@ unsigned long Memory::event(unsigned long cc) {
             write(sp_, pc_ & 0xFF, cc);
             unsigned const pendingIrqs = ie & intreq_.ifreg();
             
-            cc += 8;
+            cc += 4;
             lcd_.update(cc);
 			unsigned const n = pendingIrqs & -pendingIrqs;
 			unsigned address;
