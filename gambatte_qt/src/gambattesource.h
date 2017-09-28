@@ -28,7 +28,9 @@
 #include <gambatte.h>
 #include <pakinfo.h>
 #include <QObject>
+#include <QTimer>
 #include <cstring>
+#include <algorithm>
 
 class GambatteSource : public QObject, public MediaSource {
 public:
@@ -39,7 +41,7 @@ public:
 	unsigned int loadDMGBios(std::string const &biosfile) { return gb_.loadDMGBios(biosfile); }
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { gb_.reset(GAMBATTE_QT_VERSION_STR); }
+	void reset() { isResetting_ = false; gb_.reset(GAMBATTE_QT_VERSION_STR); }
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
@@ -57,6 +59,7 @@ public:
 	QDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
 	void loadState() { gb_.loadState(); }
+    void tryReset();
 
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
@@ -67,6 +70,7 @@ public:
 signals:
 	void setTurbo(bool on);
 	void togglePause();
+    void pauseAndReset();
 	void frameStep();
 	void decFrameRate();
 	void incFrameRate();
@@ -98,6 +102,8 @@ private:
 	bool dpadUp_, dpadDown_;
 	bool dpadLeft_, dpadRight_;
 	bool dpadUpLast_, dpadLeftLast_;
+    bool isResetting_;
+    unsigned resetFrameCount_;
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
@@ -111,7 +117,7 @@ private:
 	void emitNextStateSlot() { emit nextStateSlot(); }
 	void emitSaveState() { emit saveStateSignal(); }
 	void emitLoadState() { emit loadStateSignal(); }
-	void emitReset() { emit reset(); }
+	void emitReset() { emit tryReset(); }
 	void emitQuit() { emit quit(); }
 };
 

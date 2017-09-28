@@ -156,6 +156,8 @@ GambatteSource::GambatteSource()
 , dpadRight_(false)
 , dpadUpLast_(false)
 , dpadLeftLast_(false)
+, isResetting_(false)
+, resetFrameCount_(0)
 {
 	gb_.setInputGetter(&inputGetter_);
 }
@@ -296,6 +298,25 @@ std::ptrdiff_t GambatteSource::update(
 
 void GambatteSource::generateVideoFrame(PixelBuffer const &pb) {
 	if (void *const pbdata = getpbdata(pb, vsrci_)) {
+        if(isResetting_) {
+            resetFrameCount_++;
+            float multiplier = (28 - std::min((int)resetFrameCount_, 28))/28.0f;
+            gambatte::uint_least32_t * intData = static_cast<gambatte::uint_least32_t *> (cconvert_ ? cconvert_->inBuf() : pbdata);
+            std::ptrdiff_t pitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
+            for(int y=0;y<pb.height;y++) {
+                for(int x=0;x<pb.width;x++) {
+                    int b = (int) (multiplier * (intData[x] & 0xFF));
+                    int g = (int) (multiplier * ((intData[x] >> 8) & 0xFF));
+                    int r = (int) (multiplier * ((intData[x] >> 16) & 0xFF));
+                    intData[x] = b | (g << 8) | (r << 16);
+                }
+                intData += pitch;
+            }
+            
+            if(resetFrameCount_ == 33) {
+                emit pauseAndReset();
+            }
+        }
 		setPixelBuffer(pbdata, pb.pixelFormat, pb.pitch);
 		if (vfilter_) {
 			void          *dstbuf   = cconvert_ ? cconvert_->inBuf()   : pbdata;
@@ -328,4 +349,11 @@ void GambatteSource::saveState(PixelBuffer const &pb) {
 void GambatteSource::saveState(PixelBuffer const &pb, std::string const &filepath) {
 	GbVidBuf gbvidbuf = setPixelBuffer(getpbdata(pb, vsrci_), pb.pixelFormat, pb.pitch);
 	gb_.saveState(gbvidbuf.pixels, gbvidbuf.pitch, filepath);
+}
+
+void GambatteSource::tryReset() {
+    if(!isResetting_) {
+        isResetting_ = true;
+        resetFrameCount_ = 0;
+    }
 }

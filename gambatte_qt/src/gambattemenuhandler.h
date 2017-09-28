@@ -23,6 +23,7 @@
 #include <QList>
 #include <QObject>
 #include <QSize>
+#include <QTimer>
 
 class CheatDialog;
 class GambatteSource;
@@ -193,6 +194,8 @@ private slots:
 	void loadStateFrom();
 	void reset();
 	void pauseChange();
+    void pauseAndReset();
+    void doReset();
 	void frameStep();
 	void escPressed();
 	void videoBlitterFailure();

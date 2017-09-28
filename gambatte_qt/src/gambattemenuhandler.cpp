@@ -452,6 +452,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	mw.setSamplesPerFrame(35112);
 	connect(&source, SIGNAL(setTurbo(bool)), &mw, SLOT(setFastForward(bool)));
 	connect(&source, SIGNAL(togglePause()), pauseAction_, SLOT(trigger()));
+    connect(&source, SIGNAL(pauseAndReset()), this, SLOT(pauseAndReset()));
 	connect(&source, SIGNAL(frameStep()), this, SLOT(frameStep()));
 	connect(&source, SIGNAL(decFrameRate()), frameRateAdjuster, SLOT(decFrameRate()));
 	connect(&source, SIGNAL(incFrameRate()), frameRateAdjuster, SLOT(incFrameRate()));
@@ -968,6 +969,11 @@ struct LoadStateFromFun {
 
 struct ResetFun {
 	GambatteSource &source;
+	void operator()() const { source.tryReset(); }
+};
+
+struct RealResetFun {
+	GambatteSource &source;
 	void operator()() const { source.reset(); }
 };
 
@@ -1021,11 +1027,24 @@ void GambatteMenuHandler::reset() {
 	mw_.callInWorkerThread(fun);
 }
 
+void GambatteMenuHandler::doReset() {
+    mw_.unpause();
+    
+	RealResetFun fun = { source_ };
+	mw_.callInWorkerThread(fun);
+}
+
 void GambatteMenuHandler::pauseChange() {
 	if (pauseAction_->isChecked())
 		mw_.pause();
 	else
 		mw_.unpause();
+}
+
+void GambatteMenuHandler::pauseAndReset() {
+    mw_.pause();
+    
+    QTimer::singleShot(1575, this, SLOT(doReset()));
 }
 
 void GambatteMenuHandler::frameStep() {
