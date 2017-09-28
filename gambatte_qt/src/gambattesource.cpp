@@ -300,6 +300,8 @@ void GambatteSource::generateVideoFrame(PixelBuffer const &pb) {
 	if (void *const pbdata = getpbdata(pb, vsrci_)) {
         if(isResetting_) {
             resetFrameCount_++;
+            if(resetFrameCount_ == 1)
+                emit startResetting();
             float multiplier = (28 - std::min((int)resetFrameCount_, 28))/28.0f;
             gambatte::uint_least32_t * intData = static_cast<gambatte::uint_least32_t *> (cconvert_ ? cconvert_->inBuf() : pbdata);
             std::ptrdiff_t pitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;

@@ -154,6 +154,7 @@ private:
 	QActionGroup *const stateSlotGroup_;
 	WindowSizeMenu windowSizeMenu_;
 	int pauseInc_;
+    bool isResetting_;
 
 	void loadFile(QString const &fileName);
 	void setCurrentFile(QString const &fileName);
@@ -202,6 +203,7 @@ private slots:
 	void audioEngineFailure();
 	void toggleFullScreen();
 	void saveWindowSizeIfNotFullScreen();
+    void startResetting();
 };
 
 #endif

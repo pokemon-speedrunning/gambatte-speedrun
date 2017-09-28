@@ -302,6 +302,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , stateSlotGroup_(new QActionGroup(&mw))
 , windowSizeMenu_(mw, *videoDialog_)
 , pauseInc_(4)
+, isResetting_(false)
 {
 	QString revision = QString("interim");
 	#ifdef GAMBATTE_QT_VERSION_STR
@@ -452,6 +453,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	mw.setSamplesPerFrame(35112);
 	connect(&source, SIGNAL(setTurbo(bool)), &mw, SLOT(setFastForward(bool)));
 	connect(&source, SIGNAL(togglePause()), pauseAction_, SLOT(trigger()));
+    connect(&source, SIGNAL(startResetting()), this, SLOT(startResetting()));
     connect(&source, SIGNAL(pauseAndReset()), this, SLOT(pauseAndReset()));
 	connect(&source, SIGNAL(frameStep()), this, SLOT(frameStep()));
 	connect(&source, SIGNAL(decFrameRate()), frameRateAdjuster, SLOT(decFrameRate()));
@@ -539,6 +541,8 @@ void GambatteMenuHandler::updateRecentFileActions() {
 }
 
 void GambatteMenuHandler::setCurrentFile(QString const &fileName) {
+    if(isResetting_)
+        return;
 	QSettings settings;
 	QStringList files = settings.value("recentFileList").toStringList();
 	files.removeAll(fileName);
@@ -551,6 +555,8 @@ void GambatteMenuHandler::setCurrentFile(QString const &fileName) {
 }
 
 void GambatteMenuHandler::loadFile(QString const &fileName) {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	pauseAction_->setChecked(false);
 	pauseChange();
@@ -675,6 +681,8 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 }
 
 void GambatteMenuHandler::open() {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -690,6 +698,8 @@ void GambatteMenuHandler::open() {
 }
 
 void GambatteMenuHandler::openGBCBios() {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -729,6 +739,8 @@ void GambatteMenuHandler::openGBCBios() {
 
 #ifdef DMG_SUPPORT
 void GambatteMenuHandler::openDMGBios() {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -768,6 +780,8 @@ void GambatteMenuHandler::openDMGBios() {
 #endif
 
 void GambatteMenuHandler::openRecentFile() {
+    if(isResetting_)
+        return;
 	if (QAction const *action = qobject_cast<QAction *>(sender()))
 		loadFile(action->data().toString());
 }
@@ -920,12 +934,16 @@ void GambatteMenuHandler::execMiscDialog() {
 }
 
 void GambatteMenuHandler::prevStateSlot() {
+    if(isResetting_)
+        return;
 	stateSlotGroup_->actions().at(source_.currentState() < 2
 	                            ? source_.currentState() + 8
 	                            : source_.currentState() - 2)->trigger();
 }
 
 void GambatteMenuHandler::nextStateSlot() {
+    if(isResetting_)
+        return;
 	stateSlotGroup_->actions().at(source_.currentState())->trigger();
 }
 
@@ -980,6 +998,8 @@ struct RealResetFun {
 } // anon ns
 
 void GambatteMenuHandler::selectStateSlot() {
+    if(isResetting_)
+        return;
 	if (QAction *action = stateSlotGroup_->checkedAction()) {
 		SelectStateFun fun = { source_, action->data().toInt() };
 		mw_.callInWorkerThread(fun);
@@ -987,16 +1007,22 @@ void GambatteMenuHandler::selectStateSlot() {
 }
 
 void GambatteMenuHandler::saveState() {
+    if(isResetting_)
+        return;
 	SaveStateFun fun = { source_, MainWindow::FrameBuffer(mw_) };
 	mw_.callInWorkerThread(fun);
 }
 
 void GambatteMenuHandler::loadState() {
+    if(isResetting_)
+        return;
 	LoadStateFun fun = { source_ };
 	mw_.callInWorkerThread(fun);
 }
 
 void GambatteMenuHandler::saveStateAs() {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -1010,6 +1036,8 @@ void GambatteMenuHandler::saveStateAs() {
 }
 
 void GambatteMenuHandler::loadStateFrom() {
+    if(isResetting_)
+        return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -1029,12 +1057,14 @@ void GambatteMenuHandler::reset() {
 
 void GambatteMenuHandler::doReset() {
     mw_.unpause();
-    
+    isResetting_ = false;
 	RealResetFun fun = { source_ };
 	mw_.callInWorkerThread(fun);
 }
 
 void GambatteMenuHandler::pauseChange() {
+    if(isResetting_)
+        return;
 	if (pauseAction_->isChecked())
 		mw_.pause();
 	else
@@ -1047,7 +1077,13 @@ void GambatteMenuHandler::pauseAndReset() {
     QTimer::singleShot(1575, this, SLOT(doReset()));
 }
 
+void GambatteMenuHandler::startResetting() {
+    isResetting_ = true;
+}
+
 void GambatteMenuHandler::frameStep() {
+    if(isResetting_)
+        return;
 	if (pauseAction_->isChecked())
 		mw_.frameStep();
 	else

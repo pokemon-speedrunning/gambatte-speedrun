@@ -79,6 +79,7 @@ signals:
 	void nextStateSlot();
 	void saveStateSignal();
 	void loadStateSignal();
+    void startResetting();
 	void quit();
 
 private:
@@ -107,16 +108,16 @@ private:
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
-	void emitSetTurbo(bool on) { emit setTurbo(on); }
-	void emitPause() { emit togglePause(); }
-	void emitFrameStep() { emit frameStep(); }
-	void emitDecFrameRate() { emit decFrameRate(); }
-	void emitIncFrameRate() { emit incFrameRate(); }
-	void emitResetFrameRate() { emit resetFrameRate(); }
-	void emitPrevStateSlot() { emit prevStateSlot(); }
-	void emitNextStateSlot() { emit nextStateSlot(); }
-	void emitSaveState() { emit saveStateSignal(); }
-	void emitLoadState() { emit loadStateSignal(); }
+	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
+	void emitPause() { if(!isResetting_) { emit togglePause();} }
+	void emitFrameStep() { if(!isResetting_) { emit frameStep();} }
+	void emitDecFrameRate() { if(!isResetting_) { emit decFrameRate();} }
+	void emitIncFrameRate() { if(!isResetting_) { emit incFrameRate();} }
+	void emitResetFrameRate() { if(!isResetting_) { emit resetFrameRate();} }
+	void emitPrevStateSlot() { if(!isResetting_) { emit prevStateSlot();} }
+	void emitNextStateSlot() { if(!isResetting_) { emit nextStateSlot();} }
+	void emitSaveState() { if(!isResetting_) { emit saveStateSignal();} }
+	void emitLoadState() { if(!isResetting_) { emit loadStateSignal();} }
 	void emitReset() { emit tryReset(); }
 	void emitQuit() { emit quit(); }
 };
