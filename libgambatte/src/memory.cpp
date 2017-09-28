@@ -346,10 +346,17 @@ unsigned long Memory::stop(unsigned long cc) {
 				   ? (intreq_.eventTime(intevent_end) - cc) << 1
 				   : (intreq_.eventTime(intevent_end) - cc) >> 1));
 		}
+        intreq_.halt();
+        intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
 	}
+    else {
+        if(!(intreq_.iereg() & 0x10) || (ioamhram_[0x100] & 0x30) == 0x30) {
+            // hang if a joypad interrupt can't come
+            di();
+        }
+        intreq_.halt();
+    }
 
-	intreq_.halt();
-	intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
 	return cc;
 }
 
