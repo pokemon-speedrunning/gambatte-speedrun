@@ -594,11 +594,11 @@ void CPU::process(unsigned long const cycles) {
                     PEEK(followingByte, pc);
                     pc = (pc + 1) & 0xFFFF;
                     
-                    if(followingByte != 0x00) {
-                        // corrupted stop
-                        mem_.di();
-                        mem_.blackScreen();
-                    }
+                    // if(followingByte != 0x00) {
+                        ////corrupted stop
+                        // mem_.di();
+                        // mem_.blackScreen();
+                    // }
 
                     cycleCounter = mem_.stop(cycleCounter);
 
