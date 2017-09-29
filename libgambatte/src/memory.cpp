@@ -351,7 +351,7 @@ unsigned long Memory::stop(unsigned long cc) {
 	}
     else {
         
-        if(ioamhram_[0x100] & 0x30) == 0x30) {
+        if((ioamhram_[0x100] & 0x30) == 0x30) {
             // hang if a joypad press can't come
             di();
             intreq_.halt();
