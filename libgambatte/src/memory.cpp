@@ -172,6 +172,9 @@ unsigned long Memory::event(unsigned long cc) {
 	case intevent_unhalt:
 		intreq_.unhalt();
 		intreq_.setEventTime<intevent_unhalt>(disabled_time);
+		nontrivial_ff_write(0xFF04, 0, cc);
+		pc_ = (pc_ + 1) & 0xFFFF;
+		cc += 4;
 		break;
 	case intevent_end:
 		intreq_.setEventTime<intevent_end>(disabled_time - 1);
@@ -330,7 +333,7 @@ unsigned long Memory::event(unsigned long cc) {
 }
 
 unsigned long Memory::stop(unsigned long cc) {
-	cc += 4 + 4 * isDoubleSpeed();
+	cc += 4;
 
 	if (ioamhram_[0x14D] & isCgb()) {
 		psg_.generateSamples(cc, isDoubleSpeed());
@@ -347,7 +350,7 @@ unsigned long Memory::stop(unsigned long cc) {
 				   : (intreq_.eventTime(intevent_end) - cc) >> 1));
 		}
         intreq_.halt();
-        intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
+        intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
 	}
     else {
         
@@ -358,7 +361,7 @@ unsigned long Memory::stop(unsigned long cc) {
         }
         else {
             intreq_.halt();
-            intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
+            intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
         }
     }
 

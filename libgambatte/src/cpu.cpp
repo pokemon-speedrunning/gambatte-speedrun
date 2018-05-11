@@ -590,16 +590,6 @@ void CPU::process(unsigned long const cycles) {
 				// Halt CPU and LCD display until button pressed:
 			case 0x10:
                 {
-                    unsigned char followingByte;
-                    PEEK(followingByte, pc);
-                    pc = (pc + 1) & 0xFFFF;
-                    
-                    // if(followingByte != 0x00) {
-                        ////corrupted stop
-                        // mem_.di();
-                        // mem_.blackScreen();
-                    // }
-
                     cycleCounter = mem_.stop(cycleCounter);
 
                     if (cycleCounter < mem_.nextEventTime()) {
