@@ -121,7 +121,7 @@ void Tima::setTma(unsigned const data, unsigned long const cc, TimaInterruptRequ
 	tma_ = data;
 }
 
-void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq) {
+void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq, bool gbIsCgb) {
 	if (tac_ ^ data) {
 		unsigned long nextIrqEventTime = timaIrq.nextIrqEventTime();
 
@@ -145,6 +145,11 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 		if (data & 4) {
 			unsigned long diff = cc - basetime_;
 
+			if (gbIsCgb) {
+				if (((diff >> (timaClock[tac_ & 3] - 1)) & 1) == 1 && ((diff >> (timaClock[data & 3] - 1)) & 1) == 0)
+					tima_++;
+			}
+
 			lastUpdate_ = basetime_ + ((diff >> timaClock[data & 3]) << timaClock[data & 3]);
 			nextIrqEventTime = lastUpdate_ + ((256u - tima_) << timaClock[data & 3]) + 3;
 		}
@@ -159,8 +164,8 @@ void Tima::resTac(unsigned long const cc, TimaInterruptRequester timaIrq) {
 	basetime_ = cc;
 
 	if (tac_ & 0x04) {
-		setTac(tac_ & ~0x04, cc, timaIrq);
-		setTac(tac_ | 0x04, cc, timaIrq);
+		setTac(tac_ & ~0x04, cc, timaIrq, false);
+		setTac(tac_ | 0x04, cc, timaIrq, false);
 	}
 }
 

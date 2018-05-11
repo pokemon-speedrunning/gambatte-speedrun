@@ -667,7 +667,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		break;
 	case 0x07:
 		data |= 0xF8;
-		tima_.setTac(data, cc, TimaInterruptRequester(intreq_));
+		tima_.setTac(data, cc, TimaInterruptRequester(intreq_), gbIsCgb_);
 		break;
 	case 0x0F:
 		updateIrqs(cc);
