@@ -143,7 +143,9 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 		}
 
 		if (data & 4) {
-			lastUpdate_ = (cc >> timaClock[data & 3]) << timaClock[data & 3];
+			unsigned long diff = cc - basetime_;
+
+			lastUpdate_ = basetime_ + ((diff >> timaClock[data & 3]) << timaClock[data & 3]);
 			nextIrqEventTime = lastUpdate_ + ((256u - tima_) << timaClock[data & 3]) + 3;
 		}
 
@@ -151,6 +153,15 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 	}
 
 	tac_ = data;
+}
+
+void Tima::resTac(unsigned long const cc, TimaInterruptRequester timaIrq) {
+	basetime_ = cc;
+
+	if (tac_ & 0x04) {
+		setTac(tac_ & ~0x04, cc, timaIrq);
+		setTac(tac_ | 0x04, cc, timaIrq);
+	}
 }
 
 unsigned Tima::tima(unsigned long cc) {

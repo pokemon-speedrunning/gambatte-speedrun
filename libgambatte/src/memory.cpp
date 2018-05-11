@@ -657,6 +657,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x04:
 		ioamhram_[0x104] = 0;
 		divLastUpdate_ = cc;
+		tima_.resTac(cc, TimaInterruptRequester(intreq_));
 		return;
 	case 0x05:
 		tima_.setTima(data, cc, TimaInterruptRequester(intreq_));
