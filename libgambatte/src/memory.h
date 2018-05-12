@@ -157,6 +157,7 @@ private:
     unsigned short &sp_;
 	unsigned short &pc_;
 	unsigned long halttime_;
+	bool stopped_;
 
 	void decEventCycles(IntEventId eventId, unsigned long dec);
 	void oamDmaInitSetup();

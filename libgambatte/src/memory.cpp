@@ -289,6 +289,11 @@ unsigned long Memory::event(unsigned long cc) {
 		lcd_.update(cc);
 		break;
 	case intevent_interrupts:
+		if (stopped_) {
+			intreq_.setEventTime<intevent_interrupts>(disabled_time);
+			break;
+		}
+
 		if (halted()) {
 			if (gbIsCgb_ || (!gbIsCgb_ && cc <= halttime_ + 4))
 				cc += 4;
@@ -352,18 +357,10 @@ unsigned long Memory::stop(unsigned long cc) {
         intreq_.halt();
         intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
 	}
-    else {
-        
-        if((ioamhram_[0x100] & 0x30) == 0x30) {
-            // hang if a joypad press can't come
-            di();
-            intreq_.halt();
-        }
-        else {
-            intreq_.halt();
-            intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
-        }
-    }
+	else {
+		stopped_ = true;
+		intreq_.halt();
+	}
 
 	return cc;
 }
