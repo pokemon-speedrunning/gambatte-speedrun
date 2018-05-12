@@ -406,6 +406,10 @@ void MediaWidget::focusOutEvent() {
 
 	blitterContainer_->showCursor();
 	cursorTimer_->stop();
+    
+    if (running_) {
+        worker_->source().clearKeyPresses();
+    }
 }
 
 void MediaWidget::focusInEvent() {

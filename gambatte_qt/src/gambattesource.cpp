@@ -183,8 +183,10 @@ InputDialog * GambatteSource::createInputDialog() {
 	addButton(v, &buttonInfoLoadState, &GambatteSource::emitLoadState, this);
 	addButton(v, &buttonInfoPrevState, &GambatteSource::emitPrevStateSlot, this);
 	addButton(v, &buttonInfoNextState, &GambatteSource::emitNextStateSlot, this);
+#ifdef ENABLE_TURBO_BUTTONS
 	addButton(v, &buttonInfoGbATurbo, SetPressedAct(inputState_[8 + a_but]));
 	addButton(v, &buttonInfoGbBTurbo, SetPressedAct(inputState_[8 + b_but]));
+#endif
 	addButton(v, &buttonInfoQuit, &GambatteSource::emitQuit, this);
 
 	InputDialog *dialog = new InputDialog(v);
@@ -215,6 +217,10 @@ void GambatteSource::keyReleaseEvent(QKeyEvent const *e) {
 
 void GambatteSource::joystickEvent(SDL_Event const &e) {
 	inputDialog_->joystickEvent(e);
+}
+
+void GambatteSource::clearKeyPresses() {
+    inputDialog_->clearKeyPresses();
 }
 
 struct GambatteSource::GbVidBuf {

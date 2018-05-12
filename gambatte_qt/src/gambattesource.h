@@ -64,6 +64,7 @@ public:
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
 	virtual void joystickEvent(SDL_Event const &);
+    virtual void clearKeyPresses();
 	virtual std::ptrdiff_t update(PixelBuffer const &fb, qint16 *soundBuf, std::size_t &samples);
 	virtual void generateVideoFrame(PixelBuffer const &fb);
 

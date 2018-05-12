@@ -335,6 +335,14 @@ void InputDialog::joystickEvent(SDL_Event const &ev) {
 	}
 }
 
+void InputDialog::clearKeyPresses() {
+    if (Mutual<KeyMapping>::TryLocked const &lm = keyMapping_) {
+        for(Kmap::iterator r = lm->map.begin(); r != lm->map.end(); ++r) {
+            unsetButtonPressed(lm->rapidvec, (*r).second.button, (*r).second.fpp);
+        }
+    }
+}
+
 template<class AutoPressVec>
 static void doConsumeAutoPress(AutoPressVec &v) {
 	for (typename AutoPressVec::iterator it = v.begin(); it != v.end(); ++it) {

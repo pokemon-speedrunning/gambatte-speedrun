@@ -65,6 +65,7 @@ public:
 	void keyPress(QKeyEvent const *);
 	void keyRelease(QKeyEvent const *);
 	void joystickEvent(SDL_Event const &);
+    void clearKeyPresses();
 
 	// Call once every frame to tick rapid-fire pressing.
 	void consumeAutoPress();

@@ -56,6 +56,7 @@ public:
 	virtual void keyPressEvent(QKeyEvent const *) {}
 	virtual void keyReleaseEvent(QKeyEvent const *) {}
 	virtual void joystickEvent(SDL_Event const &) {}
+    virtual void clearKeyPresses() {}
 
 	/**
 	  * Update until a new frame of video, or 'samples' audio samples have been produced.
