@@ -60,6 +60,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.divLastUpdate = divLastUpdate_;
 	state.mem.nextSerialtime = intreq_.eventTime(intevent_serial);
 	state.mem.unhaltTime = intreq_.eventTime(intevent_unhalt);
+	state.mem.halttime = halttime_;
 	state.mem.lastOamDmaUpdate = lastOamDmaUpdate_;
 	state.mem.dmaSource = dmaSource_;
 	state.mem.dmaDestination = dmaDestination_;
@@ -68,6 +69,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.cgbSwitching = cgbSwitching_;
 	state.mem.agbMode = agbMode_;
 	state.mem.gbIsCgb = gbIsCgb_;
+	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
 	cart_.saveState(state);
@@ -87,6 +89,7 @@ void Memory::loadState(SaveState const &state) {
 	cgbSwitching_ = state.mem.cgbSwitching;
 	agbMode_ = state.mem.agbMode;
 	gbIsCgb_ = state.mem.gbIsCgb;
+	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -98,6 +101,7 @@ void Memory::loadState(SaveState const &state) {
 		? state.mem.nextSerialtime
 		: state.cpu.cycleCounter);
 	intreq_.setEventTime<intevent_unhalt>(state.mem.unhaltTime);
+	halttime_ = state.mem.halttime;
 	lastOamDmaUpdate_ = state.mem.lastOamDmaUpdate;
 	dmaSource_ = state.mem.dmaSource;
 	dmaDestination_ = state.mem.dmaDestination;

@@ -33,11 +33,13 @@ Tima::Tima()
 }
 
 void Tima::saveState(SaveState &state) const {
+	state.mem.timaBasetime = basetime_;
 	state.mem.timaLastUpdate = lastUpdate_;
 	state.mem.tmatime = tmatime_;
 }
 
 void Tima::loadState(SaveState const &state, TimaInterruptRequester timaIrq) {
+	basetime_ = state.mem.timaBasetime;
 	lastUpdate_ = state.mem.timaLastUpdate;
 	tmatime_ = state.mem.tmatime;
 	tima_ = state.mem.ioamhram.get()[0x105];
