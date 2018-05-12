@@ -349,6 +349,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		                            this, SLOT(saveState()), QString("Ctrl+S")));
 		romLoadedActions->addAction(fileMenu->addAction(tr("&Load State"),
 		                            this, SLOT(loadState()), QString("Ctrl+L")));
+        fileMenu->addAction(tr("Open Save Folder"), this, SLOT(openSaveFolder()));
 
 		{
 			QMenu *const stateSlotMenu = fileMenu->addMenu(tr("S&elect State Slot"));
@@ -1048,6 +1049,12 @@ void GambatteMenuHandler::loadStateFrom() {
 		LoadStateFromFun fun = { source_, fileName };
 		mw_.callInWorkerThread(fun);
 	}
+}
+
+void GambatteMenuHandler::openSaveFolder() {
+    // ref https://stackoverflow.com/questions/3569749/qt-open-default-file-explorer-on-nix
+    QString path = QDir::toNativeSeparators(miscDialog_->savePath());
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
 void GambatteMenuHandler::reset() {

@@ -193,6 +193,7 @@ private slots:
 	void saveStateAs();
 	void loadState();
 	void loadStateFrom();
+    void openSaveFolder();
 	void reset();
 	void pauseChange();
     void pauseAndReset();
