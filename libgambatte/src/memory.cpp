@@ -60,6 +60,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.divLastUpdate = divLastUpdate_;
 	state.mem.nextSerialtime = intreq_.eventTime(intevent_serial);
 	state.mem.unhaltTime = intreq_.eventTime(intevent_unhalt);
+	state.mem.halttime = halttime_;
 	state.mem.lastOamDmaUpdate = lastOamDmaUpdate_;
 	state.mem.dmaSource = dmaSource_;
 	state.mem.dmaDestination = dmaDestination_;
@@ -68,6 +69,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.cgbSwitching = cgbSwitching_;
 	state.mem.agbMode = agbMode_;
 	state.mem.gbIsCgb = gbIsCgb_;
+	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
 	cart_.saveState(state);
@@ -87,6 +89,7 @@ void Memory::loadState(SaveState const &state) {
 	cgbSwitching_ = state.mem.cgbSwitching;
 	agbMode_ = state.mem.agbMode;
 	gbIsCgb_ = state.mem.gbIsCgb;
+	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -98,6 +101,7 @@ void Memory::loadState(SaveState const &state) {
 		? state.mem.nextSerialtime
 		: state.cpu.cycleCounter);
 	intreq_.setEventTime<intevent_unhalt>(state.mem.unhaltTime);
+	halttime_ = state.mem.halttime;
 	lastOamDmaUpdate_ = state.mem.lastOamDmaUpdate;
 	dmaSource_ = state.mem.dmaSource;
 	dmaDestination_ = state.mem.dmaDestination;
@@ -172,6 +176,9 @@ unsigned long Memory::event(unsigned long cc) {
 	case intevent_unhalt:
 		intreq_.unhalt();
 		intreq_.setEventTime<intevent_unhalt>(disabled_time);
+		nontrivial_ff_write(0xFF04, 0, cc);
+		pc_ = (pc_ + 1) & 0xFFFF;
+		cc += 4;
 		break;
 	case intevent_end:
 		intreq_.setEventTime<intevent_end>(disabled_time - 1);
@@ -286,8 +293,13 @@ unsigned long Memory::event(unsigned long cc) {
 		lcd_.update(cc);
 		break;
 	case intevent_interrupts:
+		if (stopped_) {
+			intreq_.setEventTime<intevent_interrupts>(disabled_time);
+			break;
+		}
+
 		if (halted()) {
-			if (gbIsCgb_)
+			if (gbIsCgb_ || (!gbIsCgb_ && cc <= halttime_ + 4))
 				cc += 4;
 
 			intreq_.unhalt();
@@ -330,7 +342,7 @@ unsigned long Memory::event(unsigned long cc) {
 }
 
 unsigned long Memory::stop(unsigned long cc) {
-	cc += 4 + 4 * isDoubleSpeed();
+	cc += 4;
 
 	if (ioamhram_[0x14D] & isCgb()) {
 		psg_.generateSamples(cc, isDoubleSpeed());
@@ -347,20 +359,12 @@ unsigned long Memory::stop(unsigned long cc) {
 				   : (intreq_.eventTime(intevent_end) - cc) >> 1));
 		}
         intreq_.halt();
-        intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
+        intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
 	}
-    else {
-        
-        if((ioamhram_[0x100] & 0x30) == 0x30) {
-            // hang if a joypad press can't come
-            di();
-            intreq_.halt();
-        }
-        else {
-            intreq_.halt();
-            intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + isDoubleSpeed() * 8);
-        }
-    }
+	else {
+		stopped_ = true;
+		intreq_.halt();
+	}
 
 	return cc;
 }
@@ -654,6 +658,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x04:
 		ioamhram_[0x104] = 0;
 		divLastUpdate_ = cc;
+		tima_.resTac(cc, TimaInterruptRequester(intreq_));
 		return;
 	case 0x05:
 		tima_.setTima(data, cc, TimaInterruptRequester(intreq_));
@@ -663,7 +668,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		break;
 	case 0x07:
 		data |= 0xF8;
-		tima_.setTac(data, cc, TimaInterruptRequester(intreq_));
+		tima_.setTac(data, cc, TimaInterruptRequester(intreq_), gbIsCgb_);
 		break;
 	case 0x0F:
 		updateIrqs(cc);

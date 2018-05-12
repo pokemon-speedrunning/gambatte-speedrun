@@ -63,12 +63,14 @@ struct SaveState {
 		Ptr<unsigned char> wram;
 		Ptr<unsigned char> ioamhram;
 		unsigned long divLastUpdate;
+		unsigned long timaBasetime;
 		unsigned long timaLastUpdate;
 		unsigned long tmatime;
 		unsigned long nextSerialtime;
 		unsigned long lastOamDmaUpdate;
 		unsigned long minIntTime;
 		unsigned long unhaltTime;
+		unsigned long halttime;
 		unsigned short rombank;
 		unsigned short dmaSource;
 		unsigned short dmaDestination;
@@ -83,6 +85,7 @@ struct SaveState {
 		unsigned char /*bool*/ cgbSwitching;
 		unsigned char /*bool*/ agbMode;
 		unsigned char /*bool*/ gbIsCgb;
+		unsigned char /*bool*/ stopped;
 	} mem;
 
 	struct PPU {

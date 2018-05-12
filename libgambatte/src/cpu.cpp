@@ -590,16 +590,6 @@ void CPU::process(unsigned long const cycles) {
 				// Halt CPU and LCD display until button pressed:
 			case 0x10:
                 {
-                    unsigned char followingByte;
-                    PEEK(followingByte, pc);
-                    pc = (pc + 1) & 0xFFFF;
-                    
-                    // if(followingByte != 0x00) {
-                        ////corrupted stop
-                        // mem_.di();
-                        // mem_.blackScreen();
-                    // }
-
                     cycleCounter = mem_.stop(cycleCounter);
 
                     if (cycleCounter < mem_.nextEventTime()) {
@@ -1006,15 +996,13 @@ void CPU::process(unsigned long const cycles) {
 
 				// halt (4 cycles):
 			case 0x76:
-				if (!mem_.ime()
-					&& (   mem_.ff_read(0x0F, cycleCounter)
-					     & mem_.ff_read(0xFF, cycleCounter) & 0x1F)) {
-					if (mem_.isCgb())
-						cycleCounter += 4;
+				if (mem_.ff_read(0x0F, cycleCounter) & mem_.ff_read(0xFF, cycleCounter) & 0x1F) {
+					if (mem_.ime())
+						pc = (pc - 1) & 0xFFFF;
 					else
 						skip_ = true;
 				} else {
-					mem_.halt();
+					mem_.halt(cycleCounter);
 
 					if (cycleCounter < mem_.nextEventTime()) {
 						unsigned long cycles = mem_.nextEventTime() - cycleCounter;

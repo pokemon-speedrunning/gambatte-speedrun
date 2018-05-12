@@ -231,12 +231,14 @@ SaverList::SaverList() {
 	{ static char const label[] = { w,r,a,m,       NUL }; ADDPTR(mem.wram); }
 	{ static char const label[] = { h,r,a,m,       NUL }; ADDPTR(mem.ioamhram); }
 	{ static char const label[] = { l,d,i,v,u,p,   NUL }; ADD(mem.divLastUpdate); }
+	{ static char const label[] = { t,i,m,a,b,t,   NUL }; ADD(mem.timaBasetime); }
 	{ static char const label[] = { l,t,i,m,a,u,p, NUL }; ADD(mem.timaLastUpdate); }
 	{ static char const label[] = { t,m,a,t,i,m,e, NUL }; ADD(mem.tmatime); }
 	{ static char const label[] = { s,e,r,i,a,l,t, NUL }; ADD(mem.nextSerialtime); }
 	{ static char const label[] = { l,o,d,m,a,u,p, NUL }; ADD(mem.lastOamDmaUpdate); }
 	{ static char const label[] = { m,i,n,i,n,t,t, NUL }; ADD(mem.minIntTime); }
 	{ static char const label[] = { u,n,h,a,l,t,t, NUL }; ADD(mem.unhaltTime); }
+	{ static char const label[] = { h,a,l,t,t,     NUL }; ADD(mem.halttime); }
 	{ static char const label[] = { r,o,m,b,a,n,k, NUL }; ADD(mem.rombank); }
 	{ static char const label[] = { d,m,a,s,r,c,   NUL }; ADD(mem.dmaSource); }
 	{ static char const label[] = { d,m,a,d,s,t,   NUL }; ADD(mem.dmaDestination); }
@@ -250,6 +252,7 @@ SaverList::SaverList() {
 	{ static char const label[] = { a,g,b,m,o,d,e, NUL }; ADD(mem.agbMode); }
 	{ static char const label[] = { c,g,b,s,w,     NUL }; ADD(mem.cgbSwitching); }
 	{ static char const label[] = { b,i,o,s,c,g,b, NUL }; ADD(mem.gbIsCgb); }
+	{ static char const label[] = { s,t,o,p,p,e,d, NUL }; ADD(mem.stopped); }
 	{ static char const label[] = { b,g,p,         NUL }; ADDPTR(ppu.bgpData); }
 	{ static char const label[] = { o,b,j,p,       NUL }; ADDPTR(ppu.objpData); }
 	{ static char const label[] = { s,p,o,s,b,u,f, NUL }; ADDPTR(ppu.oamReaderBuf); }
