@@ -290,7 +290,7 @@ unsigned long Memory::event(unsigned long cc) {
 		break;
 	case intevent_interrupts:
 		if (halted()) {
-			if (gbIsCgb_)
+			if (gbIsCgb_ || (!gbIsCgb_ && cc <= halttime_ + 4))
 				cc += 4;
 
 			intreq_.unhalt();

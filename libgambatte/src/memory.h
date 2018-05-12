@@ -64,7 +64,7 @@ public:
 		return (cc - intreq_.eventTime(intevent_blit)) >> isDoubleSpeed();
 	}
 
-	void halt() { intreq_.halt(); }
+	void halt(unsigned long cycleCounter) { halttime_ = cycleCounter; intreq_.halt(); }
 	void ei(unsigned long cycleCounter) { if (!ime()) { intreq_.ei(cycleCounter); } }
 	void di() { intreq_.di(); }
 	
@@ -156,6 +156,7 @@ private:
 	bool gbIsCgb_;
     unsigned short &sp_;
 	unsigned short &pc_;
+	unsigned long halttime_;
 
 	void decEventCycles(IntEventId eventId, unsigned long dec);
 	void oamDmaInitSetup();
