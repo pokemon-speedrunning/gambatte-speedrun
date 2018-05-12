@@ -346,7 +346,7 @@ unsigned long Memory::stop(unsigned long cc) {
 
 	if (ioamhram_[0x14D] & isCgb()) {
 		psg_.generateSamples(cc, isDoubleSpeed());
-		lcd_.speedChange(cc);
+		lcd_.speedChange((cc + 7) & ~7);
 		ioamhram_[0x14D] ^= 0x81;
 		intreq_.setEventTime<intevent_blit>(ioamhram_[0x140] & lcdc_en
 			? lcd_.nextMode1IrqTime()
