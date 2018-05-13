@@ -323,7 +323,10 @@ unsigned long Memory::event(unsigned long cc) {
             lcd_.update(cc);
 			unsigned const n = pendingIrqs & -pendingIrqs;
 			unsigned address;
-			if (n <= 4) {
+            if (n == 0) {
+                address = 0;
+            }
+			else if (n <= 4) {
 				static unsigned char const lut[] = { 0x40, 0x48, 0x48, 0x50 };
 				address = lut[n-1];
 			} else
