@@ -123,7 +123,7 @@ void Tima::setTma(unsigned const data, unsigned long const cc, TimaInterruptRequ
 	tma_ = data;
 }
 
-void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq, bool gbIsCgb) {
+void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq, bool agbMode) {
 	if (tac_ ^ data) {
 		unsigned long nextIrqEventTime = timaIrq.nextIrqEventTime();
 
@@ -147,7 +147,7 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 		if (data & 4) {
 			unsigned long diff = cc - basetime_;
 
-			if (gbIsCgb) {
+			if (agbMode) {
 				if (((diff >> (timaClock[tac_ & 3] - 1)) & 1) == 1 && ((diff >> (timaClock[data & 3] - 1)) & 1) == 0)
 					tima_++;
 			}
