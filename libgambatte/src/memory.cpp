@@ -320,6 +320,7 @@ unsigned long Memory::event(unsigned long cc) {
             unsigned const pendingIrqs = ie & intreq_.ifreg();
             
             cc += 4;
+            lcd_.update(cc);
 			unsigned const n = pendingIrqs & -pendingIrqs;
 			unsigned address;
             if (n == 0) {
