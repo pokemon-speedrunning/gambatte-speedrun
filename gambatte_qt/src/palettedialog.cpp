@@ -521,9 +521,7 @@ static unsigned long gbcToRgb32(unsigned const rgb15) {
 	unsigned long g = rgb15 >>  5 & 0x1F;
 	unsigned long b = rgb15       & 0x1F;
 
-	return ((r * 13 + g * 2 + b) >> 1) << 16
-	     | (g * 3 + b) << 9
-	     | (r * 3 + g * 2 + b * 11) >> 1;
+	return r << 19 | g << 11 | b << 3;
 }
 
 } // anon ns

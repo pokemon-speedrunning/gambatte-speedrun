@@ -58,24 +58,25 @@ public:
 	void setCgb(bool cgb);
 	void copyCgbPalettesToDmg();
     void blackScreen();
+	void setTrueColors(bool trueColors);
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) { osdElement_ = osdElement; }
 
 	void dmgBgPaletteChange(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		bgpData_[0] = data;
-		setDmgPalette(ppu_.bgPalette(), dmgColorsRgb32_, data);
+		setDmgPalette(ppu_.bgPalette(), dmgColorsBgr15_, data, isTrueColors());
 	}
 
 	void dmgSpPalette1Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[0] = data;
-		setDmgPalette(ppu_.spPalette(), dmgColorsRgb32_ + 4, data);
+		setDmgPalette(ppu_.spPalette(), dmgColorsBgr15_ + 4, data, isTrueColors());
 	}
 
 	void dmgSpPalette2Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[1] = data;
-		setDmgPalette(ppu_.spPalette() + 4, dmgColorsRgb32_ + 8, data);
+		setDmgPalette(ppu_.spPalette() + 4, dmgColorsBgr15_ + 8, data, isTrueColors());
 	}
 
 	void cgbBgColorChange(unsigned index, unsigned data, unsigned long cycleCounter) {
@@ -200,7 +201,7 @@ private:
 	};
 
 	PPU ppu_;
-	unsigned long dmgColorsRgb32_[3 * 4];
+	unsigned short dmgColorsBgr15_[3 * 4];
 	unsigned char  bgpData_[8 * 8];
 	unsigned char objpData_[8 * 8];
 	EventTimes eventTimes_;
@@ -213,8 +214,9 @@ private:
 	unsigned char m1IrqStatReg_;
 
 	static void setDmgPalette(unsigned long palette[],
-	                          unsigned long const dmgColors[],
-	                          unsigned data);
+	                          unsigned short const dmgColors[],
+	                          unsigned data,
+	                          bool trueColor);
 	void refreshPalettes();
 	void setDBuffer();
 	void doMode2IrqEvent();

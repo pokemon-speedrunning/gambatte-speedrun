@@ -25,6 +25,7 @@
 #include "file/file.h"
 #include <cstring>
 #include <sstream>
+#include <zlib.h>
 
 static std::string const itos(int i) {
 	std::stringstream ss;
@@ -44,6 +45,10 @@ struct GB::Priv {
 	unsigned loadflags;
 
 	Priv() : stateNo(1), loadflags(0) {}
+
+	unsigned criticalLoadflags() {
+		return loadflags & (CGB_MODE);
+	}
 };
 
 GB::GB() : p_(new Priv) {}
@@ -78,7 +83,7 @@ void GB::reset(std::string const &build) {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
-		setInitState(state, !(p_->loadflags & FORCE_DMG), p_->loadflags & GBA_CGB, p_->loadflags & TRUE_COLOR);
+		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & GBA_FLAG);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 		p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -98,13 +103,13 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		p_->cpu.saveSavedata();
 
 	LoadRes const loadres = p_->cpu.load(romfile,
-	                                     flags & FORCE_DMG,
+	                                     flags & CGB_MODE,
 	                                     flags & MULTICART_COMPAT);
 	if (loadres == LOADRES_OK) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
-		setInitState(state, !(flags & FORCE_DMG), flags & GBA_CGB, flags & TRUE_COLOR);
+		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 
@@ -115,54 +120,29 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 	return loadres;
 }
 
-unsigned int GB::loadGBCBios(std::string const &biosfile) {
+unsigned int GB::loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
 	scoped_ptr<File> const bios(newFileInstance(biosfile));
-	char newBiosBuffer[0x900];
-	int i, sz;
+	unsigned char newBiosBuffer[size];
+	std::size_t sz;
 	
 	if (bios->fail())
 		return -1;
 	
 	sz = bios->size();
-	if (sz != 0x900)
+	if (sz != size)
 		return -2;
 	
-	bios->read(newBiosBuffer, sz);
+	bios->read((char *)newBiosBuffer, sz);
 	if (bios->fail())
 		return -1;
 	
-	for(i=0x100;i<0x200;i++) {
-		if(newBiosBuffer[i] != 0x00) {
-			return -3;
-		}
-	}
+	if (crc32(0, newBiosBuffer, sz) != crc)
+		return -3;
 	
-	memcpy(p_->cpu.cgbBiosBuffer(), newBiosBuffer, sz);
+	p_->cpu.setBios(newBiosBuffer, size);
 	
 	return 0;
 }
-
-unsigned int GB::loadDMGBios(std::string const &biosfile) {
-	scoped_ptr<File> const bios(newFileInstance(biosfile));
-	char newBiosBuffer[0x100];
-	int i, sz;
-	
-	if (bios->fail())
-		return -1;
-	
-	sz = bios->size();
-	if (sz != 0x100)
-		return -2;
-	
-	bios->read(newBiosBuffer, sz);
-	if (bios->fail())
-		return -1;
-	
-	memcpy(p_->cpu.dmgBiosBuffer(), newBiosBuffer, sz);
-	
-	return 0;
-}
-
 
 bool GB::isCgb() const {
 	return p_->cpu.isCgb();
@@ -181,6 +161,10 @@ void GB::setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 	p_->cpu.setDmgPaletteColor(palNum, colorNum, rgb32);
 }
 
+void GB::setTrueColors(bool trueColors) {
+	p_->cpu.setTrueColors(trueColors);
+}
+
 bool GB::loadState(std::string const &filepath) {
 	if (p_->cpu.loaded()) {
 		p_->cpu.saveSavedata();
@@ -188,9 +172,7 @@ bool GB::loadState(std::string const &filepath) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 
-		if (StateSaver::loadState(state, filepath, true, p_->cpu.gbIsCgb() ? 1 : 0)) {
-            setInitState(state, !(p_->loadflags & FORCE_DMG), p_->loadflags & GBA_CGB, p_->loadflags & TRUE_COLOR);
-            StateSaver::loadState(state, filepath, true, p_->cpu.gbIsCgb() ? 1 : 0);
+		if (StateSaver::loadState(state, filepath, true, p_->criticalLoadflags())) {
 			p_->cpu.loadState(state);
 			return true;
 		}
@@ -223,7 +205,7 @@ bool GB::saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitc
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->cpu.saveState(state);
-		return StateSaver::saveState(state, videoBuf, pitch, filepath);
+		return StateSaver::saveState(state, videoBuf, pitch, filepath, p_->criticalLoadflags());
 	}
 
 	return false;

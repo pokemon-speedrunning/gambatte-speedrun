@@ -35,12 +35,11 @@ public:
 	~GB();
 
 	enum LoadFlag {
-		FORCE_DMG        = 1, /**< Treat the ROM as not having CGB support regardless of
+		CGB_MODE         = 1, /**< Treat the ROM as having CGB support regardless of
 		                           what its header advertises. */
-		GBA_CGB          = 2, /**< Use GBA intial CPU register values when in CGB mode. */
+		GBA_FLAG         = 2, /**< Use GBA intial CPU register values when in CGB mode. */
 		MULTICART_COMPAT = 4, /**< Use heuristics to detect and support some multicart
 		                           MBCs disguised as MBC1. */
-		TRUE_COLOR       = 8  /**< Use GBP color conversion instead of GBC-screen approximation */
 	};
 
 	 /*
@@ -53,8 +52,7 @@ public:
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
 
-	unsigned int loadGBCBios(std::string const &biosfile);
-	unsigned int loadDMGBios(std::string const &biosfile);
+	unsigned int loadBios(std::string const &biosfile, std::size_t size, unsigned crc);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
@@ -98,6 +96,9 @@ public:
 	  * @param colorNum 0 <= colorNum < 4
 	  */
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32);
+
+	/** Use GBP color conversion instead of GBC-screen approximation. */
+	void setTrueColors(bool trueColors);
 
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput);

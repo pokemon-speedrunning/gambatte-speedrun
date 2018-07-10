@@ -49,8 +49,8 @@ exists(../../.git) {
 #QMAKE_CFLAGS_RELEASE += -g
 #QMAKE_LFLAGS_RELEASE =
 
-# dmg support
-#DEFINES += DMG_SUPPORT
-
-# gbc rng option
-#DEFINES += CGB_RNG_OPTION
+# platform support
+# GBP is hardcoded
+DEFINES += SHOW_PLATFORM_GB
+DEFINES += SHOW_PLATFORM_GBC
+DEFINES += SHOW_PLATFORM_GBA
