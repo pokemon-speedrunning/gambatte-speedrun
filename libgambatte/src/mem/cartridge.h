@@ -22,6 +22,7 @@
 #include "loadres.h"
 #include "memptrs.h"
 #include "rtc.h"
+#include "huc3.h"
 #include "savestate.h"
 #include "scoped_ptr.h"
 #include <string>
@@ -69,6 +70,9 @@ public:
 	char const * romTitle() const { return reinterpret_cast<char const *>(memptrs_.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
+    bool isHuC3() const { return huc3_.isHuC3(); }
+    unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
+	void HuC3Write(unsigned p, unsigned data) { huc3_.write(p, data); }
 
 private:
 	struct AddrData {
@@ -79,6 +83,7 @@ private:
 
 	MemPtrs memptrs_;
 	Rtc rtc_;
+    HuC3Chip huc3_;
 	scoped_ptr<Mbc> mbc_;
 	std::string defaultSaveBasePath_;
 	std::string saveDir_;
