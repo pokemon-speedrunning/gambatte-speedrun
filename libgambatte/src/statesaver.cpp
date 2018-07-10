@@ -25,7 +25,7 @@
 #include <vector>
 #include <cstring>
 
-#define SAVE_VERSION 0x01
+#define SAVE_VERSION 0x02
 
 namespace {
 
@@ -96,6 +96,10 @@ static void write(std::ofstream &file, bool const *data, std::size_t size) {
 		std::bind1st(std::mem_fun(&std::ofstream::put), &file));
 }
 
+static void write(std::ofstream &file, unsigned short const *data, std::size_t size) {
+	write(file, (unsigned char const *)data, size * sizeof data[0]);
+}
+
 static unsigned long get24(std::ifstream &file) {
 	unsigned long tmp = file.get() & 0xFF;
 	tmp =   tmp << 8 | (file.get() & 0xFF);
@@ -151,6 +155,10 @@ static void read(std::ifstream &file, bool *buf, std::size_t bufsize) {
 		buf[i] = file.get();
 
 	file.ignore(size - minsize);
+}
+
+static void read(std::ifstream &file, unsigned short *buf, std::size_t bufsize) {
+	read(file, (unsigned char *)buf, bufsize * sizeof buf[0]);
 }
 
 } // anon namespace
@@ -249,11 +257,12 @@ SaverList::SaverList() {
 	{ static char const label[] = { r,a,m,b,m,o,d, NUL }; ADD(mem.rambankMode); }
 	{ static char const label[] = { h,d,m,a,       NUL }; ADD(mem.hdmaTransfer); }
 	{ static char const label[] = { b,i,o,s,       NUL }; ADD(mem.biosMode); }
-	{ static char const label[] = { a,g,b,m,o,d,e, NUL }; ADD(mem.agbMode); }
+	{ static char const label[] = { a,g,b,f,l,a,g, NUL }; ADD(mem.agbFlag); }
 	{ static char const label[] = { c,g,b,s,w,     NUL }; ADD(mem.cgbSwitching); }
 	{ static char const label[] = { b,i,o,s,c,g,b, NUL }; ADD(mem.gbIsCgb); }
 	{ static char const label[] = { s,t,o,p,p,e,d, NUL }; ADD(mem.stopped); }
     { static char const label[] = { h,u,c,NO3,r,a,m, NUL }; ADD(mem.HuC3RAMflag); }
+	{ static char const label[] = { d,m,g,c,o,l,s, NUL }; ADDPTR(ppu.dmgColorsBgr15); }
 	{ static char const label[] = { b,g,p,         NUL }; ADDPTR(ppu.bgpData); }
 	{ static char const label[] = { o,b,j,p,       NUL }; ADDPTR(ppu.objpData); }
 	{ static char const label[] = { s,p,o,s,b,u,f, NUL }; ADDPTR(ppu.oamReaderBuf); }
@@ -285,7 +294,6 @@ SaverList::SaverList() {
 	{ static char const label[] = { w,e,m,a,s,t,r, NUL }; ADD(ppu.weMaster); }
 	{ static char const label[] = { l,c,d,s,i,r,q, NUL }; ADD(ppu.pendingLcdstatIrq); }
 	{ static char const label[] = { i,s,c,g,b,     NUL }; ADD(ppu.isCgb); }
-    { static char const label[] = { t,r,u,e,c,o,l, NUL }; ADD(ppu.trueColors); }
 	{ static char const label[] = { s,p,u,c,n,t,r, NUL }; ADD(spu.cycleCounter); }
 	{ static char const label[] = { s,w,p,c,n,t,r, NUL }; ADD(spu.ch1.sweep.counter); }
 	{ static char const label[] = { s,w,p,s,h,d,w, NUL }; ADD(spu.ch1.sweep.shadow); }
@@ -419,14 +427,14 @@ namespace gambatte {
 
 bool StateSaver::saveState(SaveState const &state,
 		uint_least32_t const *const videoBuf,
-		std::ptrdiff_t const pitch, std::string const &filename) {
+		std::ptrdiff_t const pitch, std::string const &filename, int mode) {
 	std::ofstream file(filename.c_str(), std::ios_base::binary);
 	if (!file)
 		return false;
 	
 	file.put(0xFF); // make sure original gambatte doesn't load our savestates
 	file.put(SAVE_VERSION);
-	file.put(state.mem.gbIsCgb ? 1 : 0);
+	file.put(mode);
 	
 	writeSnapShot(file, videoBuf, pitch);
 

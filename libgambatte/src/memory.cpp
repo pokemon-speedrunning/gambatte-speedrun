@@ -26,7 +26,8 @@
 namespace gambatte {
 
 Memory::Memory(Interrupter const &interrupter, unsigned short &sp, unsigned short &pc)
-: getInput_(0)
+: bios_(0)
+, getInput_(0)
 , divLastUpdate_(0)
 , lastOamDmaUpdate_(disabled_time)
 , lcd_(ioamhram_, 0, VideoInterruptRequester(intreq_))
@@ -41,6 +42,10 @@ Memory::Memory(Interrupter const &interrupter, unsigned short &sp, unsigned shor
 {
 	intreq_.setEventTime<intevent_blit>(144 * 456ul);
 	intreq_.setEventTime<intevent_end>(0);
+}
+
+Memory::~Memory() {
+	delete []bios_;
 }
 
 void Memory::setStatePtrs(SaveState &state) {
@@ -67,7 +72,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.oamDmaPos = oamDmaPos_;
 	state.mem.biosMode = biosMode_;
 	state.mem.cgbSwitching = cgbSwitching_;
-	state.mem.agbMode = agbMode_;
+	state.mem.agbFlag = agbFlag_;
 	state.mem.gbIsCgb = gbIsCgb_;
 	state.mem.stopped = stopped_;
 
@@ -87,7 +92,7 @@ static int serialCntFrom(unsigned long cyclesUntilDone, bool cgbFast) {
 void Memory::loadState(SaveState const &state) {
 	biosMode_ = state.mem.biosMode;
 	cgbSwitching_ = state.mem.cgbSwitching;
-	agbMode_ = state.mem.agbMode;
+	agbFlag_ = state.mem.agbFlag;
 	gbIsCgb_ = state.mem.gbIsCgb;
 	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
@@ -676,7 +681,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		break;
 	case 0x07:
 		data |= 0xF8;
-		tima_.setTac(data, cc, TimaInterruptRequester(intreq_), agbMode_);
+		tima_.setTac(data, cc, TimaInterruptRequester(intreq_), agbFlag_);
 		break;
 	case 0x0F:
 		updateIrqs(cc);
@@ -1114,8 +1119,8 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 		ioamhram_[p - 0xFE00] = data;
 }
 
-LoadRes Memory::loadROM(std::string const &romfile, bool const forceDmg, bool const multicartCompat) {
-	if (LoadRes const fail = cart_.loadROM(romfile, forceDmg, multicartCompat))
+LoadRes Memory::loadROM(std::string const &romfile, bool const cgbMode, bool const multicartCompat) {
+	if (LoadRes const fail = cart_.loadROM(romfile, cgbMode, multicartCompat))
 		return fail;
 
 	psg_.init(cart_.isCgb());

@@ -35,7 +35,7 @@ struct SaveState {
 		void set(T *p, std::size_t size) { ptr = p; size_ = size; }
 
 		friend class SaverList;
-		friend void setInitState(SaveState &, bool, bool, bool);
+		friend void setInitState(SaveState &, bool, bool);
 
 	private:
 		T *ptr;
@@ -84,12 +84,13 @@ struct SaveState {
 		unsigned char /*bool*/ hdmaTransfer;
 		unsigned char /*bool*/ biosMode;
 		unsigned char /*bool*/ cgbSwitching;
-		unsigned char /*bool*/ agbMode;
+		unsigned char /*bool*/ agbFlag;
 		unsigned char /*bool*/ gbIsCgb;
 		unsigned char /*bool*/ stopped;
 	} mem;
 
 	struct PPU {
+		Ptr<unsigned short> dmgColorsBgr15;
 		Ptr<unsigned char> bgpData;
 		Ptr<unsigned char> objpData;
 		//SpriteMapper::OamReader
@@ -123,7 +124,6 @@ struct SaveState {
 		unsigned char /*bool*/ weMaster;
 		unsigned char /*bool*/ pendingLcdstatIrq;
 		unsigned char /*bool*/ isCgb;
-        unsigned char /*bool*/ trueColors;
 	} ppu;
 
 	struct SPU {

@@ -36,6 +36,7 @@ class FilterInfo;
 class Memory {
 public:
 	explicit Memory(Interrupter const &interrupter, unsigned short &sp, unsigned short &pc);
+	~Memory();
 	bool loaded() const { return cart_.loaded(); }
 	char const * romTitle() const { return cart_.romTitle(); }
 	PakInfo const pakInfo(bool multicartCompat) const { return cart_.pakInfo(multicartCompat); }
@@ -69,13 +70,10 @@ public:
 	void di() { intreq_.di(); }
 	
 	unsigned readBios(unsigned p) {
-		if(gbIsCgb_) {
-			if(agbMode_ && p >= 0xF3 && p < 0x100) {
-				return (agbOverride[p-0xF3] + cgbBios[p]) & 0xFF;
-			}
-			return cgbBios[p];
+		if(agbFlag_ && p >= 0xF3 && p < 0x100) {
+			return (agbOverride[p-0xF3] + bios_[p]) & 0xFF;
 		}
-		return dmgBios[p];
+		return bios_[p];
 	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
@@ -83,7 +81,7 @@ public:
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
-		if(biosMode_ && ((!gbIsCgb_ && p < 0x100) || (gbIsCgb_ && p < 0x900 && (p < 0x100 || p >= 0x200)))) {
+		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
 			return readBios(p);
 		}
 		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
@@ -105,7 +103,7 @@ public:
 
 	unsigned long event(unsigned long cycleCounter);
 	unsigned long resetCounters(unsigned long cycleCounter);
-	LoadRes loadROM(std::string const &romfile, bool forceDmg, bool multicartCompat);
+	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);
 	void setSaveDir(std::string const &dir) { cart_.setSaveDir(dir); }
 	void setInputGetter(InputGetter *getInput) { getInput_ = getInput; }
 	void setEndtime(unsigned long cc, unsigned long inc);
@@ -124,19 +122,25 @@ public:
         lcd_.blackScreen();
     }
 
+	void setTrueColors(bool trueColors) { lcd_.setTrueColors(trueColors); }
+
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
 	void updateInput();
 
-	unsigned char* cgbBiosBuffer() { return (unsigned char*) cgbBios; }
-	unsigned char* dmgBiosBuffer() { return (unsigned char*) dmgBios; }
+	void setBios(unsigned char *buffer, std::size_t size) {
+		delete []bios_;
+		bios_ = new unsigned char[size];
+		memcpy(bios_, buffer, size);
+		biosSize_ = size;
+	}
 	bool gbIsCgb() { return gbIsCgb_; }
 
 private:
 	Cartridge cart_;
 	unsigned char ioamhram_[0x200];
-	unsigned char cgbBios[0x900];
-	unsigned char dmgBios[0x100];
+	unsigned char *bios_;
+	std::size_t biosSize_;
 	InputGetter *getInput_;
 	unsigned long divLastUpdate_;
 	unsigned long lastOamDmaUpdate_;
@@ -152,7 +156,7 @@ private:
 	bool blanklcd_;
 	bool biosMode_;
 	bool cgbSwitching_;
-	bool agbMode_;
+	bool agbFlag_;
 	bool gbIsCgb_;
     unsigned short &sp_;
 	unsigned short &pc_;

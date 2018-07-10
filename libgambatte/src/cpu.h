@@ -53,8 +53,8 @@ public:
 		mem_.setOsdElement(osdElement);
 	}
 
-	LoadRes load(std::string const &romfile, bool forceDmg, bool multicartCompat) {
-		return mem_.loadROM(romfile, forceDmg, multicartCompat);
+	LoadRes load(std::string const &romfile, bool cgbMode, bool multicartCompat) {
+		return mem_.loadROM(romfile, cgbMode, multicartCompat);
 	}
 
 	bool loaded() const { return mem_.loaded(); }
@@ -68,10 +68,11 @@ public:
 		mem_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
 
+	void setTrueColors(bool trueColors) { mem_.setTrueColors(trueColors); }
+
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }
-	unsigned char* cgbBiosBuffer() { return mem_.cgbBiosBuffer(); }
-	unsigned char* dmgBiosBuffer() { return mem_.dmgBiosBuffer(); }
+	void setBios(unsigned char *buffer, std::size_t size) { mem_.setBios(buffer, size); }
 	bool gbIsCgb() { return mem_.gbIsCgb(); }
 
 private:

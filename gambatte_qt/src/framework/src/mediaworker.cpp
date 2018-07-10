@@ -28,6 +28,7 @@
 #include <objbase.h> // For CoInitialize
 #endif
 #include <cstdlib>
+#include <cstring>
 
 MediaWorker::MeanQueue::MeanQueue(long mean, long var)
 : q_(size, Elem(mean, var))
@@ -183,6 +184,11 @@ void MediaWorker::initAudioEngine() {
 	if (!ao_->successfullyInitialized()) {
 		pauseVar_.localPause(PauseVar::fail_bit);
 		callback_.audioEngineFailure();
+	}
+	else {
+		std::memset(sndOutBuffer_, 0, sndOutBuffer_.size() * sizeof *sndOutBuffer_);
+		for (int i = 0; i < 4; i++)
+			ao_->write(sndOutBuffer_, sourceUpdater_.maxOut());
 	}
 }
 

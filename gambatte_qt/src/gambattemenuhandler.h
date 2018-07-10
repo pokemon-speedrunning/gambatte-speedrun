@@ -120,6 +120,45 @@ private slots:
 	void triggered();
 };
 
+enum GambattePlatform {
+	PLATFORM_GB  = 0,
+	PLATFORM_GBC = 1,
+	PLATFORM_GBA = 2,
+	PLATFORM_GBP = 3,
+};
+
+class GambattePlatformMenu : private QObject {
+public:
+	GambattePlatformMenu(MainWindow &mw);
+	~GambattePlatformMenu();
+	QMenu * menu() const { return menu_; }
+	QActionGroup * group() const { return group_; }
+
+private:
+	Q_OBJECT
+
+	MainWindow &mw_;
+	QMenu *const menu_;
+	QActionGroup *group_;
+
+	void addPlatform(int platformId, QString const &platformName);
+	void fillMenu();
+	void setCheckedPlatform(int platformId);
+	int checkedPlatform() const;
+
+private slots:
+	void triggered();
+};
+
+struct GambatteBiosInfo {
+	std::size_t size;
+	unsigned crc;
+
+	QString name;
+	QString filter;
+	QString key;
+};
+
 class GambatteMenuHandler : public QObject {
 public:
 	GambatteMenuHandler(MainWindow &mw, GambatteSource &source,
@@ -140,12 +179,6 @@ private:
 	QAction *recentFileActs_[max_recent_files];
 	QAction *pauseAction_;
 	QAction *syncFrameRateAction_;
-#ifdef CGB_RNG_OPTION
-	QAction *cgbRngAction_;
-#endif
-#ifdef DMG_SUPPORT
-	QAction *dmgModeAction_;
-#endif
     QAction *trueColorsAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
@@ -153,13 +186,18 @@ private:
 	PaletteDialog *romPaletteDialog_;
 	QActionGroup *const stateSlotGroup_;
 	WindowSizeMenu windowSizeMenu_;
+	GambattePlatformMenu gambattePlatformMenu_;
 	int pauseInc_;
     bool isResetting_;
+	unsigned resetDelay_;
 
 	void loadFile(QString const &fileName);
 	void setCurrentFile(QString const &fileName);
 	void setDmgPaletteColors();
 	void updateRecentFileActions();
+	void openBios(GambatteBiosInfo const &info);
+	void setResetParams(unsigned before, unsigned fade,
+	                    unsigned limit, unsigned delay);
 
 signals:
 	void romLoaded(bool);
@@ -167,10 +205,7 @@ signals:
 
 private slots:
 	void open();
-	void openGBCBios();
-#ifdef DMG_SUPPORT
-	void openDMGBios();
-#endif
+	void close();
 	void openRecentFile();
 	void about();
 	void globalPaletteChange();

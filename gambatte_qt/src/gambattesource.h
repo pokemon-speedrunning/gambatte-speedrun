@@ -37,8 +37,9 @@ public:
 	GambatteSource();
 	std::vector<VideoDialog::VideoSourceInfo> const generateVideoSourceInfos();
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) { return gb_.load(romfile, flags); }
-	unsigned int loadGBCBios(std::string const &biosfile) { return gb_.loadGBCBios(biosfile); }
-	unsigned int loadDMGBios(std::string const &biosfile) { return gb_.loadDMGBios(biosfile); }
+	unsigned int loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
+		return gb_.loadBios(biosfile, size, crc);
+	}
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
 	void reset() { isResetting_ = false; gb_.reset(GAMBATTE_QT_VERSION_STR); }
@@ -60,6 +61,7 @@ public:
 	void saveState(PixelBuffer const &fb);
 	void loadState() { gb_.loadState(); }
     void tryReset();
+	void setResetParams(unsigned before, unsigned fade, unsigned limit);
 
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
@@ -67,6 +69,9 @@ public:
     virtual void clearKeyPresses();
 	virtual std::ptrdiff_t update(PixelBuffer const &fb, qint16 *soundBuf, std::size_t &samples);
 	virtual void generateVideoFrame(PixelBuffer const &fb);
+
+public slots:
+	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
 
 signals:
 	void setTurbo(bool on);
@@ -106,6 +111,9 @@ private:
 	bool dpadUpLast_, dpadLeftLast_;
     bool isResetting_;
     unsigned resetFrameCount_;
+	unsigned resetBefore_;
+	unsigned resetFade_;
+	unsigned resetLimit_;
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);

@@ -1148,7 +1148,7 @@ static void setInitialDmgIoamhram(unsigned char ioamhram[]) {
 
 } // anon namespace
 
-void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbMode, bool const trueColors) {
+void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb) {
 	static unsigned char const cgbObjpDump[0x40] = {
 		0x00, 0x00, 0xF2, 0xAB,
 		0x61, 0xC2, 0xD9, 0xBA,
@@ -1182,7 +1182,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.cpu.skip = false;
 	state.mem.biosMode = true;
 	state.mem.cgbSwitching = false;
-	state.mem.agbMode = gbaCgbMode;
+	state.mem.agbFlag = cgb && agb;
 
 	std::memset(state.mem.sram.ptr, 0xFF, state.mem.sram.size());
 
@@ -1222,6 +1222,9 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.mem.gbIsCgb = cgb;
 	state.mem.stopped = false;
 
+
+	for (int i = 0; i < 3 * 4; ++i)
+		state.ppu.dmgColorsBgr15.ptr[i] = (3 - (i & 3)) * 0x294A + !(i & 3) * 0x421;
 
 	for (int i = 0x00; i < 0x40; i += 0x02) {
 		state.ppu.bgpData.ptr[i    ] = 0xFF;
@@ -1267,7 +1270,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.ppu.oldWy = state.mem.ioamhram.get()[0x14A];
 	state.ppu.pendingLcdstatIrq = false;
 	state.ppu.isCgb = cgb;
-    state.ppu.trueColors = trueColors;
 
 	// spu.cycleCounter >> 12 & 7 represents the frame sequencer position.
 	state.spu.cycleCounter = 0;
@@ -1276,16 +1278,16 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const gbaCgbM
 	state.spu.ch1.sweep.shadow = 0;
 	state.spu.ch1.sweep.nr0 = 0;
 	state.spu.ch1.sweep.negging = false;
-	state.spu.ch1.duty.nextPosUpdate = (state.spu.cycleCounter & ~1ul) + 37 * 2;
+	state.spu.ch1.duty.nextPosUpdate = SoundUnit::counter_disabled;
 	state.spu.ch1.duty.pos = 0;
-	state.spu.ch1.duty.high = true;
+	state.spu.ch1.duty.high = false;
 	state.spu.ch1.duty.nr3 = 0;
 	state.spu.ch1.env.counter = SoundUnit::counter_disabled;
 	state.spu.ch1.env.volume = 0;
 	state.spu.ch1.lcounter.counter = SoundUnit::counter_disabled;
 	state.spu.ch1.lcounter.lengthCounter = 0;
 	state.spu.ch1.nr4 = 0;
-	state.spu.ch1.master = true;
+	state.spu.ch1.master = false;
 
 	state.spu.ch2.duty.nextPosUpdate = SoundUnit::counter_disabled;
 	state.spu.ch2.duty.nr3 = 0;

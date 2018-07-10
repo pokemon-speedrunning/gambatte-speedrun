@@ -34,6 +34,8 @@
 #endif
 #include <iostream>
 
+#define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
+
 namespace {
 
 static QString const strippedName(QString const &fullFileName) {
@@ -223,6 +225,66 @@ QSize const WindowSizeMenu::checkedSize() const {
 	return group_->checkedAction() ? group_->checkedAction()->data().toSize() : QSize();
 }
 
+GambattePlatformMenu::GambattePlatformMenu(MainWindow &mw)
+: mw_(mw)
+, menu_(new QMenu(tr("&Platform"), &mw))
+, group_(new QActionGroup(menu_))
+{
+	fillMenu();
+	setCheckedPlatform(QSettings().value("platform", DEFAULT_GAMBATTE_PLATFORM).toInt());
+	connect(group_, SIGNAL(triggered(QAction *)), this, SLOT(triggered()));
+
+	QSettings settings;
+	settings.setValue("platform", checkedPlatform());
+}
+
+GambattePlatformMenu::~GambattePlatformMenu() {
+	QSettings settings;
+	settings.setValue("platform", checkedPlatform());
+}
+
+void GambattePlatformMenu::triggered() {
+	QSettings settings;
+	settings.setValue("platform", checkedPlatform());
+}
+
+void GambattePlatformMenu::addPlatform(int platformId, QString const &platformName) {
+	QAction *a = menu_->addAction(platformName);
+	a->setData(platformId);
+	a->setCheckable(true);
+	group_->addAction(a);
+}
+
+void GambattePlatformMenu::fillMenu() {
+#ifdef SHOW_PLATFORM_GB
+	addPlatform(PLATFORM_GB, tr("&Game Boy"));
+#endif
+#ifdef SHOW_PLATFORM_GBC
+	addPlatform(PLATFORM_GBC, tr("Game Boy &Color"));
+#endif
+#ifdef SHOW_PLATFORM_GBA
+	addPlatform(PLATFORM_GBA, tr("Game Boy &Advance"));
+#endif
+	addPlatform(PLATFORM_GBP, tr("Game Boy &Player"));
+}
+
+void GambattePlatformMenu::setCheckedPlatform(int platformId) {
+	QList<QAction *> const &actions = group_->actions();
+	foreach (QAction *a, actions) {
+		if (a->data() == platformId) {
+			a->setChecked(true);
+			return;
+		}
+	}
+
+	if (!group_->checkedAction())
+		setCheckedPlatform(DEFAULT_GAMBATTE_PLATFORM);
+}
+
+int GambattePlatformMenu::checkedPlatform() const {
+	return group_->checkedAction() ? group_->checkedAction()->data().toInt() : -1;
+}
+
 static QString const settingsPath() {
 	QString path = QSettings(QSettings::IniFormat, QSettings::UserScope,
 		QCoreApplication::organizationName(), QCoreApplication::applicationName()).fileName();
@@ -289,20 +351,16 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , recentFileActs_()
 , pauseAction_()
 , syncFrameRateAction_()
-#ifdef CGB_RNG_OPTION
-, cgbRngAction_()
-#endif
-#ifdef DMG_SUPPORT
-, dmgModeAction_()
-#endif
 , fsAct_()
 , recentMenu_()
 , globalPaletteDialog_()
 , romPaletteDialog_()
 , stateSlotGroup_(new QActionGroup(&mw))
 , windowSizeMenu_(mw, *videoDialog_)
+, gambattePlatformMenu_(mw)
 , pauseInc_(4)
 , isResetting_(false)
+, resetDelay_(1580)
 {
 	QString revision = QString("interim");
 	#ifdef GAMBATTE_QT_VERSION_STR
@@ -335,10 +393,11 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		QMenu *fileMenu = mw.menuBar()->addMenu(tr("&File"));
 		fileMenu->addAction(tr("&Open..."), this, SLOT(open()), tr("Ctrl+O"));
 
-		recentMenu_ = fileMenu->addMenu(tr("Open Re&cent"));
+		recentMenu_ = fileMenu->addMenu(tr("O&pen Recent"));
 		for (int i = 0; i < max_recent_files; ++i)
 			recentMenu_->addAction(recentFileActs_[i]);
 
+		romLoadedActions->addAction(fileMenu->addAction(tr("&Close ROM"), this, SLOT(close())));
 		fileMenu->addSeparator();
 		romLoadedActions->addAction(fileMenu->addAction(tr("&Reset"), this, SLOT(reset()), tr("Ctrl+R")));
 		fileMenu->addSeparator();
@@ -349,7 +408,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		                            this, SLOT(saveState()), QString("Ctrl+S")));
 		romLoadedActions->addAction(fileMenu->addAction(tr("&Load State"),
 		                            this, SLOT(loadState()), QString("Ctrl+L")));
-        fileMenu->addAction(tr("Open Save Folder"), this, SLOT(openSaveFolder()));
 
 		{
 			QMenu *const stateSlotMenu = fileMenu->addMenu(tr("S&elect State Slot"));
@@ -371,6 +429,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 			connect(this, SIGNAL(romLoaded(bool)), stateSlotMenu, SLOT(setEnabled(bool)));
 		}
 
+		fileMenu->addAction(tr("Open Save Folder"), this, SLOT(openSaveFolder()));
 		fileMenu->addSeparator();
 		fileMenu->addAction(tr("&Quit"), qApp, SLOT(closeAllWindows()), tr("Ctrl+Q"));
 		updateRecentFileActions();
@@ -408,26 +467,13 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	settingsm->addSeparator();
 	settingsm->addMenu(windowSizeMenu_.menu());
 	settingsm->addSeparator();
-#ifdef CGB_RNG_OPTION
-	cgbRngAction_ = settingsm->addAction(tr("Origin&al GBC RNG"));
-	cgbRngAction_->setCheckable(true);
-	cgbRngAction_->setChecked(QSettings().value("gbcrng-sr", false).toBool());
-#endif
 
-	settingsm->addAction(tr("Select GBC Bios Image..."), this, SLOT(openGBCBios()));
-	
-#ifdef DMG_SUPPORT
-	settingsm->addSeparator();
-	dmgModeAction_ = settingsm->addAction(tr("DMG Mode"));
-	dmgModeAction_->setCheckable(true);
-	dmgModeAction_->setChecked(QSettings().value("dmgmode-sr", false).toBool());
-	
-	settingsm->addAction(tr("Select DMG Bios Image..."), this, SLOT(openDMGBios()));
-#endif
+	settingsm->addMenu(gambattePlatformMenu_.menu());
 
     trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
+	connect(trueColorsAction_, SIGNAL(toggled(bool)), &source, SLOT(setTrueColors(bool)));
 
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
@@ -474,6 +520,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	connect(&mw, SIGNAL(closing()), this, SLOT(saveWindowSizeIfNotFullScreen()));
 	connect(&mw, SIGNAL(dwmCompositionChange()), this, SLOT(reconsiderSyncFrameRateActionEnable()));
 	connect(this, SIGNAL(romLoaded(bool)), romLoadedActions, SLOT(setEnabled(bool)));
+	connect(this, SIGNAL(romLoaded(bool)), gambattePlatformMenu_.group(), SLOT(setDisabled(bool)));
 	connect(this, SIGNAL(romLoaded(bool)), stateSlotGroup_->actions().at(0), SLOT(setChecked(bool)));
 
 	mw.setAspectRatio(QSize(160, 144));
@@ -513,12 +560,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
-#ifdef CGB_RNG_OPTION
-	settings.setValue("gbcrng-sr", cgbRngAction_->isChecked());
-#endif
-#ifdef DMG_SUPPORT
-	settings.setValue("dmgmode-sr", dmgModeAction_->isChecked());
-#endif
     settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
@@ -542,8 +583,8 @@ void GambatteMenuHandler::updateRecentFileActions() {
 }
 
 void GambatteMenuHandler::setCurrentFile(QString const &fileName) {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	QSettings settings;
 	QStringList files = settings.value("recentFileList").toStringList();
 	files.removeAll(fileName);
@@ -556,64 +597,67 @@ void GambatteMenuHandler::setCurrentFile(QString const &fileName) {
 }
 
 void GambatteMenuHandler::loadFile(QString const &fileName) {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	TmpPauser tmpPauser(mw_, 4);
 	pauseAction_->setChecked(false);
 	pauseChange();
 	mw_.waitUntilPaused();
 
 	QSettings settings;
-	bool dmgMode, cgbRng;
-#ifdef DMG_SUPPORT
-	dmgMode = dmgModeAction_->isChecked();
-#else
-	dmgMode = false;
-#endif
-#ifdef CGB_RNG_OPTION
-    cgbRng = cgbRngAction_->isChecked();
-#else
-    cgbRng = false;
-#endif
-	if(dmgMode) {
-		QString biosFilename = settings.value("biosFilenameDMG", "").toString();
-		if(biosFilename.isEmpty() || source_.loadDMGBios(biosFilename.toLocal8Bit().constData()) != 0) {
-			mw_.stop();
-			emit dmgRomLoaded(false);
-			emit romLoaded(false);
-			QMessageBox::critical(
-				&mw_,
-				tr("Bios Load Error"),
-				(tr("Could not load DMG bios.\n") + 
-				"Gambatte-Speedrun requires a DMG bios to function when DMG mode is on.\n" +
-				"Please use Settings > Select DMG Bios Image to specify the location of such a file."));
-			return;
-		}
+	int platformId = settings.value("platform", DEFAULT_GAMBATTE_PLATFORM).toInt();
+
+	unsigned flags = 0;
+	GambatteBiosInfo info;
+
+	switch (platformId) {
+	case PLATFORM_GB:
+		info = { 0x100, 0x59C8598E, "DMG", "*.gb", "biosFilenameDMG" };
+		setResetParams(0, 1, 1, 0);
+		break;
+	case PLATFORM_GBC:
+		flags |= gambatte::GB::CGB_MODE;
+		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		setResetParams(0, 1, 1, 0);
+		break;
+	case PLATFORM_GBA:
+		flags |= gambatte::GB::CGB_MODE;
+		flags |= gambatte::GB::GBA_FLAG;
+		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		setResetParams(0, 1, 1, 0);
+		break;
+	case PLATFORM_GBP:
+		flags |= gambatte::GB::CGB_MODE;
+		flags |= gambatte::GB::GBA_FLAG;
+		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		setResetParams(4, 32, 37, 1580);
+		break;
 	}
-	else {
-		QString biosFilename = settings.value("biosFilename", "").toString();
-		if(biosFilename.isEmpty() || source_.loadGBCBios(biosFilename.toLocal8Bit().constData()) != 0) {
-			mw_.stop();
-			emit dmgRomLoaded(false);
-			emit romLoaded(false);
-			QMessageBox::critical(
-				&mw_,
-				tr("Bios Load Error"),
-				(tr("Could not load GBC bios.\n") + 
-				"Gambatte-Speedrun requires a GBC bios to function.\n" +
-				"Please use Settings > Select GBC Bios Image to specify the location of such a file."));
-			return;
-		}
+
+	if (miscDialog_->multicartCompat())
+		flags |= gambatte::GB::MULTICART_COMPAT;
+
+	QString biosFilename = settings.value(info.key, "").toString();
+	if(biosFilename.isEmpty() ||
+			source_.loadBios(biosFilename.toLocal8Bit().constData(), info.size, info.crc) != 0) {
+		mw_.stop();
+		emit dmgRomLoaded(false);
+		emit romLoaded(false);
+		QMessageBox::StandardButton button = QMessageBox::critical(
+			&mw_,
+			tr("Bios Load Error"),
+			(tr("Could not load ") + info.name + tr(" bios.\n") +
+			"Gambatte-Speedrun requires a " + info.name + " bios for the selected platform.\n" +
+			"Please specify the location of such a file."),
+			QMessageBox::Ok | QMessageBox::Cancel);
+		if (button == QMessageBox::Ok)
+			openBios(info);
+		return;
 	}
 	
 	std::cout << "Loading rom..." << std::endl;
 
-	if (gambatte::LoadRes const error =
-			source_.load(fileName.toLocal8Bit().constData(),
-			               (!cgbRng)                      * gambatte::GB::GBA_CGB
-					     + dmgMode                        * gambatte::GB::FORCE_DMG
-			             + miscDialog_->multicartCompat() * gambatte::GB::MULTICART_COMPAT
-                         + trueColorsAction_->isChecked()  * gambatte::GB::TRUE_COLOR)) {
+	if (gambatte::LoadRes const error = source_.load(fileName.toLocal8Bit().constData(), flags)) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
 		emit romLoaded(false);
@@ -634,8 +678,10 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		romPaletteDialog_->setSettingsFile(
 				QFileInfo(fileName).completeBaseName() + ".pal",
 				romTitle);
-		setDmgPaletteColors();
+		//setDmgPaletteColors();
 	}
+
+	source_.setTrueColors(trueColorsAction_->isChecked());
 
 	gambatte::PakInfo const &pak = source_.pakInfo();
 	std::cout << romTitle.toStdString() << '\n'
@@ -682,8 +728,8 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 }
 
 void GambatteMenuHandler::open() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -698,37 +744,48 @@ void GambatteMenuHandler::open() {
 	mw_.setFocus();
 }
 
-void GambatteMenuHandler::openGBCBios() {
-    if(isResetting_)
-        return;
+void GambatteMenuHandler::close() {
+	if (isResetting_)
+		return;
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	mw_.stop();
+	emit dmgRomLoaded(false);
+	emit romLoaded(false);
+}
+
+void GambatteMenuHandler::openBios(GambatteBiosInfo const &info) {
+	if (isResetting_)
+		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
 	QString const &fileName = QFileDialog::getOpenFileName(
 		&mw_, tr("Open"), "",
-		tr("GBC Bios Images (*.bin *.gbc);;All Files (*)"));
+		(info.name + tr(" Bios Images (*.bin ") + info.filter + tr(");;All Files (*)")));
 	if (!fileName.isEmpty()) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
 		emit romLoaded(false);
-		int result = source_.loadGBCBios(fileName.toLocal8Bit().constData());
+		int result = source_.loadBios(fileName.toLocal8Bit().constData(), info.size, info.crc);
 		if(result != 0) {
 			QMessageBox::critical(
 				&mw_,
 				tr("Bios Load Error"),
-				(tr("Could not load new GBC bios.\n") +
-				"Please check that the file is a valid GBC bios file and not DMG/SGB."));
+				(tr("Could not load ") + info.name + tr(" bios.\n") +
+				"Please check that the file is a valid " + info.name + " bios file."));
 			return;
 		}
 		else {
-			// Store new GBC bios path
+			// Store bios path
 			QSettings settings;
-			settings.setValue("biosFilename", fileName);
+			settings.setValue(info.key, fileName);
 			QMessageBox::information(
 				&mw_,
 				tr("Loaded Bios Successfully"),
-				(tr("Loaded the GBC BIOS file successfully.\n") +
-				"Its path has also been saved for future use."));
+				(tr("Loaded the ") + info.name + tr(" bios file successfully.\n") +
+				"Its path has been saved for future use."));
 			return;
 		}
 	}
@@ -737,52 +794,10 @@ void GambatteMenuHandler::openGBCBios() {
 	// can be problematic with current exclusive mode handling.
 	mw_.setFocus();
 }
-
-#ifdef DMG_SUPPORT
-void GambatteMenuHandler::openDMGBios() {
-    if(isResetting_)
-        return;
-	TmpPauser tmpPauser(mw_, 4);
-	mw_.waitUntilPaused();
-
-	QString const &fileName = QFileDialog::getOpenFileName(
-		&mw_, tr("Open"), "",
-		tr("DMG Bios Images (*.bin *.gb);;All Files (*)"));
-	if (!fileName.isEmpty()) {
-		mw_.stop();
-		emit dmgRomLoaded(false);
-		emit romLoaded(false);
-		int result = source_.loadDMGBios(fileName.toLocal8Bit().constData());
-		if(result != 0) {
-			QMessageBox::critical(
-				&mw_,
-				tr("Bios Load Error"),
-				(tr("Could not load new DMG bios.\n") +
-				"Please check that the file is a valid DMG bios file and not GBC."));
-			return;
-		}
-		else {
-			// Store new GBC bios path
-			QSettings settings;
-			settings.setValue("biosFilenameDMG", fileName);
-			QMessageBox::information(
-				&mw_,
-				tr("Loaded Bios Successfully"),
-				(tr("Loaded the DMG BIOS file successfully.\n") +
-				"Its path has also been saved for future use."));
-			return;
-		}
-	}
-
-	// giving back focus after getOpenFileName seems to fail at times, which
-	// can be problematic with current exclusive mode handling.
-	mw_.setFocus();
-}
-#endif
 
 void GambatteMenuHandler::openRecentFile() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	if (QAction const *action = qobject_cast<QAction *>(sender()))
 		loadFile(action->data().toString());
 }
@@ -791,7 +806,7 @@ void GambatteMenuHandler::about() {
 	TmpPauser tmpPauser(mw_, pauseInc_);
 	QMessageBox::about(
 		&mw_,
-		"About Gambatte",
+		"About Gambatte-Speedrun",
 		"<h3>Gambatte-Speedrun "
 #ifdef GAMBATTE_QT_VERSION_STR
 		" (" GAMBATTE_QT_VERSION_STR ")"
@@ -935,16 +950,16 @@ void GambatteMenuHandler::execMiscDialog() {
 }
 
 void GambatteMenuHandler::prevStateSlot() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	stateSlotGroup_->actions().at(source_.currentState() < 2
 	                            ? source_.currentState() + 8
 	                            : source_.currentState() - 2)->trigger();
 }
 
 void GambatteMenuHandler::nextStateSlot() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	stateSlotGroup_->actions().at(source_.currentState())->trigger();
 }
 
@@ -999,8 +1014,10 @@ struct RealResetFun {
 } // anon ns
 
 void GambatteMenuHandler::selectStateSlot() {
-    if(isResetting_)
-        return;
+	if (isResetting_) {
+		stateSlotGroup_->actions().at(source_.currentState() - 1)->setChecked(true);
+		return;
+	}
 	if (QAction *action = stateSlotGroup_->checkedAction()) {
 		SelectStateFun fun = { source_, action->data().toInt() };
 		mw_.callInWorkerThread(fun);
@@ -1008,22 +1025,22 @@ void GambatteMenuHandler::selectStateSlot() {
 }
 
 void GambatteMenuHandler::saveState() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	SaveStateFun fun = { source_, MainWindow::FrameBuffer(mw_) };
 	mw_.callInWorkerThread(fun);
 }
 
 void GambatteMenuHandler::loadState() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	LoadStateFun fun = { source_ };
 	mw_.callInWorkerThread(fun);
 }
 
 void GambatteMenuHandler::saveStateAs() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -1037,8 +1054,8 @@ void GambatteMenuHandler::saveStateAs() {
 }
 
 void GambatteMenuHandler::loadStateFrom() {
-    if(isResetting_)
-        return;
+	if (isResetting_)
+		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
@@ -1070,18 +1087,27 @@ void GambatteMenuHandler::doReset() {
 }
 
 void GambatteMenuHandler::pauseChange() {
-    if(isResetting_)
-        return;
+	if (isResetting_) {
+		pauseAction_->setChecked(false);
+		return;
+	}
 	if (pauseAction_->isChecked())
 		mw_.pause();
 	else
 		mw_.unpause();
 }
 
+void GambatteMenuHandler::setResetParams(unsigned before, unsigned fade,
+		unsigned limit, unsigned delay) {
+	source_.setResetParams(before, fade, limit);
+	resetDelay_ = delay;
+}
+
 void GambatteMenuHandler::pauseAndReset() {
     mw_.pause();
+    mw_.resetAudio();
     
-    QTimer::singleShot(1575, this, SLOT(doReset()));
+    QTimer::singleShot(resetDelay_, Qt::PreciseTimer, this, SLOT(doReset()));
 }
 
 void GambatteMenuHandler::startResetting() {
@@ -1089,10 +1115,16 @@ void GambatteMenuHandler::startResetting() {
 }
 
 void GambatteMenuHandler::frameStep() {
-    if(isResetting_)
-        return;
-	if (pauseAction_->isChecked())
+	if (isResetting_)
+		return;
+	if (pauseAction_->isChecked()) {
 		mw_.frameStep();
+
+		if (isResetting_) {
+			pauseAction_->setChecked(false);
+			mw_.unpause();
+		}
+	}
 	else
 		pauseAction_->trigger();
 }

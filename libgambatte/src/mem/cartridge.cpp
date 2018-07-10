@@ -621,7 +621,7 @@ static bool presumedMulti64Mbc1(unsigned char const header[], unsigned rombanks)
 }
 
 LoadRes Cartridge::loadROM(std::string const &romfile,
-                           bool const forceDmg,
+                           bool const cgbMode,
                            bool const multicartCompat)
 {
 	scoped_ptr<File> const rom(newFileInstance(romfile));
@@ -696,7 +696,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		}*/
 
 		rambanks = numRambanksFromH14x(header[0x147], header[0x149]);
-		cgb = !forceDmg;
+		cgb = cgbMode;
 	}
 
 	std::size_t const filesize = rom->size();
