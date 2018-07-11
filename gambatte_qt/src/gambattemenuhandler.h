@@ -125,6 +125,7 @@ enum GambattePlatform {
 	PLATFORM_GBC = 1,
 	PLATFORM_GBA = 2,
 	PLATFORM_GBP = 3,
+	PLATFORM_SGB = 4
 };
 
 class GambattePlatformMenu : private QObject {

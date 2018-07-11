@@ -266,6 +266,9 @@ void GambattePlatformMenu::fillMenu() {
 	addPlatform(PLATFORM_GBA, tr("Game Boy &Advance"));
 #endif
 	addPlatform(PLATFORM_GBP, tr("Game Boy &Player"));
+#ifdef SHOW_PLATFORM_SGB
+	addPlatform(PLATFORM_SGB, tr("&Super Game Boy 2"));
+#endif
 }
 
 void GambattePlatformMenu::setCheckedPlatform(int platformId) {
@@ -631,6 +634,11 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		flags |= gambatte::GB::GBA_FLAG;
 		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(4, 32, 37, 1580);
+		break;
+	case PLATFORM_SGB:
+		flags |= gambatte::GB::SGB_MODE;
+		info = { 0x100, 0xEC8A83B9, "SGB", "*.sgb", "biosFilenameSGB" };
+		setResetParams(0, 1, 1, 2000);
 		break;
 	}
 

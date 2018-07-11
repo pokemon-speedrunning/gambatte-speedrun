@@ -47,7 +47,7 @@ struct GB::Priv {
 	Priv() : stateNo(1), loadflags(0) {}
 
 	unsigned criticalLoadflags() {
-		return loadflags & (CGB_MODE);
+		return loadflags & (CGB_MODE | SGB_MODE);
 	}
 };
 
@@ -83,7 +83,8 @@ void GB::reset(std::string const &build) {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
-		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & GBA_FLAG);
+		unsigned flags = p_->loadflags;
+		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 		p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -109,7 +110,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
-		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG);
+		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 

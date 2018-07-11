@@ -52,6 +52,7 @@ void Memory::setStatePtrs(SaveState &state) {
 	state.mem.ioamhram.set(ioamhram_, sizeof ioamhram_);
 
 	cart_.setStatePtrs(state);
+	sgb_.setStatePtrs(state);
 	lcd_.setStatePtrs(state);
 	psg_.setStatePtrs(state);
 }
@@ -74,10 +75,12 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.cgbSwitching = cgbSwitching_;
 	state.mem.agbFlag = agbFlag_;
 	state.mem.gbIsCgb = gbIsCgb_;
+	state.mem.gbIsSgb = gbIsSgb_;
 	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
 	cart_.saveState(state);
+	sgb_.saveState(state);
 	tima_.saveState(state);
 	lcd_.saveState(state);
 	psg_.saveState(state);
@@ -94,10 +97,12 @@ void Memory::loadState(SaveState const &state) {
 	cgbSwitching_ = state.mem.cgbSwitching;
 	agbFlag_ = state.mem.agbFlag;
 	gbIsCgb_ = state.mem.gbIsCgb;
+	gbIsSgb_ = state.mem.gbIsSgb;
 	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
+	sgb_.loadState(state);
 	cart_.loadState(state);
 	intreq_.loadState(state);
 
@@ -202,7 +207,10 @@ unsigned long Memory::event(unsigned long cc) {
 			unsigned long blitTime = intreq_.eventTime(intevent_blit);
 
 			if (lcden | blanklcd_) {
-				lcd_.updateScreen(blanklcd_, cc);
+				lcd_.updateScreen(blanklcd_, cc, 0);
+				if (gbIsSgb_)
+					sgb_.updateScreen();
+				lcd_.updateScreen(blanklcd_, cc, 1);
 				intreq_.setEventTime<intevent_blit>(disabled_time);
 				intreq_.setEventTime<intevent_end>(disabled_time);
 
@@ -422,18 +430,21 @@ unsigned long Memory::resetCounters(unsigned long cc) {
 void Memory::updateInput() {
 	unsigned state = 0xF;
 
-	if ((ioamhram_[0x100] & 0x30) != 0x30 && getInput_) {
-		unsigned input = (*getInput_)();
-		unsigned dpad_state = ~input >> 4;
-		unsigned button_state = ~input;
-		if (!(ioamhram_[0x100] & 0x10))
-			state &= dpad_state;
-		if (!(ioamhram_[0x100] & 0x20))
-			state &= button_state;
-	}
+	if ((ioamhram_[0x100] & 0x30) != 0x30) {
+		if (getInput_) {
+			unsigned input = (*getInput_)();
+			unsigned dpad_state = ~input >> 4;
+			unsigned button_state = ~input;
+			if (!(ioamhram_[0x100] & 0x10))
+				state &= dpad_state;
+			if (!(ioamhram_[0x100] & 0x20))
+				state &= button_state;
 
-	if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
-		intreq_.flagIrq(0x10);
+			if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
+				intreq_.flagIrq(0x10);
+		}
+	} else if (gbIsSgb_)
+		state -= sgb_.getJoypadIndex();
 
 	ioamhram_[0x100] = (ioamhram_[0x100] & -0x10u) | state;
 }
@@ -647,6 +658,11 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	switch (p & 0xFF) {
 	case 0x00:
 		if ((data ^ ioamhram_[0x100]) & 0x30) {
+			if (gbIsSgb_) {
+				if ((((data ^ ioamhram_[0x100]) & 0x30) & data) && !biosMode_)
+					sgb_.onJoypad(ioamhram_[0x100]);
+			}
+
 			ioamhram_[0x100] = (ioamhram_[0x100] & ~0x30u) | (data & 0x30);
 			updateInput();
 		}

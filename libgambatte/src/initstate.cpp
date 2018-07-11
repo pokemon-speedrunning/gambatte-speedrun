@@ -1148,7 +1148,7 @@ static void setInitialDmgIoamhram(unsigned char ioamhram[]) {
 
 } // anon namespace
 
-void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb) {
+void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bool const sgb) {
 	static unsigned char const cgbObjpDump[0x40] = {
 		0x00, 0x00, 0xF2, 0xAB,
 		0x61, 0xC2, 0xD9, 0xBA,
@@ -1220,8 +1220,33 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb) {
 	state.mem.rambankMode = false;
 	state.mem.hdmaTransfer = false;
 	state.mem.gbIsCgb = cgb;
+	state.mem.gbIsSgb = sgb;
 	state.mem.stopped = false;
 
+
+	std::memset(state.mem.sgb.systemColors.ptr, 0, state.mem.sgb.systemColors.size() * 2);
+	std::memset(state.mem.sgb.colors.ptr, 0, state.mem.sgb.colors.size() * 2);
+	std::memset(state.mem.sgb.attributes.ptr, 0, state.mem.sgb.attributes.size());
+	std::memset(state.mem.sgb.packet.ptr, 0, state.mem.sgb.packet.size());
+	std::memset(state.mem.sgb.command.ptr, 0, state.mem.sgb.command.size());
+
+	if (sgb) {
+		state.mem.sgb.colors.ptr[0] = 0x67BF;
+
+		for (int i = 0; i < 16; i += 4) {
+			state.mem.sgb.colors.ptr[i + 1] = 0x265B;
+			state.mem.sgb.colors.ptr[i + 2] = 0x10B5;
+			state.mem.sgb.colors.ptr[i + 3] = 0x2866;
+		}
+	}
+
+	state.mem.sgb.transfer = 0xFF;
+	state.mem.sgb.commandIndex = 0;
+	state.mem.sgb.joypadIndex = 0;
+	state.mem.sgb.joypadMask = 0;
+	state.mem.sgb.pending = 0xFF;
+	state.mem.sgb.pendingCount = 0;
+	state.mem.sgb.mask = 0;
 
 	for (int i = 0; i < 3 * 4; ++i)
 		state.ppu.dmgColorsBgr15.ptr[i] = (3 - (i & 3)) * 0x294A + !(i & 3) * 0x421;

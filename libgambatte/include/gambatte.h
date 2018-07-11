@@ -40,6 +40,8 @@ public:
 		GBA_FLAG         = 2, /**< Use GBA intial CPU register values when in CGB mode. */
 		MULTICART_COMPAT = 4, /**< Use heuristics to detect and support some multicart
 		                           MBCs disguised as MBC1. */
+		SGB_MODE         = 8  /**< Treat the ROM as having SGB support regardless of
+		                           what its header advertises. */
 	};
 
 	 /*

@@ -279,32 +279,37 @@ static void clear(T *buf, unsigned long color, std::ptrdiff_t dpitch) {
 
 }
 
-void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter) {
-	update(cycleCounter);
+void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter, unsigned const stage) {
+	switch (stage) {
+	case 0:
+		update(cycleCounter);
 
-	if (blanklcd && ppu_.frameBuf().fb()) {
-		unsigned long color = gbcToRgb32(ppu_.cgb() ? 0x7FFF : dmgColorsBgr15_[0], isTrueColors());
-		clear(ppu_.frameBuf().fb(), color, ppu_.frameBuf().pitch());
-	}
+		if (blanklcd && ppu_.frameBuf().fb()) {
+			unsigned long color = gbcToRgb32(ppu_.cgb() ? 0x7FFF : dmgColorsBgr15_[0], isTrueColors());
+			clear(ppu_.frameBuf().fb(), color, ppu_.frameBuf().pitch());
+		}
+		break;
+	case 1:
+		if (ppu_.frameBuf().fb() && osdElement_) {
+			if (uint_least32_t const *const s = osdElement_->update()) {
+				uint_least32_t *const d = ppu_.frameBuf().fb()
+					+ std::ptrdiff_t(osdElement_->y()) * ppu_.frameBuf().pitch()
+					+ osdElement_->x();
 
-	if (ppu_.frameBuf().fb() && osdElement_) {
-		if (uint_least32_t const *const s = osdElement_->update()) {
-			uint_least32_t *const d = ppu_.frameBuf().fb()
-				+ std::ptrdiff_t(osdElement_->y()) * ppu_.frameBuf().pitch()
-				+ osdElement_->x();
-
-			switch (osdElement_->opacity()) {
-			case OsdElement::seven_eighths:
-				blitOsdElement(d, s, osdElement_->w(), osdElement_->h(),
-				               ppu_.frameBuf().pitch(), Blend<8>());
-				break;
-			case OsdElement::three_fourths:
-				blitOsdElement(d, s, osdElement_->w(), osdElement_->h(),
-				               ppu_.frameBuf().pitch(), Blend<4>());
-				break;
-			}
-		} else
-			osdElement_.reset();
+				switch (osdElement_->opacity()) {
+				case OsdElement::seven_eighths:
+					blitOsdElement(d, s, osdElement_->w(), osdElement_->h(),
+						ppu_.frameBuf().pitch(), Blend<8>());
+					break;
+				case OsdElement::three_fourths:
+					blitOsdElement(d, s, osdElement_->w(), osdElement_->h(),
+						ppu_.frameBuf().pitch(), Blend<4>());
+					break;
+				}
+			} else
+				osdElement_.reset();
+		}
+		break;
 	}
 }
 

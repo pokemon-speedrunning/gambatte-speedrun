@@ -22,6 +22,7 @@
 static unsigned char const agbOverride[0xD] = { 0xFF, 0x00, 0xCD, 0x03, 0x35, 0xAA, 0x31, 0x90, 0x94, 0x00, 0x00, 0x00, 0x00 };
 
 #include "mem/cartridge.h"
+#include "mem/sgb.h"
 #include "interrupter.h"
 #include "pakinfo.h"
 #include "sound.h"
@@ -112,17 +113,22 @@ public:
 
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch) {
 		lcd_.setVideoBuffer(videoBuf, pitch);
+		sgb_.setVideoBuffer(videoBuf, pitch);
 	}
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
-		lcd_.setDmgPaletteColor(palNum, colorNum, rgb32);
+		if (!gbIsSgb_)
+			lcd_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
     
     void blackScreen() {
         lcd_.blackScreen();
     }
 
-	void setTrueColors(bool trueColors) { lcd_.setTrueColors(trueColors); }
+	void setTrueColors(bool trueColors) {
+		lcd_.setTrueColors(trueColors);
+		sgb_.setTrueColors(trueColors);
+	}
 
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
@@ -138,6 +144,7 @@ public:
 
 private:
 	Cartridge cart_;
+	Sgb sgb_;
 	unsigned char ioamhram_[0x200];
 	unsigned char *bios_;
 	std::size_t biosSize_;
@@ -158,6 +165,7 @@ private:
 	bool cgbSwitching_;
 	bool agbFlag_;
 	bool gbIsCgb_;
+	bool gbIsSgb_;
     unsigned short &sp_;
 	unsigned short &pc_;
 	unsigned long halttime_;

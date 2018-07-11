@@ -97,7 +97,7 @@ public:
 		return ppu_.cgb() & cgbpAccessible(cycleCounter) ? objpData_[index] : 0xFF;
 	}
 
-	void updateScreen(bool blanklcd, unsigned long cc);
+	void updateScreen(bool blanklcd, unsigned long cc, unsigned stage);
 	void resetCc(unsigned long oldCC, unsigned long newCc);
 	void speedChange(unsigned long cycleCounter);
 	bool vramAccessible(unsigned long cycleCounter);
