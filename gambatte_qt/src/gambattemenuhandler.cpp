@@ -630,29 +630,29 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	switch (platformId) {
 	case PLATFORM_GB:
-		info = { 0x100, 0x59C8598E, "DMG", "*.gb", "biosFilenameDMG" };
+		info = { 0x100, 0x580A33B9, "DMG", "*.gb", "biosFilenameDMG" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBC:
 		flags |= gambatte::GB::CGB_MODE;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBA:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBP:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(4, 32, 37, 1580);
 		break;
 	case PLATFORM_SGB:
 		flags |= gambatte::GB::SGB_MODE;
-		info = { 0x100, 0xEC8A83B9, "SGB", "*.sgb", "biosFilenameSGB" };
+		info = { 0x100, 0xED48E98E, "SGB", "*.sgb", "biosFilenameSGB" };
 		setResetParams(0, 1, 1, 2000);
 		break;
 	}

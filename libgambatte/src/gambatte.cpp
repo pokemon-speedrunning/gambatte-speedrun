@@ -123,7 +123,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 
 unsigned int GB::loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
 	scoped_ptr<File> const bios(newFileInstance(biosfile));
-	unsigned char newBiosBuffer[size];
+	unsigned char newBiosBuffer[size], maskedBiosBuffer[size];
 	std::size_t sz;
 	
 	if (bios->fail())
@@ -137,7 +137,9 @@ unsigned int GB::loadBios(std::string const &biosfile, std::size_t size, unsigne
 	if (bios->fail())
 		return -1;
 	
-	if (crc32(0, newBiosBuffer, sz) != crc)
+	std::memcpy(maskedBiosBuffer, newBiosBuffer, sz);
+	maskedBiosBuffer[0xFD] = 0;
+	if (crc32(0, maskedBiosBuffer, sz) != crc)
 		return -3;
 	
 	p_->cpu.setBios(newBiosBuffer, size);

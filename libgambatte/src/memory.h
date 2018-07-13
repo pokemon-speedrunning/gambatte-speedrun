@@ -28,6 +28,7 @@ static unsigned char const agbOverride[0xD] = { 0xFF, 0x00, 0xCD, 0x03, 0x35, 0x
 #include "sound.h"
 #include "tima.h"
 #include "video.h"
+#include <cstring>
 
 namespace gambatte {
 
@@ -141,7 +142,7 @@ public:
 	void setBios(unsigned char *buffer, std::size_t size) {
 		delete []bios_;
 		bios_ = new unsigned char[size];
-		memcpy(bios_, buffer, size);
+		std::memcpy(bios_, buffer, size);
 		biosSize_ = size;
 	}
 	bool gbIsCgb() { return gbIsCgb_; }
