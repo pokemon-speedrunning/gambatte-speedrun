@@ -49,9 +49,7 @@ exists(../../.git) {
 #QMAKE_CFLAGS_RELEASE += -g
 #QMAKE_LFLAGS_RELEASE =
 
-# platform support
-# GBP is hardcoded
-DEFINES += SHOW_PLATFORM_GB
-DEFINES += SHOW_PLATFORM_GBC
-DEFINES += SHOW_PLATFORM_GBA
-DEFINES += SHOW_PLATFORM_SGB
+# additional platforms
+exists(platforms.pri) {
+	include(platforms.pri)
+}
