@@ -35,7 +35,7 @@ struct SaveState {
 		void set(T *p, std::size_t size) { ptr = p; size_ = size; }
 
 		friend class SaverList;
-		friend void setInitState(SaveState &, bool, bool);
+		friend void setInitState(SaveState &, bool, bool, bool);
 
 	private:
 		T *ptr;
@@ -86,7 +86,23 @@ struct SaveState {
 		unsigned char /*bool*/ cgbSwitching;
 		unsigned char /*bool*/ agbFlag;
 		unsigned char /*bool*/ gbIsCgb;
+		unsigned char /*bool*/ gbIsSgb;
 		unsigned char /*bool*/ stopped;
+
+		struct SGB {
+			Ptr<unsigned short> systemColors;
+			Ptr<unsigned short> colors;
+			Ptr<unsigned char> attributes;
+			Ptr<unsigned char> packet;
+			Ptr<unsigned char> command;
+			unsigned char transfer;
+			unsigned char commandIndex;
+			unsigned char joypadIndex;
+			unsigned char joypadMask;
+			unsigned char pending;
+			unsigned char pendingCount;
+			unsigned char mask;
+		} sgb;
 	} mem;
 
 	struct PPU {
@@ -192,8 +208,14 @@ struct SaveState {
 		unsigned long cycleCounter;
 	} spu;
 
+	struct Time {
+		unsigned long seconds;
+		unsigned long lastTimeSec;
+		unsigned long lastTimeUsec;
+		unsigned long lastCycles;
+	} time;
+
 	struct RTC {
-		unsigned long baseTime;
 		unsigned long haltTime;
 		unsigned char dataDh;
 		unsigned char dataDl;
@@ -204,7 +226,6 @@ struct SaveState {
 	} rtc;
     
     struct HuC3 {
-        unsigned long baseTime;
         unsigned long haltTime;
         unsigned long dataTime;
         unsigned long writingTime;

@@ -22,8 +22,8 @@
 
 namespace gambatte {
 
-HuC3Chip::HuC3Chip()
-: baseTime_(0)
+HuC3Chip::HuC3Chip(Time &time)
+: time_(time)
 , haltTime_(0)
 , dataTime_(0)
 , writingTime_(0)
@@ -33,14 +33,14 @@ HuC3Chip::HuC3Chip()
 , modeflag_(HUC3_NONE)
 , irBaseCycle_(0)
 , enabled_(false)
-, halted_(false)
 , lastLatchData_(false)
+, halted_(false)
 , irReceivingPulse_(false)
 {
 }
 
-void HuC3Chip::doLatch() {
-	std::time_t tmp = (halted_ ? haltTime_ : std::time(0)) - baseTime_;
+void HuC3Chip::doLatch(unsigned long const cc) {
+	std::time_t tmp = time(cc);
     
     unsigned minute = (tmp / 60) % 1440;
     unsigned day = (tmp / 86400) & 0xFFF;
@@ -48,7 +48,6 @@ void HuC3Chip::doLatch() {
 }
 
 void HuC3Chip::saveState(SaveState &state) const {
-	state.huc3.baseTime = baseTime_;
 	state.huc3.haltTime = haltTime_;
     state.huc3.dataTime = dataTime_;
     state.huc3.writingTime = writingTime_;
@@ -61,7 +60,6 @@ void HuC3Chip::saveState(SaveState &state) const {
 }
 
 void HuC3Chip::loadState(SaveState const &state) {
-	baseTime_ = state.huc3.baseTime;
 	haltTime_ = state.huc3.haltTime;
     dataTime_ = state.huc3.dataTime;
     ramValue_ = state.huc3.ramValue;
@@ -73,7 +71,7 @@ void HuC3Chip::loadState(SaveState const &state) {
     irReceivingPulse_ = state.huc3.irReceivingPulse;
 }
 
-unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
+unsigned char HuC3Chip::read(unsigned /*p*/, unsigned long const cc) {
     // should only reach here with ramflag = 0B-0E
     if(ramflag_ == 0x0E) {
         // INFRARED
@@ -121,14 +119,14 @@ unsigned char HuC3Chip::read(unsigned p, unsigned long const cc) {
     else return ramValue_;
 }
 
-void HuC3Chip::write(unsigned p, unsigned data) {
+void HuC3Chip::write(unsigned /*p*/, unsigned data, unsigned long const cc) {
     // as above
     if(ramflag_ == 0x0B) {
         // command
         switch(data & 0xF0) {
             case 0x10:
                 // read time
-                doLatch();
+                doLatch(cc);
                 if(modeflag_ == HUC3_READ) {
                     ramValue_ = (dataTime_ >> shift_) & 0x0F;
                     shift_ += 4;
@@ -143,7 +141,7 @@ void HuC3Chip::write(unsigned p, unsigned data) {
                         writingTime_ |= (data & 0x0F) << shift_;
                         shift_ += 4;
                         if(shift_ == 24) {
-                            updateTime();
+                            updateTime(cc);
                             modeflag_ = HUC3_READ;
                         }
                     }
@@ -179,11 +177,12 @@ void HuC3Chip::write(unsigned p, unsigned data) {
     // do nothing for 0C/0D yet
 }
 
-void HuC3Chip::updateTime() {
+void HuC3Chip::updateTime(unsigned long const cc) {
     unsigned minute = (writingTime_ & 0xFFF) % 1440;
     unsigned day = (writingTime_ & 0xFFF000) >> 12;
-    baseTime_ = std::time(0) - minute*60 - day*86400;
-    haltTime_ = baseTime_;
+    std::time_t seconds = minute*60 + day*86400;
+    time_.reset(seconds, cc);
+    haltTime_ = seconds;
     
 }
 

@@ -52,6 +52,7 @@ void Memory::setStatePtrs(SaveState &state) {
 	state.mem.ioamhram.set(ioamhram_, sizeof ioamhram_);
 
 	cart_.setStatePtrs(state);
+	sgb_.setStatePtrs(state);
 	lcd_.setStatePtrs(state);
 	psg_.setStatePtrs(state);
 }
@@ -74,10 +75,12 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.cgbSwitching = cgbSwitching_;
 	state.mem.agbFlag = agbFlag_;
 	state.mem.gbIsCgb = gbIsCgb_;
+	state.mem.gbIsSgb = gbIsSgb_;
 	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
-	cart_.saveState(state);
+	cart_.saveState(state, cc);
+	sgb_.saveState(state);
 	tima_.saveState(state);
 	lcd_.saveState(state);
 	psg_.saveState(state);
@@ -94,10 +97,12 @@ void Memory::loadState(SaveState const &state) {
 	cgbSwitching_ = state.mem.cgbSwitching;
 	agbFlag_ = state.mem.agbFlag;
 	gbIsCgb_ = state.mem.gbIsCgb;
+	gbIsSgb_ = state.mem.gbIsSgb;
 	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < 0xA0 ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
+	sgb_.loadState(state);
 	cart_.loadState(state);
 	intreq_.loadState(state);
 
@@ -202,7 +207,10 @@ unsigned long Memory::event(unsigned long cc) {
 			unsigned long blitTime = intreq_.eventTime(intevent_blit);
 
 			if (lcden | blanklcd_) {
-				lcd_.updateScreen(blanklcd_, cc);
+				lcd_.updateScreen(blanklcd_, cc, 0);
+				if (gbIsSgb_)
+					sgb_.updateScreen();
+				lcd_.updateScreen(blanklcd_, cc, 1);
 				intreq_.setEventTime<intevent_blit>(disabled_time);
 				intreq_.setEventTime<intevent_end>(disabled_time);
 
@@ -355,6 +363,7 @@ unsigned long Memory::stop(unsigned long cc) {
 	if (ioamhram_[0x14D] & isCgb()) {
 		psg_.generateSamples(cc, isDoubleSpeed());
 		lcd_.speedChange((cc + 7) & ~7);
+		cart_.speedChange(cc);
 		ioamhram_[0x14D] ^= 0x81;
 		intreq_.setEventTime<intevent_blit>(ioamhram_[0x140] & lcdc_en
 			? lcd_.nextMode1IrqTime()
@@ -413,6 +422,7 @@ unsigned long Memory::resetCounters(unsigned long cc) {
 	unsigned long const oldCC = cc;
 	cc -= dec;
 	intreq_.resetCc(oldCC, cc);
+	cart_.resetCc(oldCC, cc);
 	tima_.resetCc(oldCC, cc, TimaInterruptRequester(intreq_));
 	lcd_.resetCc(oldCC, cc);
 	psg_.resetCounter(cc, oldCC, isDoubleSpeed());
@@ -422,18 +432,21 @@ unsigned long Memory::resetCounters(unsigned long cc) {
 void Memory::updateInput() {
 	unsigned state = 0xF;
 
-	if ((ioamhram_[0x100] & 0x30) != 0x30 && getInput_) {
-		unsigned input = (*getInput_)();
-		unsigned dpad_state = ~input >> 4;
-		unsigned button_state = ~input;
-		if (!(ioamhram_[0x100] & 0x10))
-			state &= dpad_state;
-		if (!(ioamhram_[0x100] & 0x20))
-			state &= button_state;
-	}
+	if ((ioamhram_[0x100] & 0x30) != 0x30) {
+		if (getInput_) {
+			unsigned input = (*getInput_)();
+			unsigned dpad_state = ~input >> 4;
+			unsigned button_state = ~input;
+			if (!(ioamhram_[0x100] & 0x10))
+				state &= dpad_state;
+			if (!(ioamhram_[0x100] & 0x20))
+				state &= button_state;
 
-	if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
-		intreq_.flagIrq(0x10);
+			if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
+				intreq_.flagIrq(0x10);
+		}
+	} else if (gbIsSgb_)
+		state -= sgb_.getJoypadIndex();
 
 	ioamhram_[0x100] = (ioamhram_[0x100] & -0x10u) | state;
 }
@@ -647,6 +660,11 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	switch (p & 0xFF) {
 	case 0x00:
 		if ((data ^ ioamhram_[0x100]) & 0x30) {
+			if (gbIsSgb_) {
+				if ((((data ^ ioamhram_[0x100]) & 0x30) & data) && !biosMode_)
+					sgb_.onJoypad(ioamhram_[0x100]);
+			}
+
 			ioamhram_[0x100] = (ioamhram_[0x100] & ~0x30u) | (data & 0x30);
 			updateInput();
 		}
@@ -1092,7 +1110,7 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 	if (p < 0xFE00) {
 		if (p < 0xA000) {
 			if (p < 0x8000) {
-				cart_.mbcWrite(p, data);
+				cart_.mbcWrite(p, data, cc);
 			} else if (lcd_.vramAccessible(cc)) {
 				lcd_.vramChange(cc);
 				cart_.vrambankptr()[p] = data;
@@ -1101,9 +1119,9 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 			if (cart_.wsrambankptr())
 				cart_.wsrambankptr()[p] = data;
             else if (cart_.isHuC3())
-                cart_.HuC3Write(p, data);
+                cart_.HuC3Write(p, data, cc);
 			else
-				cart_.rtcWrite(data);
+				cart_.rtcWrite(data, cc);
 		} else
 			cart_.wramdata(p >> 12 & 1)[p & 0xFFF] = data;
 	} else if (p - 0xFF80u >= 0x7Fu) {

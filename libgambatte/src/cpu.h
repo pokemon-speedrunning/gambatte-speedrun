@@ -30,8 +30,8 @@ public:
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state);
 	void loadState(SaveState const &state);
-	void loadSavedata() { mem_.loadSavedata(); }
-	void saveSavedata() { mem_.saveSavedata(); }
+	void loadSavedata() { mem_.loadSavedata(cycleCounter_); }
+	void saveSavedata() { mem_.saveSavedata(cycleCounter_); }
 
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch) {
 		mem_.setVideoBuffer(videoBuf, pitch);
@@ -69,6 +69,7 @@ public:
 	}
 
 	void setTrueColors(bool trueColors) { mem_.setTrueColors(trueColors); }
+	void setTimeMode(bool useCycles) { mem_.setTimeMode(useCycles, cycleCounter_); }
 
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }

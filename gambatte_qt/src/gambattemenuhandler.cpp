@@ -266,6 +266,9 @@ void GambattePlatformMenu::fillMenu() {
 	addPlatform(PLATFORM_GBA, tr("Game Boy &Advance"));
 #endif
 	addPlatform(PLATFORM_GBP, tr("Game Boy &Player"));
+#ifdef SHOW_PLATFORM_SGB
+	addPlatform(PLATFORM_SGB, tr("&Super Game Boy 2"));
+#endif
 }
 
 void GambattePlatformMenu::setCheckedPlatform(int platformId) {
@@ -470,6 +473,20 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 	settingsm->addMenu(gambattePlatformMenu_.menu());
 
+	{
+		QMenu *const rtcModeMenu = settingsm->addMenu(tr("Real &Time Clock"));
+		QActionGroup *const rtcModeActions = new QActionGroup(rtcModeMenu);
+		cycleBasedAction_ = rtcModeMenu->addAction(tr("&Cycle-based"));
+		cycleBasedAction_->setCheckable(true);
+		cycleBasedAction_->setChecked(QSettings().value("rtc-mode", true).toBool());
+		rtcModeActions->addAction(cycleBasedAction_);
+		realTimeAction_ = rtcModeMenu->addAction(tr("&Real-time"));
+		realTimeAction_->setCheckable(true);
+		realTimeAction_->setChecked(!cycleBasedAction_->isChecked());
+		rtcModeActions->addAction(realTimeAction_);
+		connect(rtcModeActions, SIGNAL(triggered(QAction *)), this, SLOT(setRtcMode()));
+	}
+
     trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
@@ -560,6 +577,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
+	settings.setValue("rtc-mode", cycleBasedAction_->isChecked());
     settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
@@ -612,25 +630,30 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	switch (platformId) {
 	case PLATFORM_GB:
-		info = { 0x100, 0x59C8598E, "DMG", "*.gb", "biosFilenameDMG" };
+		info = { 0x100, 0x580A33B9, "DMG", "*.gb", "biosFilenameDMG" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBC:
 		flags |= gambatte::GB::CGB_MODE;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBA:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBP:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x41884E46, "GBC", "*.gbc", "biosFilename" };
+		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
 		setResetParams(4, 32, 37, 1580);
+		break;
+	case PLATFORM_SGB:
+		flags |= gambatte::GB::SGB_MODE;
+		info = { 0x100, 0xED48E98E, "SGB", "*.sgb", "biosFilenameSGB" };
+		setResetParams(0, 1, 1, 2000);
 		break;
 	}
 
@@ -682,6 +705,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	}
 
 	source_.setTrueColors(trueColorsAction_->isChecked());
+	source_.setTimeMode(cycleBasedAction_->isChecked());
 
 	gambatte::PakInfo const &pak = source_.pakInfo();
 	std::cout << romTitle.toStdString() << '\n'
@@ -750,6 +774,7 @@ void GambatteMenuHandler::close() {
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
+	source_.load("", 0);
 	mw_.stop();
 	emit dmgRomLoaded(false);
 	emit romLoaded(false);
@@ -1007,8 +1032,8 @@ struct ResetFun {
 };
 
 struct RealResetFun {
-	GambatteSource &source;
-	void operator()() const { source.reset(); }
+	GambatteSource &source; bool useCycles;
+	void operator()() const { source.reset(); source.setTimeMode(useCycles); }
 };
 
 } // anon ns
@@ -1082,7 +1107,7 @@ void GambatteMenuHandler::reset() {
 void GambatteMenuHandler::doReset() {
     mw_.unpause();
     isResetting_ = false;
-	RealResetFun fun = { source_ };
+	RealResetFun fun = { source_, rtcMode_ };
 	mw_.callInWorkerThread(fun);
 }
 
@@ -1106,11 +1131,13 @@ void GambatteMenuHandler::setResetParams(unsigned before, unsigned fade,
 void GambatteMenuHandler::pauseAndReset() {
     mw_.pause();
     mw_.resetAudio();
+    source_.setTimeMode(false);
     
     QTimer::singleShot(resetDelay_, Qt::PreciseTimer, this, SLOT(doReset()));
 }
 
 void GambatteMenuHandler::startResetting() {
+    rtcMode_ = cycleBasedAction_->isChecked();
     isResetting_ = true;
 }
 
@@ -1152,6 +1179,15 @@ void GambatteMenuHandler::audioEngineFailure() {
 	QMessageBox::critical(&mw_, tr("Sound engine failure"),
 			tr("Failed to output audio. This may be fixed by changing the sound settings."));
 	soundDialog_->exec();
+}
+
+void GambatteMenuHandler::setRtcMode() {
+	if (isResetting_) {
+		(rtcMode_ ? cycleBasedAction_ : realTimeAction_)->setChecked(true);
+		return;
+	}
+
+	source_.setTimeMode(cycleBasedAction_->isChecked());
 }
 
 void GambatteMenuHandler::toggleFullScreen() {

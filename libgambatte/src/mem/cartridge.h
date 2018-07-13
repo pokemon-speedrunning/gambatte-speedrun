@@ -21,6 +21,7 @@
 
 #include "loadres.h"
 #include "memptrs.h"
+#include "time.h"
 #include "rtc.h"
 #include "huc3.h"
 #include "savestate.h"
@@ -33,7 +34,7 @@ namespace gambatte {
 class Mbc {
 public:
 	virtual ~Mbc() {}
-	virtual void romWrite(unsigned P, unsigned data) = 0;
+	virtual void romWrite(unsigned P, unsigned data, unsigned long cycleCounter) = 0;
 	virtual void saveState(SaveState::Mem &ss) const = 0;
 	virtual void loadState(SaveState::Mem const &ss) = 0;
 	virtual bool isAddressWithinAreaRombankCanBeMappedTo(unsigned address, unsigned rombank) const = 0;
@@ -41,8 +42,9 @@ public:
 
 class Cartridge {
 public:
+	Cartridge();
 	void setStatePtrs(SaveState &);
-	void saveState(SaveState &) const;
+	void saveState(SaveState &, unsigned long cycleCounter);
 	void loadState(SaveState const &);
 	bool loaded() const { return mbc_.get(); }
 	unsigned char const * rmem(unsigned area) const { return memptrs_.rmem(area); }
@@ -58,12 +60,15 @@ public:
 	void setVrambank(unsigned bank) { memptrs_.setVrambank(bank); }
 	void setWrambank(unsigned bank) { memptrs_.setWrambank(bank); }
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc) { memptrs_.setOamDmaSrc(oamDmaSrc); }
-	void mbcWrite(unsigned addr, unsigned data) { mbc_->romWrite(addr, data); }
+	void mbcWrite(unsigned addr, unsigned data, unsigned long const cc) { mbc_->romWrite(addr, data, cc); }
 	bool isCgb() const { return gambatte::isCgb(memptrs_); }
-	void rtcWrite(unsigned data) { rtc_.write(data); }
+	void resetCc(unsigned long const oldCc, unsigned long const newCc) { time_.resetCc(oldCc, newCc); }
+	void speedChange(unsigned long const cc) { time_.speedChange(cc); }
+	void setTimeMode(bool useCycles, unsigned long const cc) { time_.setTimeMode(useCycles, cc); }
+	void rtcWrite(unsigned data, unsigned long const cc) { rtc_.write(data, cc); }
 	unsigned char rtcRead() const { return *rtc_.activeData(); }
-	void loadSavedata();
-	void saveSavedata();
+	void loadSavedata(unsigned long cycleCounter);
+	void saveSavedata(unsigned long cycleCounter);
 	std::string const saveBasePath() const;
 	void setSaveDir(std::string const &dir);
 	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);
@@ -72,7 +77,7 @@ public:
 	void setGameGenie(std::string const &codes);
     bool isHuC3() const { return huc3_.isHuC3(); }
     unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
-	void HuC3Write(unsigned p, unsigned data) { huc3_.write(p, data); }
+	void HuC3Write(unsigned p, unsigned data, unsigned long const cc) { huc3_.write(p, data, cc); }
 
 private:
 	struct AddrData {
@@ -82,6 +87,7 @@ private:
 	};
 
 	MemPtrs memptrs_;
+	Time time_;
 	Rtc rtc_;
     HuC3Chip huc3_;
 	scoped_ptr<Mbc> mbc_;

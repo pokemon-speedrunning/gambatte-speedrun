@@ -48,7 +48,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		if (p < 0x2000) {
 			enableRam_ = (data & 0xF) == 0xA;
 			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
@@ -88,7 +88,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -159,7 +159,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -229,7 +229,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p & 0x6100) {
 		case 0x0000:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -271,7 +271,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const cc) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -287,7 +287,7 @@ public:
 			break;
 		case 3:
 			if (rtc_)
-				rtc_->latch(data);
+				rtc_->latch(data, cc);
 
 			break;
 		}
@@ -343,7 +343,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -410,7 +410,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
             ramflag_ = data;
@@ -489,7 +489,7 @@ public:
 	{
 	}
 
-	virtual void romWrite(unsigned const p, unsigned const data) {
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
@@ -551,14 +551,21 @@ static bool hasRtc(unsigned headerByte0x147) {
 
 }
 
+Cartridge::Cartridge()
+: rtc_(time_)
+, huc3_(time_)
+{
+}
+
 void Cartridge::setStatePtrs(SaveState &state) {
 	state.mem.vram.set(memptrs_.vramdata(), memptrs_.vramdataend() - memptrs_.vramdata());
 	state.mem.sram.set(memptrs_.rambankdata(), memptrs_.rambankdataend() - memptrs_.rambankdata());
 	state.mem.wram.set(memptrs_.wramdata(0), memptrs_.wramdataend() - memptrs_.wramdata(0));
 }
 
-void Cartridge::saveState(SaveState &state) const {
+void Cartridge::saveState(SaveState &state, unsigned long const cc) {
 	mbc_->saveState(state.mem);
+	time_.saveState(state, cc);
 	rtc_.saveState(state);
     huc3_.saveState(state);
 }
@@ -566,6 +573,7 @@ void Cartridge::saveState(SaveState &state) const {
 void Cartridge::loadState(SaveState const &state) {
     huc3_.loadState(state);
 	rtc_.loadState(state);
+	time_.loadState(state);
 	mbc_->loadState(state.mem);
 }
 
@@ -624,6 +632,11 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
                            bool const cgbMode,
                            bool const multicartCompat)
 {
+	if (romfile.empty()) {
+		mbc_.reset();
+		return LOADRES_IO_ERROR;
+	}
+
 	scoped_ptr<File> const rom(newFileInstance(romfile));
 	if (rom->fail())
 		return LOADRES_IO_ERROR;
@@ -762,7 +775,7 @@ static bool hasBattery(unsigned char headerByte0x147) {
 	}
 }
 
-void Cartridge::loadSavedata() {
+void Cartridge::loadSavedata(unsigned long const cc) {
 	std::string const &sbp = saveBasePath();
 
 	if (hasBattery(memptrs_.romdata()[0x147])) {
@@ -778,17 +791,26 @@ void Cartridge::loadSavedata() {
 	if (hasRtc(memptrs_.romdata()[0x147])) {
 		std::ifstream file((sbp + ".rtc").c_str(), std::ios::binary | std::ios::in);
 		if (file) {
-			unsigned long basetime =    file.get() & 0xFF;
-			basetime = basetime << 8 | (file.get() & 0xFF);
-			basetime = basetime << 8 | (file.get() & 0xFF);
-			basetime = basetime << 8 | (file.get() & 0xFF);
-            if(memptrs_.romdata()[0x147] == 0xFE) huc3_.setBaseTime(basetime);
-			else rtc_.setBaseTime(basetime);
+			timeval basetime;
+			basetime.tv_sec = file.get() & 0xFF;
+			basetime.tv_sec = basetime.tv_sec << 8 | (file.get() & 0xFF);
+			basetime.tv_sec = basetime.tv_sec << 8 | (file.get() & 0xFF);
+			basetime.tv_sec = basetime.tv_sec << 8 | (file.get() & 0xFF);
+			basetime.tv_usec = file.get() & 0xFF;
+
+			if (!file.eof()) {
+				basetime.tv_usec = basetime.tv_usec << 8 | (file.get() & 0xFF);
+				basetime.tv_usec = basetime.tv_usec << 8 | (file.get() & 0xFF);
+				basetime.tv_usec = basetime.tv_usec << 8 | (file.get() & 0xFF);
+			} else
+				basetime.tv_usec = 0;
+
+			time_.setBaseTime(basetime, cc);
 		}
 	}
 }
 
-void Cartridge::saveSavedata() {
+void Cartridge::saveSavedata(unsigned long const cc) {
 	std::string const &sbp = saveBasePath();
 
 	if (hasBattery(memptrs_.romdata()[0x147])) {
@@ -799,11 +821,15 @@ void Cartridge::saveSavedata() {
 
 	if (hasRtc(memptrs_.romdata()[0x147])) {
 		std::ofstream file((sbp + ".rtc").c_str(), std::ios::binary | std::ios::out);
-		unsigned long const basetime = (memptrs_.romdata()[0x147] == 0xFE) ? huc3_.baseTime() : rtc_.baseTime();
-		file.put(basetime >> 24 & 0xFF);
-		file.put(basetime >> 16 & 0xFF);
-		file.put(basetime >>  8 & 0xFF);
-		file.put(basetime       & 0xFF);
+		timeval basetime = time_.baseTime(cc);
+		file.put(basetime.tv_sec  >> 24 & 0xFF);
+		file.put(basetime.tv_sec  >> 16 & 0xFF);
+		file.put(basetime.tv_sec  >>  8 & 0xFF);
+		file.put(basetime.tv_sec        & 0xFF);
+		file.put(basetime.tv_usec >> 24 & 0xFF);
+		file.put(basetime.tv_usec >> 16 & 0xFF);
+		file.put(basetime.tv_usec >>  8 & 0xFF);
+		file.put(basetime.tv_usec       & 0xFF);
 	}
 }
 
