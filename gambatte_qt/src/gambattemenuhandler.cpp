@@ -774,6 +774,7 @@ void GambatteMenuHandler::close() {
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
 
+	source_.load("", 0);
 	mw_.stop();
 	emit dmgRomLoaded(false);
 	emit romLoaded(false);

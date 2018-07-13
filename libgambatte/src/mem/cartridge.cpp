@@ -632,6 +632,11 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
                            bool const cgbMode,
                            bool const multicartCompat)
 {
+	if (romfile.empty()) {
+		mbc_.reset();
+		return LOADRES_IO_ERROR;
+	}
+
 	scoped_ptr<File> const rom(newFileInstance(romfile));
 	if (rom->fail())
 		return LOADRES_IO_ERROR;
