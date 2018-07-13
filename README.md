@@ -11,5 +11,14 @@ To build it on Debian, do:
     cd gambatte-speedrun
     ./build_qt.sh
     cp gambatte_qt/bin/gambatte_qt SOMEWHERE/gsr # or w/e
+    
+To build the "non-PSR" version with additional selectable platforms (GB, GBC, GBA, SGB2), create `gambatte_qt/src/platforms.pri` with the following:
+    
+    # platform support
+    # GBP is hardcoded
+    DEFINES += SHOW_PLATFORM_GB
+    DEFINES += SHOW_PLATFORM_GBC
+    DEFINES += SHOW_PLATFORM_GBA
+    DEFINES += SHOW_PLATFORM_SGB
 
 Otherwise GLHF.
