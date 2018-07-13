@@ -102,6 +102,9 @@ public:
 	/** Use GBP color conversion instead of GBC-screen approximation. */
 	void setTrueColors(bool trueColors);
 
+	/** Use cycle-based RTC instead of real-time. */
+	void setTimeMode(bool useCycles);
+
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput);
 

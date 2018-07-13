@@ -473,6 +473,20 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 	settingsm->addMenu(gambattePlatformMenu_.menu());
 
+	{
+		QMenu *const rtcModeMenu = settingsm->addMenu(tr("Real &Time Clock"));
+		QActionGroup *const rtcModeActions = new QActionGroup(rtcModeMenu);
+		cycleBasedAction_ = rtcModeMenu->addAction(tr("&Cycle-based"));
+		cycleBasedAction_->setCheckable(true);
+		cycleBasedAction_->setChecked(QSettings().value("rtc-mode", true).toBool());
+		rtcModeActions->addAction(cycleBasedAction_);
+		realTimeAction_ = rtcModeMenu->addAction(tr("&Real-time"));
+		realTimeAction_->setCheckable(true);
+		realTimeAction_->setChecked(!cycleBasedAction_->isChecked());
+		rtcModeActions->addAction(realTimeAction_);
+		connect(rtcModeActions, SIGNAL(triggered(QAction *)), this, SLOT(setRtcMode()));
+	}
+
     trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
@@ -563,6 +577,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
+	settings.setValue("rtc-mode", cycleBasedAction_->isChecked());
     settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
@@ -690,6 +705,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	}
 
 	source_.setTrueColors(trueColorsAction_->isChecked());
+	source_.setTimeMode(cycleBasedAction_->isChecked());
 
 	gambatte::PakInfo const &pak = source_.pakInfo();
 	std::cout << romTitle.toStdString() << '\n'
@@ -1015,8 +1031,8 @@ struct ResetFun {
 };
 
 struct RealResetFun {
-	GambatteSource &source;
-	void operator()() const { source.reset(); }
+	GambatteSource &source; bool useCycles;
+	void operator()() const { source.reset(); source.setTimeMode(useCycles); }
 };
 
 } // anon ns
@@ -1090,7 +1106,7 @@ void GambatteMenuHandler::reset() {
 void GambatteMenuHandler::doReset() {
     mw_.unpause();
     isResetting_ = false;
-	RealResetFun fun = { source_ };
+	RealResetFun fun = { source_, rtcMode_ };
 	mw_.callInWorkerThread(fun);
 }
 
@@ -1114,11 +1130,13 @@ void GambatteMenuHandler::setResetParams(unsigned before, unsigned fade,
 void GambatteMenuHandler::pauseAndReset() {
     mw_.pause();
     mw_.resetAudio();
+    source_.setTimeMode(false);
     
     QTimer::singleShot(resetDelay_, Qt::PreciseTimer, this, SLOT(doReset()));
 }
 
 void GambatteMenuHandler::startResetting() {
+    rtcMode_ = cycleBasedAction_->isChecked();
     isResetting_ = true;
 }
 
@@ -1160,6 +1178,15 @@ void GambatteMenuHandler::audioEngineFailure() {
 	QMessageBox::critical(&mw_, tr("Sound engine failure"),
 			tr("Failed to output audio. This may be fixed by changing the sound settings."));
 	soundDialog_->exec();
+}
+
+void GambatteMenuHandler::setRtcMode() {
+	if (isResetting_) {
+		(rtcMode_ ? cycleBasedAction_ : realTimeAction_)->setChecked(true);
+		return;
+	}
+
+	source_.setTimeMode(cycleBasedAction_->isChecked());
 }
 
 void GambatteMenuHandler::toggleFullScreen() {

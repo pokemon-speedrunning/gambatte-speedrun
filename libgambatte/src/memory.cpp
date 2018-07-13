@@ -79,7 +79,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
-	cart_.saveState(state);
+	cart_.saveState(state, cc);
 	sgb_.saveState(state);
 	tima_.saveState(state);
 	lcd_.saveState(state);
@@ -363,6 +363,7 @@ unsigned long Memory::stop(unsigned long cc) {
 	if (ioamhram_[0x14D] & isCgb()) {
 		psg_.generateSamples(cc, isDoubleSpeed());
 		lcd_.speedChange((cc + 7) & ~7);
+		cart_.speedChange(cc);
 		ioamhram_[0x14D] ^= 0x81;
 		intreq_.setEventTime<intevent_blit>(ioamhram_[0x140] & lcdc_en
 			? lcd_.nextMode1IrqTime()
@@ -421,6 +422,7 @@ unsigned long Memory::resetCounters(unsigned long cc) {
 	unsigned long const oldCC = cc;
 	cc -= dec;
 	intreq_.resetCc(oldCC, cc);
+	cart_.resetCc(oldCC, cc);
 	tima_.resetCc(oldCC, cc, TimaInterruptRequester(intreq_));
 	lcd_.resetCc(oldCC, cc);
 	psg_.resetCounter(cc, oldCC, isDoubleSpeed());
@@ -1108,7 +1110,7 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 	if (p < 0xFE00) {
 		if (p < 0xA000) {
 			if (p < 0x8000) {
-				cart_.mbcWrite(p, data);
+				cart_.mbcWrite(p, data, cc);
 			} else if (lcd_.vramAccessible(cc)) {
 				lcd_.vramChange(cc);
 				cart_.vrambankptr()[p] = data;
@@ -1117,9 +1119,9 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 			if (cart_.wsrambankptr())
 				cart_.wsrambankptr()[p] = data;
             else if (cart_.isHuC3())
-                cart_.HuC3Write(p, data);
+                cart_.HuC3Write(p, data, cc);
 			else
-				cart_.rtcWrite(data);
+				cart_.rtcWrite(data, cc);
 		} else
 			cart_.wramdata(p >> 12 & 1)[p & 0xFFF] = data;
 	} else if (p - 0xFF80u >= 0x7Fu) {

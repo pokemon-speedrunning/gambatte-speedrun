@@ -208,8 +208,14 @@ struct SaveState {
 		unsigned long cycleCounter;
 	} spu;
 
+	struct Time {
+		unsigned long seconds;
+		unsigned long lastTimeSec;
+		unsigned long lastTimeUsec;
+		unsigned long lastCycles;
+	} time;
+
 	struct RTC {
-		unsigned long baseTime;
 		unsigned long haltTime;
 		unsigned char dataDh;
 		unsigned char dataDl;
@@ -220,7 +226,6 @@ struct SaveState {
 	} rtc;
     
     struct HuC3 {
-        unsigned long baseTime;
         unsigned long haltTime;
         unsigned long dataTime;
         unsigned long writingTime;

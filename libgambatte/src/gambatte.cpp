@@ -166,6 +166,10 @@ void GB::setTrueColors(bool trueColors) {
 	p_->cpu.setTrueColors(trueColors);
 }
 
+void GB::setTimeMode(bool useCycles) {
+	p_->cpu.setTimeMode(useCycles);
+}
+
 bool GB::loadState(std::string const &filepath) {
 	if (p_->cpu.loaded()) {
 		p_->cpu.saveSavedata();

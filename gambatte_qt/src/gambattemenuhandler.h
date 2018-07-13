@@ -180,6 +180,8 @@ private:
 	QAction *recentFileActs_[max_recent_files];
 	QAction *pauseAction_;
 	QAction *syncFrameRateAction_;
+	QAction *cycleBasedAction_;
+	QAction *realTimeAction_;
     QAction *trueColorsAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
@@ -191,6 +193,7 @@ private:
 	int pauseInc_;
     bool isResetting_;
 	unsigned resetDelay_;
+	bool rtcMode_;
 
 	void loadFile(QString const &fileName);
 	void setCurrentFile(QString const &fileName);
@@ -238,6 +241,7 @@ private slots:
 	void escPressed();
 	void videoBlitterFailure();
 	void audioEngineFailure();
+	void setRtcMode();
 	void toggleFullScreen();
 	void saveWindowSizeIfNotFullScreen();
     void startResetting();

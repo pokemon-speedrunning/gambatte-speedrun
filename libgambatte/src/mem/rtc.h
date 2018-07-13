@@ -19,7 +19,7 @@
 #ifndef RTC_H
 #define RTC_H
 
-#include <ctime>
+#include "time.h"
 
 namespace gambatte {
 
@@ -27,14 +27,12 @@ struct SaveState;
 
 class Rtc {
 public:
-	Rtc();
+	Rtc(Time &time);
 	unsigned char const * activeData() const { return activeData_; }
-	std::time_t baseTime() const { return baseTime_; }
-	void setBaseTime(std::time_t baseTime) { baseTime_ = baseTime; }
 
-	void latch(unsigned data) {
+	void latch(unsigned data, unsigned long const cc) {
 		if (!lastLatchData_ && data == 1)
-			doLatch();
+			doLatch(cc);
 
 		lastLatchData_ = data;
 	}
@@ -51,15 +49,15 @@ public:
 		doSwapActive();
 	}
 
-	void write(unsigned data) {
-		(this->*activeSet_)(data);
+	void write(unsigned data, unsigned long const cc) {
+		(this->*activeSet_)(data, cc);
 		*activeData_ = data;
 	}
 
 private:
+	Time &time_;
 	unsigned char *activeData_;
-	void (Rtc::*activeSet_)(unsigned);
-	std::time_t baseTime_;
+	void (Rtc::*activeSet_)(unsigned, unsigned long);
 	std::time_t haltTime_;
 	unsigned char index_;
 	unsigned char dataDh_;
@@ -70,13 +68,17 @@ private:
 	bool enabled_;
 	bool lastLatchData_;
 
-	void doLatch();
+	void doLatch(unsigned long cycleCounter);
 	void doSwapActive();
-	void setDh(unsigned newDh);
-	void setDl(unsigned newLowdays);
-	void setH(unsigned newHours);
-	void setM(unsigned newMinutes);
-	void setS(unsigned newSeconds);
+	void setDh(unsigned newDh, unsigned long cycleCounter);
+	void setDl(unsigned newLowdays, unsigned long cycleCounter);
+	void setH(unsigned newHours, unsigned long cycleCounter);
+	void setM(unsigned newMinutes, unsigned long cycleCounter);
+	void setS(unsigned newSeconds, unsigned long cycleCounter);
+
+	std::time_t time(unsigned long const cc) {
+		return dataDh_ & 0x40 ? haltTime_ : time_.get(cc);
+	}
 };
 
 }

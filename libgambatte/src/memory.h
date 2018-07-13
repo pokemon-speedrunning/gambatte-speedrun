@@ -44,8 +44,8 @@ public:
 	void setStatePtrs(SaveState &state);
 	unsigned long saveState(SaveState &state, unsigned long cc);
 	void loadState(SaveState const &state);
-	void loadSavedata() { cart_.loadSavedata(); }
-	void saveSavedata() { cart_.saveSavedata(); }
+	void loadSavedata(unsigned long const cc) { cart_.loadSavedata(cc); }
+	void saveSavedata(unsigned long const cc) { cart_.saveSavedata(cc); }
 	std::string const saveBasePath() const { return cart_.saveBasePath(); }
 
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) {
@@ -128,6 +128,10 @@ public:
 	void setTrueColors(bool trueColors) {
 		lcd_.setTrueColors(trueColors);
 		sgb_.setTrueColors(trueColors);
+	}
+
+	void setTimeMode(bool useCycles, unsigned long const cc) {
+		cart_.setTimeMode(useCycles, cc);
 	}
 
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }

@@ -20,6 +20,7 @@
 #include "counterdef.h"
 #include "savestate.h"
 #include "sound/sound_unit.h"
+#include "mem/time.h"
 #include <algorithm>
 #include <cstring>
 #include <ctime>
@@ -1345,8 +1346,12 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.spu.ch4.nr4 = 0;
 	state.spu.ch4.master = false;
 
-	state.rtc.baseTime = std::time(0);
-	state.rtc.haltTime = state.rtc.baseTime;
+	state.time.seconds = 0;
+	state.time.lastTimeSec = Time::now().tv_sec;
+	state.time.lastTimeUsec = Time::now().tv_usec;
+	state.time.lastCycles = state.cpu.cycleCounter;
+
+	state.rtc.haltTime = state.time.seconds;
 	state.rtc.dataDh = 0;
 	state.rtc.dataDl = 0;
 	state.rtc.dataH = 0;
@@ -1354,8 +1359,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.rtc.dataS = 0;
 	state.rtc.lastLatchData = false;
     
-    state.huc3.baseTime = std::time(0);
-	state.huc3.haltTime = state.huc3.baseTime;
+	state.huc3.haltTime = state.time.seconds;
     state.huc3.dataTime = 0;
     state.huc3.writingTime = 0;
     state.huc3.halted = false;

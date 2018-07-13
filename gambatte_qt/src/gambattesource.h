@@ -72,6 +72,7 @@ public:
 
 public slots:
 	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
+	void setTimeMode(bool useCycles) { gb_.setTimeMode(useCycles); }
 
 signals:
 	void setTurbo(bool on);

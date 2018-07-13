@@ -30,6 +30,7 @@ sourceFiles = Split('''
 			src/mem/pakinfo.cpp
 			src/mem/rtc.cpp
 			src/mem/sgb.cpp
+			src/mem/time.cpp
 			src/sound/channel1.cpp
 			src/sound/channel2.cpp
 			src/sound/channel3.cpp

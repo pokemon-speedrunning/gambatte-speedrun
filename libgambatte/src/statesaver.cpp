@@ -350,7 +350,10 @@ SaverList::SaverList() {
 	{ static char const label[] = { l,e,n,NO4,v,a,l, NUL }; ADD(spu.ch4.lcounter.lengthCounter); }
 	{ static char const label[] = { n,r,NO4,NO4,       NUL }; ADD(spu.ch4.nr4); }
 	{ static char const label[] = { c,NO4,m,a,s,t,r, NUL }; ADD(spu.ch4.master); }
-	{ static char const label[] = { r,t,c,b,a,s,e, NUL }; ADD(rtc.baseTime); }
+	{ static char const label[] = { t,i,m,e,s,e,c, NUL }; ADD(time.seconds); }
+	{ static char const label[] = { t,i,m,e,l,t,s, NUL }; ADD(time.lastTimeSec); }
+	{ static char const label[] = { t,i,m,e,l,t,u, NUL }; ADD(time.lastTimeUsec); }
+	{ static char const label[] = { t,i,m,e,l,c,   NUL }; ADD(time.lastCycles); }
 	{ static char const label[] = { r,t,c,h,a,l,t, NUL }; ADD(rtc.haltTime); }
 	{ static char const label[] = { r,t,c,d,h,     NUL }; ADD(rtc.dataDh); }
 	{ static char const label[] = { r,t,c,d,l,     NUL }; ADD(rtc.dataDl); }
@@ -358,7 +361,6 @@ SaverList::SaverList() {
 	{ static char const label[] = { r,t,c,m,       NUL }; ADD(rtc.dataM); }
 	{ static char const label[] = { r,t,c,s,       NUL }; ADD(rtc.dataS); }
 	{ static char const label[] = { r,t,c,l,l,d,   NUL }; ADD(rtc.lastLatchData); }
-    { static char const label[] = { h,NO3,b,a,s,e,t, NUL }; ADD(huc3.baseTime); }
     { static char const label[] = { h,NO3,h,a,l,t,t, NUL }; ADD(huc3.haltTime); }
     { static char const label[] = { h,NO3,d,a,t,a,t, NUL }; ADD(huc3.dataTime); }
     { static char const label[] = { h,NO3,w,r,i,t,t, NUL }; ADD(huc3.writingTime); }

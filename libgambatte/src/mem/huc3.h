@@ -26,7 +26,7 @@ enum
     HUC3_NONE = 2
 };
 
-#include <ctime>
+#include "time.h"
 
 namespace gambatte {
 
@@ -34,9 +34,7 @@ struct SaveState;
 
 class HuC3Chip {
 public:
-	HuC3Chip();
-	std::time_t baseTime() const { return baseTime_; }
-	void setBaseTime(std::time_t baseTime) { baseTime_ = baseTime; }
+	HuC3Chip(Time &time);
 
 	void saveState(SaveState &state) const;
 	void loadState(SaveState const &state);
@@ -48,10 +46,10 @@ public:
 	}
     
     unsigned char read(unsigned p, unsigned long const cc);
-	void write(unsigned p, unsigned data);
+	void write(unsigned p, unsigned data, unsigned long cycleCounter);
 
 private:
-	std::time_t baseTime_;
+	Time &time_;
 	std::time_t haltTime_;
 	unsigned dataTime_;
     unsigned writingTime_;
@@ -65,8 +63,12 @@ private:
     bool halted_;
     bool irReceivingPulse_;
 
-	void doLatch();
-    void updateTime();
+	void doLatch(unsigned long cycleCounter);
+    void updateTime(unsigned long cycleCounter);
+
+	std::time_t time(unsigned long const cc) {
+		return halted_ ? haltTime_ : time_.get(cc);
+	}
 };
 
 }
