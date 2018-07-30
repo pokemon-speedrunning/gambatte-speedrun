@@ -120,7 +120,7 @@ static unsigned long mode2IrqSchedule(unsigned const statReg,
 }
 
 static unsigned long m0IrqTimeFromXpos166Time(unsigned long xpos166Time, bool cgb, bool ds) {
-	return xpos166Time + 2 + cgb - ds;
+	return xpos166Time + cgb - ds;
 }
 
 static unsigned long hdmaTimeFromM0Time(unsigned long m0Time, bool ds) {

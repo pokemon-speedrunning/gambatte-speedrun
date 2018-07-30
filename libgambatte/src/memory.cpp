@@ -361,7 +361,7 @@ unsigned long Memory::stop(unsigned long cc) {
 	cc += 4;
 
 	if (ioamhram_[0x14D] & isCgb()) {
-		psg_.generateSamples(cc, isDoubleSpeed());
+		psg_.generateSamples(cc + 4, isDoubleSpeed());
 		lcd_.speedChange((cc + 7) & ~7);
 		cart_.speedChange(cc);
 		ioamhram_[0x14D] ^= 0x81;
@@ -972,12 +972,6 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x4B:
 		lcd_.wxChange(data, cc);
 		break;
-	case 0x4C:
-		if(biosMode_) {
-			//flagClockReq(intreq_);
-		}
-		break;
-
 	case 0x4D:
 		if (isCgb())
 			ioamhram_[0x14D] = (ioamhram_[0x14D] & ~1u) | (data & 1);
@@ -1064,8 +1058,10 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		ioamhram_[0x16C] = data | 0xFE;
-		cgbSwitching_ = true;
+		if (isCgb()) {
+			ioamhram_[0x16C] = data | 0xFE;
+			cgbSwitching_ = true;
+		}
 
 		return;
 	case 0x70:
