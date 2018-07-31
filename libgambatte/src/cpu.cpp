@@ -291,8 +291,8 @@ void CPU::loadState(SaveState const &state) {
 // push rr (16 cycles):
 // Push value of register pair onto stack:
 #define push_rr(r1, r2) do { \
-	PUSH(r1, r2); \
 	cycleCounter += 4; \
+	PUSH(r1, r2); \
 } while (0)
 
 // pop rr (12 cycles):
@@ -475,8 +475,9 @@ void CPU::loadState(SaveState const &state) {
 // rst n (16 Cycles):
 // Push present address onto stack, jump to address n (one of 00h,08h,10h,18h,20h,28h,30h,38h):
 #define rst_n(n) do { \
+	cycleCounter += 4; \
 	PUSH(pc >> 8, pc & 0xFF); \
-	PC_MOD(n); \
+	pc = n; \
 } while (0)
 
 // ret (16 cycles):
