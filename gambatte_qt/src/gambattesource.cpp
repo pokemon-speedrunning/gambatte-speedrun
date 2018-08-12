@@ -162,7 +162,7 @@ GambatteSource::GambatteSource()
 , resetFade_(32)
 , resetLimit_(37)
 {
-	gb_.setInputGetter(&inputGetter_);
+	gb_.setInputGetter((gambatte::InputGetter *)&GetInput::get, &inputGetter_);
 }
 
 InputDialog * GambatteSource::createInputDialog() {

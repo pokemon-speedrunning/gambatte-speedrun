@@ -35,16 +35,17 @@ public:
 	~GB();
 
 	enum LoadFlag {
-		CGB_MODE         = 1, /**< Treat the ROM as having CGB support regardless of
-		                           what its header advertises. */
-		GBA_FLAG         = 2, /**< Use GBA intial CPU register values when in CGB mode. */
-		MULTICART_COMPAT = 4, /**< Use heuristics to detect and support some multicart
-		                           MBCs disguised as MBC1. */
-		SGB_MODE         = 8  /**< Treat the ROM as having SGB support regardless of
-		                           what its header advertises. */
+		CGB_MODE         = 1,  /**< Treat the ROM as having CGB support regardless of
+		                            what its header advertises. */
+		GBA_FLAG         = 2,  /**< Use GBA intial CPU register values when in CGB mode. */
+		MULTICART_COMPAT = 4,  /**< Use heuristics to detect and support some multicart
+		                            MBCs disguised as MBC1. */
+		SGB_MODE         = 8,  /**< Treat the ROM as having SGB support regardless of
+		                            what its header advertises. */
+		READONLY_SAV     = 16  /**< Prevent implicit saveSavedata calls for the ROM. */
 	};
 
-	 /*
+	/**
 	  * Load ROM image.
 	  *
 	  * @param romfile  Path to rom image file. Typically a .gbc, .gb, or .zip-file (if
@@ -54,7 +55,15 @@ public:
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
 
-	unsigned int loadBios(std::string const &biosfile, std::size_t size, unsigned crc);
+	/**
+	  * Load bios image.
+	  *
+	  * @param biosfile  Path to bios image file. Typically a .bin-file.
+	  * @param size      File size requirement or 0.
+	  * @param crc       File crc32 requirement or 0.
+	  * @return 0 on success, negative value on failure.
+	  */
+	int loadBios(std::string const &biosfile, std::size_t size = 0, unsigned crc = 0);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
@@ -91,7 +100,7 @@ public:
 	  * Reset to initial state.
 	  * Equivalent to reloading a ROM image, or turning a Game Boy Color off and on again.
 	  */
-	void reset(std::string const &build);
+	void reset(std::string const &build = "");
 
 	/**
 	  * @param palNum 0 <= palNum < 3. One of BG_PALETTE, SP1_PALETTE and SP2_PALETTE.
@@ -106,7 +115,7 @@ public:
 	void setTimeMode(bool useCycles);
 
 	/** Sets the callback used for getting input state. */
-	void setInputGetter(InputGetter *getInput);
+	void setInputGetter(InputGetter *getInput, void *p);
 
 	/**
 	  * Sets the directory used for storing save data. The default is the same directory as
@@ -160,6 +169,24 @@ public:
 	bool loadState(std::string const &filepath);
 
 	/**
+	  * Saves emulator state to the buffer given by 'stateBuf'.
+	  *
+	  * @param  videoBuf 160x144 RGB32 (native endian) video frame buffer or 0. Used for
+	  *                  saving a thumbnail.
+	  * @param  pitch distance in number of pixels (not bytes) from the start of one line
+	  *               to the next in videoBuf.
+	  * @return size
+	  */
+	std::size_t saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitch,
+	                      char *stateBuf);
+
+	/**
+	  * Loads emulator state from the buffer given by 'stateBuf' of size 'size'.
+	  * @return success
+	  */
+	bool loadState(char const *stateBuf, std::size_t size);
+
+	/**
 	  * Selects which state slot to save state to or load state from.
 	  * There are 10 such slots, numbered from 0 to 9 (periodically extended for all n).
 	  */
@@ -189,6 +216,40 @@ public:
 	  * @param codes Game Shark codes in format 01HHHHHH;01HHHHHH;... where H is [0-9]|[A-F]
 	  */
 	void setGameShark(std::string const &codes);
+
+	/**
+	  * Read a single byte from the CPU bus. This includes all RAM, ROM, MMIO, etc as
+	  * it is visible to the CPU (including mappers). While there is no cycle cost to
+	  * these reads, there may be other side effects! Use at your own risk.
+	  *
+	  * @param addr system bus address
+	  * @return byte read
+	  */
+	unsigned char externalRead(unsigned short addr);
+
+	/**
+	  * Write a single byte to the CPU bus. While there is no cycle cost to these
+	  * writes, there can be quite a few side effects. Use at your own risk.
+	  *
+	  * @param addr system bus address
+	  * @param val  byte to write
+	  */
+	void externalWrite(unsigned short addr, unsigned char val);
+
+	/**
+	  * Get reg and flag values.
+	  * @param dest length of at least 10, please
+	  */
+	void getRegs(int *dest);
+
+	/**
+	  * Sets addresses the CPU will interrupt processing at before the instruction.
+	  * Format is 0xBBAAAA where AAAA is an address and BB is an optional ROM bank.
+	  */
+	void setInterruptAddresses(int *addrs, int numAddrs);
+	
+	/** Gets the address the CPU was interrupted at or -1 if stopped normally. */
+	int getHitInterruptAddress();
 
 private:
 	struct Priv;

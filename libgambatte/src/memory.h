@@ -23,6 +23,7 @@ static unsigned char const agbOverride[0xD] = { 0xFF, 0x00, 0xCD, 0x03, 0x35, 0x
 
 #include "mem/cartridge.h"
 #include "mem/sgb.h"
+#include "inputgetter.h"
 #include "interrupter.h"
 #include "pakinfo.h"
 #include "sound.h"
@@ -32,7 +33,6 @@ static unsigned char const agbOverride[0xD] = { 0xFF, 0x00, 0xCD, 0x03, 0x35, 0x
 
 namespace gambatte {
 
-class InputGetter;
 class FilterInfo;
 
 class Memory {
@@ -40,6 +40,7 @@ public:
 	explicit Memory(Interrupter const &interrupter, unsigned short &sp, unsigned short &pc);
 	~Memory();
 	bool loaded() const { return cart_.loaded(); }
+	unsigned char curRomBank() const { return cart_.curRomBank(); }
 	char const * romTitle() const { return cart_.romTitle(); }
 	PakInfo const pakInfo(bool multicartCompat) const { return cart_.pakInfo(multicartCompat); }
 	void setStatePtrs(SaveState &state);
@@ -107,7 +108,12 @@ public:
 	unsigned long resetCounters(unsigned long cycleCounter);
 	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);
 	void setSaveDir(std::string const &dir) { cart_.setSaveDir(dir); }
-	void setInputGetter(InputGetter *getInput) { getInput_ = getInput; }
+
+	void setInputGetter(InputGetter *getInput, void *p) {
+		getInput_ = getInput;
+		getInputP_ = p;
+	}
+
 	void setEndtime(unsigned long cc, unsigned long inc);
 	void setSoundBuffer(uint_least32_t *buf) { psg_.setBuffer(buf); }
 	std::size_t fillSoundBuffer(unsigned long cc);
@@ -154,6 +160,7 @@ private:
 	unsigned char *bios_;
 	std::size_t biosSize_;
 	InputGetter *getInput_;
+	void *getInputP_;
 	unsigned long divLastUpdate_;
 	unsigned long lastOamDmaUpdate_;
 	InterruptRequester intreq_;

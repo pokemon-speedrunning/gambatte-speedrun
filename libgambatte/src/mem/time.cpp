@@ -32,6 +32,11 @@ static timeval operator-(timeval l, timeval r) {
 	return t;
 }
 
+Time::Time()
+: useCycles_(true)
+{
+}
+
 void Time::saveState(SaveState &state, unsigned long const cc) {
 	if (useCycles_)
 		timeFromCycles(cc);

@@ -436,7 +436,7 @@ void Memory::updateInput() {
 
 	if ((ioamhram_[0x100] & 0x30) != 0x30) {
 		if (getInput_) {
-			unsigned input = (*getInput_)();
+			unsigned input = (*getInput_)(getInputP_);
 			unsigned dpad_state = ~input >> 4;
 			unsigned button_state = ~input;
 			if (!(ioamhram_[0x100] & 0x10))

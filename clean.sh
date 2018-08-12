@@ -3,8 +3,8 @@
 echo "cd gambatte_qt && make distclean"
 (cd gambatte_qt && make distclean)
 
-echo "cd libgambatte && scons -c"
-(cd libgambatte && scons -c)
+echo "cd libgambatte && scons -c ."
+(cd libgambatte && scons -c .)
 
 echo "rm -f *gambatte*/config.log"
 rm -f *gambatte*/config.log

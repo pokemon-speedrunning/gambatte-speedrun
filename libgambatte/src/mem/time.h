@@ -34,6 +34,7 @@ public:
 		return t;
 	}
 
+	Time();
 	void saveState(SaveState &state, unsigned long cycleCounter);
 	void loadState(SaveState const &state);
 

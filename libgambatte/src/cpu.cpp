@@ -492,6 +492,8 @@ void CPU::process(unsigned long const cycles) {
 	mem_.setEndtime(cycleCounter_, cycles);
 	mem_.updateInput();
 
+	hitInterruptAddress = -1;
+
 	unsigned char a = a_;
 	unsigned long cycleCounter = cycleCounter_;
 
@@ -505,6 +507,23 @@ void CPU::process(unsigned long const cycles) {
 			}
 		} else while (cycleCounter < mem_.nextEventTime()) {
 			unsigned char opcode;
+
+#ifdef DLLABLES
+			for (int i = 0; i < numInterruptAddresses; ++i) {
+				if (pc == (interruptAddresses[i] & 0xFFFF)) {
+					unsigned bank = interruptAddresses[i] >> 16;
+
+					if (!bank || bank == mem_.curRomBank()) {
+						hitInterruptAddress = interruptAddresses[i];
+						mem_.setEndtime(cycleCounter, 0);
+						break;
+					}
+				}
+			}
+
+			if (hitInterruptAddress != -1)
+				break;
+#endif
 
 			PC_READ(opcode);
 
@@ -2033,6 +2052,30 @@ void CPU::process(unsigned long const cycles) {
 
 	a_ = a;
 	cycleCounter_ = cycleCounter;
+}
+
+void CPU::getRegs(int *dest) {
+	hf2 = updateHf2FromHf1(hf1, hf2);
+
+	dest[0] = pc_;
+	dest[1] = sp;
+	dest[2] = a_;
+	dest[3] = b;
+	dest[4] = c;
+	dest[5] = d;
+	dest[6] = e;
+	dest[7] = toF(hf2, cf, zf);
+	dest[8] = h;
+	dest[9] = l;
+}
+
+void CPU::setInterruptAddresses(int *addrs, int numAddrs) {
+	interruptAddresses = addrs;
+	numInterruptAddresses = numAddrs;
+}
+
+int CPU::getHitInterruptAddress() {
+	return hitInterruptAddress;
 }
 
 }

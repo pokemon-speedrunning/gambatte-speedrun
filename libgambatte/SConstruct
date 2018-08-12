@@ -56,4 +56,12 @@ else:
 
 conf.Finish()
 
-env.Library('gambatte', sourceFiles)
+lib = env.Library('gambatte', sourceFiles)
+
+slib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
+                         CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES',
+                         LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
+                         LIBS = ['z'])
+
+env.Default(lib)
+env.Alias('slib', slib)

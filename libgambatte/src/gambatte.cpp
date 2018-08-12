@@ -49,12 +49,16 @@ struct GB::Priv {
 	unsigned criticalLoadflags() {
 		return loadflags & (CGB_MODE | SGB_MODE);
 	}
+
+	bool implicitSave() {
+		return !(loadflags & READONLY_SAV);
+	}
 };
 
 GB::GB() : p_(new Priv) {}
 
 GB::~GB() {
-	if (p_->cpu.loaded())
+	if (p_->cpu.loaded() && p_->implicitSave())
 		p_->cpu.saveSavedata();
 
 	delete p_;
@@ -79,7 +83,8 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 
 void GB::reset(std::string const &build) {
 	if (p_->cpu.loaded()) {
-		p_->cpu.saveSavedata();
+		if (p_->implicitSave())
+			p_->cpu.saveSavedata();
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
@@ -87,12 +92,14 @@ void GB::reset(std::string const &build) {
 		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
-		p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
+
+		if (!build.empty())
+			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
 	}
 }
 
-void GB::setInputGetter(InputGetter *getInput) {
-	p_->cpu.setInputGetter(getInput);
+void GB::setInputGetter(InputGetter *getInput, void *p) {
+	p_->cpu.setInputGetter(getInput, p);
 }
 
 void GB::setSaveDir(std::string const &sdir) {
@@ -100,7 +107,7 @@ void GB::setSaveDir(std::string const &sdir) {
 }
 
 LoadRes GB::load(std::string const &romfile, unsigned const flags) {
-	if (p_->cpu.loaded())
+	if (p_->cpu.loaded() && p_->implicitSave())
 		p_->cpu.saveSavedata();
 
 	LoadRes const loadres = p_->cpu.load(romfile,
@@ -121,29 +128,33 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 	return loadres;
 }
 
-unsigned int GB::loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
+int GB::loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
 	scoped_ptr<File> const bios(newFileInstance(biosfile));
-	unsigned char newBiosBuffer[size], maskedBiosBuffer[size];
-	std::size_t sz;
 	
 	if (bios->fail())
 		return -1;
 	
-	sz = bios->size();
-	if (sz != size)
+	std::size_t sz = bios->size();
+	
+	if (size != 0 && sz != size)
 		return -2;
 	
+	unsigned char newBiosBuffer[sz];
 	bios->read((char *)newBiosBuffer, sz);
+	
 	if (bios->fail())
 		return -1;
 	
-	std::memcpy(maskedBiosBuffer, newBiosBuffer, sz);
-	maskedBiosBuffer[0xFD] = 0;
-	if (crc32(0, maskedBiosBuffer, sz) != crc)
-		return -3;
+	if (crc != 0) {
+		unsigned char maskedBiosBuffer[sz];
+		std::memcpy(maskedBiosBuffer, newBiosBuffer, sz);
+		maskedBiosBuffer[0xFD] = 0;
+
+		if (crc32(0, maskedBiosBuffer, sz) != crc)
+			return -3;
+	}
 	
-	p_->cpu.setBios(newBiosBuffer, size);
-	
+	p_->cpu.setBios(newBiosBuffer, sz);
 	return 0;
 }
 
@@ -174,7 +185,8 @@ void GB::setTimeMode(bool useCycles) {
 
 bool GB::loadState(std::string const &filepath) {
 	if (p_->cpu.loaded()) {
-		p_->cpu.saveSavedata();
+		if (p_->implicitSave())
+			p_->cpu.saveSavedata();
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
@@ -218,6 +230,32 @@ bool GB::saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitc
 	return false;
 }
 
+std::size_t GB::saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitch,
+                          char *stateBuf) {
+	if (p_->cpu.loaded()) {
+		SaveState state;
+		p_->cpu.setStatePtrs(state);
+		p_->cpu.saveState(state);
+		return StateSaver::saveState(state, videoBuf, pitch, stateBuf, p_->criticalLoadflags());
+	}
+
+	return 0;
+}
+
+bool GB::loadState(char const *stateBuf, std::size_t size) {
+	if (p_->cpu.loaded()) {
+		SaveState state;
+		p_->cpu.setStatePtrs(state);
+
+		if (StateSaver::loadState(state, stateBuf, size, true, p_->criticalLoadflags())) {
+			p_->cpu.loadState(state);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void GB::selectState(int n) {
 	n -= (n / 10) * 10;
 	p_->stateNo = n < 0 ? n + 10 : n;
@@ -249,6 +287,30 @@ void GB::setGameGenie(std::string const &codes) {
 
 void GB::setGameShark(std::string const &codes) {
 	p_->cpu.setGameShark(codes);
+}
+
+unsigned char GB::externalRead(unsigned short addr) {
+	if (p_->cpu.loaded())
+		return p_->cpu.externalRead(addr);
+	else
+		return 0;
+}
+
+void GB::externalWrite(unsigned short addr, unsigned char val) {
+	if (p_->cpu.loaded())
+		p_->cpu.externalWrite(addr, val);
+}
+
+void GB::getRegs(int *dest) {
+	p_->cpu.getRegs(dest);
+}
+
+void GB::setInterruptAddresses(int *addrs, int numAddrs) {
+	p_->cpu.setInterruptAddresses(addrs, numAddrs);
+}
+
+int GB::getHitInterruptAddress() {
+	return p_->cpu.getHitInterruptAddress();
 }
 
 }
