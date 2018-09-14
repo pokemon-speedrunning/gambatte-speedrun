@@ -48,6 +48,10 @@ public:
 	{
 	}
 
+	virtual unsigned char curRomBank() const {
+		return 1;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		if (p < 0x2000) {
 			enableRam_ = (data & 0xF) == 0xA;
@@ -86,6 +90,10 @@ public:
 	, enableRam_(false)
 	, rambankMode_(false)
 	{
+	}
+
+	virtual unsigned char curRomBank() const {
+		return rombank_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
@@ -159,6 +167,10 @@ public:
 	{
 	}
 
+	virtual unsigned char curRomBank() const {
+		return rombank_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
@@ -229,6 +241,10 @@ public:
 	{
 	}
 
+	virtual unsigned char curRomBank() const {
+		return rombank_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p & 0x6100) {
 		case 0x0000:
@@ -269,6 +285,10 @@ public:
 	, rambank_(0)
 	, enableRam_(false)
 	{
+	}
+
+	virtual unsigned char curRomBank() const {
+		return rombank_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const cc) {
@@ -343,6 +363,10 @@ public:
 	{
 	}
 
+	virtual unsigned char curRomBank() const {
+		return rombank_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
@@ -408,6 +432,10 @@ public:
 	, rambank_(0)
     , ramflag_(0)
 	{
+	}
+
+	virtual unsigned char curRomBank() const {
+		return rombank_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
@@ -487,6 +515,10 @@ public:
 	, rambank_(0)
 	, enableRam_(false)
 	{
+	}
+
+	virtual unsigned char curRomBank() const {
+		return rombank_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {

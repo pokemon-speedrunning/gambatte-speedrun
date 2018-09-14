@@ -242,7 +242,7 @@ static bool frameBufsEqual(
 		gambatte::uint_least32_t const lhs[],
 		gambatte::uint_least32_t const rhs[]) {
 	for (std::size_t i = 0; i < framebuf_size; ++i) {
-		if ((lhs[i] ^ rhs[i]) & 0xFCFCFC)
+		if ((lhs[i] ^ rhs[i]) & 0xF8F8F8)
 			return false;
 	}
 
@@ -276,17 +276,37 @@ static void runTestRom(
 		gambatte::uint_least32_t framebuf[],
 		gambatte::uint_least32_t audiobuf[],
 		std::string const &file,
-		bool const forceDmg) {
+		bool const cgb) {
 	gambatte::GB gb;
 
-	if (gb.load(file, forceDmg)) {
+	if (cgb) {
+		if (gb.loadBios("bios.gbc", 0x900, 0x31672598)) {
+			std::fprintf(stderr, "Failed to load bios image file bios.gbc\n");
+			std::abort();
+		}
+	} else {
+		if (gb.loadBios("bios.gb", 0x100, 0x580A33B9)) {
+			std::fprintf(stderr, "Failed to load bios image file bios.gb\n");
+			std::abort();
+		}
+	}
+
+	if (gb.load(file, cgb * gambatte::GB::LoadFlag::CGB_MODE)) {
 		std::fprintf(stderr, "Failed to load ROM image file %s\n", file.c_str());
 		std::abort();
 	}
 
-	std::putchar(gb.isCgb() ? 'c' : 'd');
+	if (!cgb) {
+		for (int i = 0; i < 12; ++i)
+			gb.setDmgPaletteColor(i / 4, i % 4, (3 - (i & 3)) * 85 * 0x010101ul);
+	}
 
-	long samplesLeft = samples_per_frame * 15;
+	gb.setTrueColors(false);
+
+	std::putchar(cgb ? 'c' : 'd');
+	std::fflush(stdout);
+
+	long samplesLeft = samples_per_frame * ((cgb ? 186 : 334) + 15);
 
 	while (samplesLeft >= 0) {
 		std::size_t samples = samples_per_frame;
@@ -295,17 +315,17 @@ static void runTestRom(
 	}
 }
 
-static bool runStrTest(std::string const &romfile, bool forceDmg, std::string const &outstr) {
+static bool runStrTest(std::string const &romfile, bool cgb, std::string const &outstr) {
 	gambatte::uint_least32_t audiobuf[audiobuf_size];
 	gambatte::uint_least32_t framebuf[framebuf_size];
-	runTestRom(framebuf, audiobuf, romfile, forceDmg);
+	runTestRom(framebuf, audiobuf, romfile, cgb);
 	return evaluateStrTestResults(audiobuf, framebuf, romfile, outstr);
 }
 
-static bool runPngTest(std::string const &romfile, bool forceDmg, std::FILE &pngfile) {
+static bool runPngTest(std::string const &romfile, bool cgb, std::FILE &pngfile) {
 	gambatte::uint_least32_t audiobuf[audiobuf_size];
 	gambatte::uint_least32_t framebuf[framebuf_size];
-	runTestRom(framebuf, audiobuf, romfile, forceDmg);
+	runTestRom(framebuf, audiobuf, romfile, cgb);
 
 	gambatte::uint_least32_t pngbuf[framebuf_size];
 	readPng(pngbuf, pngfile);
@@ -349,25 +369,25 @@ int main(int const argc, char *argv[]) {
 				cgbout = "_out";
 		}
 		if (cgbout) {
-			numTestsSucceeded += runStrTest(argv[i], false, cgbout);
+			numTestsSucceeded += runStrTest(argv[i],  true, cgbout);
 			++numTestsRun;
 		}
 		if (dmgout) {
-			numTestsSucceeded += runStrTest(argv[i],  true, dmgout);
+			numTestsSucceeded += runStrTest(argv[i], false, dmgout);
 			++numTestsRun;
 		}
 
 		if (file_ptr png = openFile(s + "_dmg08_cgb04c.png")) {
-			numTestsSucceeded += runPngTest(argv[i], false, *png);
 			numTestsSucceeded += runPngTest(argv[i],  true, *png);
+			numTestsSucceeded += runPngTest(argv[i], false, *png);
 			numTestsRun += 2;
 		} else {
 			if (file_ptr p = openFile(s + "_cgb04c.png")) {
-				numTestsSucceeded += runPngTest(argv[i], false, *p);
+				numTestsSucceeded += runPngTest(argv[i],  true, *p);
 				++numTestsRun;
 			}
 			if (file_ptr p = openFile(s + "_dmg08.png")) {
-				numTestsSucceeded += runPngTest(argv[i],  true, *p);
+				numTestsSucceeded += runPngTest(argv[i], false, *p);
 				++numTestsRun;
 			}
 		}

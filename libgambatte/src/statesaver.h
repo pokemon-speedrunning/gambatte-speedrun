@@ -34,10 +34,17 @@ public:
 	enum { ss_width = 160 >> ss_shift };
 	enum { ss_height = 144 >> ss_shift };
 
+	static std::size_t saveState(SaveState const &state,
+			uint_least32_t const *videoBuf, std::ptrdiff_t pitch,
+			char *stateBuf, int mode);
+	static bool loadState(SaveState &state,
+			char const *stateBuf, std::size_t size, bool checkMode, int mode);
+
 	static bool saveState(SaveState const &state,
 			uint_least32_t const *videoBuf, std::ptrdiff_t pitch,
 			std::string const &filename, int mode);
-	static bool loadState(SaveState &state, std::string const &filename, bool checkMode, int mode);
+	static bool loadState(SaveState &state,
+			std::string const &filename, bool checkMode, int mode);
 
 private:
 	StateSaver();

@@ -93,10 +93,10 @@ private:
 	Q_OBJECT
 
 	struct GbVidBuf;
-	struct GetInput : gambatte::InputGetter {
+	struct GetInput {
 		unsigned is;
 		GetInput() : is(0) {}
-		virtual unsigned operator()() { return is; }
+		static unsigned get(GetInput *p) { return p->is; }
 	};
 
 	gambatte::GB gb_;

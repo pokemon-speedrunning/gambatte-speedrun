@@ -37,8 +37,8 @@ static unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
 }
 
 Sgb::Sgb()
-: transfer(0xFF),
-  pending(0xFF)
+: transfer(0xFF)
+, pending(0xFF)
 {
 }
 

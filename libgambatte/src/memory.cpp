@@ -320,35 +320,37 @@ unsigned long Memory::event(unsigned long cc) {
 		}
 
 		if (ime()) {
-            // non-atomic interrupt fix for yellow TIDs
-            cc += 12;
-            lcd_.update(cc);
-            sp_ = (sp_ - 2) & 0xFFFF;
-            write(sp_ + 1, pc_ >> 8, cc);
-            unsigned ie = intreq_.iereg();
-            
-            cc += 4;
-            lcd_.update(cc);
-            write(sp_, pc_ & 0xFF, cc);
-            unsigned const pendingIrqs = ie & intreq_.ifreg();
-            
-            cc += 4;
-            lcd_.update(cc);
+			cc += 12;
+
+			sp_ = (sp_ - 1) & 0xFFFF;
+			write(sp_, pc_ >> 8, cc);
+
+			cc += 4;
+
+			updateIrqs(cc);
+			unsigned const pendingIrqs = intreq_.pendingIrqs();
+
+			sp_ = (sp_ - 1) & 0xFFFF;
+			write(sp_, pc_ & 0xFF, cc);
+
+			cc += 2;
+
 			unsigned const n = pendingIrqs & -pendingIrqs;
 			unsigned address;
-            if (n == 0) {
-                address = 0;
-            }
-			else if (n <= 4) {
+			if (n == 0) {
+				address = 0;
+			} else if (n <= 4) {
 				static unsigned char const lut[] = { 0x40, 0x48, 0x48, 0x50 };
 				address = lut[n-1];
 			} else
 				address = 0x50 + n;
 
+			updateIrqs(cc);
 			intreq_.ackIrq(n);
+
+			cc += 2;
+
 			pc_ = address;
-            
-            // RIP vblank cheats LUL
 		}
 
 		break;
@@ -361,7 +363,7 @@ unsigned long Memory::stop(unsigned long cc) {
 	cc += 4;
 
 	if (ioamhram_[0x14D] & isCgb()) {
-		psg_.generateSamples(cc, isDoubleSpeed());
+		psg_.generateSamples(cc + 4, isDoubleSpeed());
 		lcd_.speedChange((cc + 7) & ~7);
 		cart_.speedChange(cc);
 		ioamhram_[0x14D] ^= 0x81;
@@ -434,7 +436,7 @@ void Memory::updateInput() {
 
 	if ((ioamhram_[0x100] & 0x30) != 0x30) {
 		if (getInput_) {
-			unsigned input = (*getInput_)();
+			unsigned input = (*getInput_)(getInputP_);
 			unsigned dpad_state = ~input >> 4;
 			unsigned button_state = ~input;
 			if (!(ioamhram_[0x100] & 0x10))
@@ -972,12 +974,6 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x4B:
 		lcd_.wxChange(data, cc);
 		break;
-	case 0x4C:
-		if(biosMode_) {
-			//flagClockReq(intreq_);
-		}
-		break;
-
 	case 0x4D:
 		if (isCgb())
 			ioamhram_[0x14D] = (ioamhram_[0x14D] & ~1u) | (data & 1);
@@ -1064,8 +1060,10 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		ioamhram_[0x16C] = data | 0xFE;
-		cgbSwitching_ = true;
+		if (isCgb()) {
+			ioamhram_[0x16C] = data | 0xFE;
+			cgbSwitching_ = true;
+		}
 
 		return;
 	case 0x70:

@@ -65,6 +65,7 @@ void Channel2::setNr3(unsigned data) {
 void Channel2::setNr4(unsigned const data) {
 	lengthCounter_.nr4Change(nr4_, data, cycleCounter_);
 	nr4_ = data;
+	dutyUnit_.nr4Change(data, cycleCounter_, master_);
 
 	if (data & 0x80) { // init-bit
 		nr4_ &= 0x7F;
@@ -72,7 +73,6 @@ void Channel2::setNr4(unsigned const data) {
 		staticOutputTest_(cycleCounter_);
 	}
 
-	dutyUnit_.nr4Change(data, cycleCounter_);
 	setEvent();
 }
 

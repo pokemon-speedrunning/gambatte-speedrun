@@ -34,6 +34,7 @@ namespace gambatte {
 class Mbc {
 public:
 	virtual ~Mbc() {}
+	virtual unsigned char curRomBank() const = 0;
 	virtual void romWrite(unsigned P, unsigned data, unsigned long cycleCounter) = 0;
 	virtual void saveState(SaveState::Mem &ss) const = 0;
 	virtual void loadState(SaveState::Mem const &ss) = 0;
@@ -60,6 +61,7 @@ public:
 	void setVrambank(unsigned bank) { memptrs_.setVrambank(bank); }
 	void setWrambank(unsigned bank) { memptrs_.setWrambank(bank); }
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc) { memptrs_.setOamDmaSrc(oamDmaSrc); }
+	unsigned char curRomBank() const { return mbc_->curRomBank(); }
 	void mbcWrite(unsigned addr, unsigned data, unsigned long const cc) { mbc_->romWrite(addr, data, cc); }
 	bool isCgb() const { return gambatte::isCgb(memptrs_); }
 	void resetCc(unsigned long const oldCc, unsigned long const newCc) { time_.resetCc(oldCc, newCc); }

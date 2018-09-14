@@ -37,8 +37,8 @@ public:
 		mem_.setVideoBuffer(videoBuf, pitch);
 	}
 
-	void setInputGetter(InputGetter *getInput) {
-		mem_.setInputGetter(getInput);
+	void setInputGetter(InputGetter *getInput, void *p) {
+		mem_.setInputGetter(getInput, p);
 	}
 
 	void setSaveDir(std::string const &sdir) {
@@ -76,6 +76,18 @@ public:
 	void setBios(unsigned char *buffer, std::size_t size) { mem_.setBios(buffer, size); }
 	bool gbIsCgb() { return mem_.gbIsCgb(); }
 
+	unsigned char externalRead(unsigned short addr) {
+		return mem_.read(addr, cycleCounter_);
+	}
+
+	void externalWrite(unsigned short addr, unsigned char val) {
+		mem_.write(addr, val, cycleCounter_);
+	}
+
+	void getRegs(int *dest);
+	void setInterruptAddresses(int *addrs, int numAddrs);
+	int getHitInterruptAddress();
+
 private:
 	Memory mem_;
 	unsigned long cycleCounter_;
@@ -84,6 +96,10 @@ private:
 	unsigned hf1, hf2, zf, cf;
 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
 	bool skip_;
+
+	int *interruptAddresses;
+	int numInterruptAddresses;
+	int hitInterruptAddress;
 
 	void process(unsigned long cycles);
 };
