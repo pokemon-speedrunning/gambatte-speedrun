@@ -9,7 +9,7 @@ To build it on Debian, do:
     sudo apt install build-essential git scons zlib1g-dev qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev libasound2-dev
     git clone https://github.com/Dabomstew/gambatte-speedrun
     cd gambatte-speedrun
-    scripts/build_qt.sh
+    sh scripts/build_qt.sh
     cp gambatte_qt/bin/gambatte_qt SOMEWHERE/gsr # or w/e
     
 To build the "non-PSR" version with additional selectable platforms (GB, GBC, GBA, SGB2), create `gambatte_qt/src/platforms.pri` with the following:
