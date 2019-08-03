@@ -75,4 +75,8 @@ GBEXPORT int gambatte_gethitinterruptaddress(GB *g) {
 	return g->getHitInterruptAddress();
 }
 
+GBEXPORT int gambatte_getdivstate(GB *g) {
+    return g->getDivState();
+}
+
 }

@@ -166,7 +166,7 @@ void DwmControl::showEvent() {
 }
 
 bool DwmControl::winEvent(void const *const msg) {
-	enum { WM_DWMCOMPOSITIONCHANGED = 0x031E };
+	//enum { WM_DWMCOMPOSITIONCHANGED = 0x031E };
 
 	if (static_cast<MSG const *>(msg)->message == WM_DWMCOMPOSITIONCHANGED) {
 		std::for_each(blitters_.begin(), blitters_.end(),

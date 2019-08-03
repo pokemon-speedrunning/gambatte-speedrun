@@ -87,6 +87,10 @@ public:
 	void getRegs(int *dest);
 	void setInterruptAddresses(int *addrs, int numAddrs);
 	int getHitInterruptAddress();
+    
+    unsigned long getCycleCounter() { return cycleCounter_; }
+    unsigned long getDivLastUpdate() { return mem_.getDivLastUpdate(); }
+    unsigned char getRawIOAMHRAM(int offset) { return mem_.getRawIOAMHRAM(offset); }
 
 private:
 	Memory mem_;

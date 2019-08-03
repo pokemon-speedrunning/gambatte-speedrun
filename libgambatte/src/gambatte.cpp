@@ -313,4 +313,11 @@ int GB::getHitInterruptAddress() {
 	return p_->cpu.getHitInterruptAddress();
 }
 
+int GB::getDivState() {
+    int cc = p_->cpu.getCycleCounter();
+    int divOff = cc - p_->cpu.getDivLastUpdate();
+    int div = p_->cpu.getRawIOAMHRAM(0x104);
+    return (((div << 8) + divOff) >> 2) & 0x3FFF;
+}
+
 }

@@ -152,6 +152,9 @@ public:
 		biosSize_ = size;
 	}
 	bool gbIsCgb() { return gbIsCgb_; }
+    
+    unsigned long getDivLastUpdate() { return divLastUpdate_; }
+    unsigned char getRawIOAMHRAM(int offset) { return ioamhram_[offset]; }
 
 private:
 	Cartridge cart_;

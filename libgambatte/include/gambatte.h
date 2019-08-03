@@ -250,6 +250,9 @@ public:
 	
 	/** Gets the address the CPU was interrupted at or -1 if stopped normally. */
 	int getHitInterruptAddress();
+    
+    /** Return a value in range 0-3FFF representing current "position" of internal divider */
+    int getDivState();
 
 private:
 	struct Priv;
