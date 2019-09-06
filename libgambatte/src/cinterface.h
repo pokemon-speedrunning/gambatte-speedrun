@@ -19,6 +19,10 @@
 #ifndef CINTERFACE_H
 #define CINTERFACE_H
 
-#define GBEXPORT extern "C" __declspec(dllexport)
+#ifdef _WIN32
+# define GBEXPORT extern "C" __declspec(dllexport)
+#else
+# define GBEXPORT extern "C"
+#endif
 
 #endif

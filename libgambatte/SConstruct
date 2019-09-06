@@ -58,10 +58,23 @@ conf.Finish()
 
 lib = env.Library('gambatte', sourceFiles)
 
+def rev():
+	try:
+		from subprocess import check_output
+		stdout = check_output(['git', 'rev-list', 'HEAD', '--count'])
+		return ' -DREVISION=' + stdout.strip()
+	except:
+		return ' -DREVISION=-1'
+
+import sys
+sys_libs = ['z']
+if sys.platform == 'darwin':
+	sys_libs.append('System')
+
 slib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
-                         CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES',
+                         CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
                          LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
-                         LIBS = ['z'])
+                         LIBS = sys_libs)
 
 env.Default(lib)
 env.Alias('slib', slib)

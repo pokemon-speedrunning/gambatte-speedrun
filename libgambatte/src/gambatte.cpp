@@ -88,10 +88,10 @@ void GB::reset(std::string const &build) {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
+		p_->cpu.saveState(state);
 		unsigned flags = p_->loadflags;
 		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
-		p_->cpu.loadSavedata();
 
 		if (!build.empty())
 			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -118,6 +118,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
 		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
+		setInitStateCart(state);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 
@@ -305,12 +306,20 @@ void GB::getRegs(int *dest) {
 	p_->cpu.getRegs(dest);
 }
 
+void GB::setRegs(int *src) {
+	p_->cpu.setRegs(src);
+}
+
 void GB::setInterruptAddresses(int *addrs, int numAddrs) {
 	p_->cpu.setInterruptAddresses(addrs, numAddrs);
 }
 
 int GB::getHitInterruptAddress() {
 	return p_->cpu.getHitInterruptAddress();
+}
+
+unsigned GB::timeNow() const {
+	return p_->cpu.timeNow();
 }
 
 int GB::getDivState() {
