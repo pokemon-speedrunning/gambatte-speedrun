@@ -42,7 +42,7 @@ public:
 	}
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { isResetting_ = false; gb_.reset(GAMBATTE_QT_VERSION_STR); }
+	void reset() { isResetting_ = false; gb_.reset(QT_VERSION_STR); }
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
