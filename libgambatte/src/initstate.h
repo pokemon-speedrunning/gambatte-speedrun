@@ -22,6 +22,7 @@
 namespace gambatte {
 
 void setInitState(struct SaveState &state, bool cgb, bool agb, bool sgb);
+void setInitStateCart(struct SaveState &state);
 
 }
 

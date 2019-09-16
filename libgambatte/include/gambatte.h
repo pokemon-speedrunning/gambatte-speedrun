@@ -239,18 +239,29 @@ public:
 	/**
 	  * Get reg and flag values.
 	  * @param dest length of at least 10, please
+	  *             [pc, sp, a, b, c, d, e, f, h, l]
 	  */
 	void getRegs(int *dest);
+
+	/**
+	  * Set reg and flag values.
+	  * @param src length of at least 10, please
+	  *            [pc, sp, a, b, c, d, e, f, h, l]
+	  */
+	void setRegs(int *src);
 
 	/**
 	  * Sets addresses the CPU will interrupt processing at before the instruction.
 	  * Format is 0xBBAAAA where AAAA is an address and BB is an optional ROM bank.
 	  */
 	void setInterruptAddresses(int *addrs, int numAddrs);
-	
+
 	/** Gets the address the CPU was interrupted at or -1 if stopped normally. */
 	int getHitInterruptAddress();
-    
+
+	/** Returns the current cycle-based time counter as dividers. (2^21/sec) */
+	unsigned timeNow() const;
+
     /** Return a value in range 0-3FFF representing current "position" of internal divider */
     int getDivState();
 

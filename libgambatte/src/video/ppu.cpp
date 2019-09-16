@@ -1513,6 +1513,7 @@ PPUPriv::PPUPriv(NextM0Time &nextM0Time, unsigned char const *const oamram, unsi
 , endx(0)
 , cgb(false)
 , weMaster(false)
+, trueColors(false)
 {
 	std::memset(spriteList, 0, sizeof spriteList);
 	std::memset(spwordList, 0, sizeof spwordList);

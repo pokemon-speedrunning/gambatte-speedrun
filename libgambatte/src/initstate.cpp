@@ -1169,6 +1169,8 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 		0x83, 0x40, 0x0B, 0x77
 	};
 
+	unsigned long cc = state.cpu.cycleCounter;
+
 	state.cpu.cycleCounter = 8;
 	state.cpu.pc = 0;
 	state.cpu.sp = 0;
@@ -1184,8 +1186,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.mem.biosMode = true;
 	state.mem.cgbSwitching = false;
 	state.mem.agbFlag = cgb && agb;
-
-	std::memset(state.mem.sram.ptr, 0xFF, state.mem.sram.size());
 
 	setInitialVram(state.mem.vram.ptr, cgb);
 
@@ -1346,10 +1346,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.spu.ch4.nr4 = 0;
 	state.spu.ch4.master = false;
 
-	state.time.seconds = 0;
-	state.time.lastTimeSec = Time::now().tv_sec;
-	state.time.lastTimeUsec = Time::now().tv_usec;
-	state.time.lastCycles = state.cpu.cycleCounter;
+	state.time.lastCycles = state.time.lastCycles - (cc - state.cpu.cycleCounter);
 
 	state.rtc.haltTime = state.time.seconds;
 	state.rtc.dataDh = 0;
@@ -1366,4 +1363,13 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
     state.huc3.shift = 0;
     state.huc3.ramValue = 1;
     state.huc3.modeflag = 2; // huc3_none
+}
+
+void gambatte::setInitStateCart(SaveState &state) {
+	std::memset(state.mem.sram.ptr, 0xFF, state.mem.sram.size());
+
+	state.time.seconds = 0;
+	state.time.lastTimeSec = Time::now().tv_sec;
+	state.time.lastTimeUsec = Time::now().tv_usec;
+	state.time.lastCycles = state.cpu.cycleCounter;
 }

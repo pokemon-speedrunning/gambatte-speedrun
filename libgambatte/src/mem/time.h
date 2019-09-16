@@ -48,6 +48,8 @@ public:
 	void setBaseTime(timeval baseTime, unsigned long cycleCounter);
 	void setTimeMode(bool useCycles, unsigned long cycleCounter);
 
+	unsigned timeNow(unsigned long cycleCounter) const;
+
 private:
 	std::time_t seconds_;
 	timeval lastTime_;

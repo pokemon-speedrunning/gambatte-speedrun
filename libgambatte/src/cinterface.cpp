@@ -23,6 +23,10 @@ namespace {
 
 using namespace gambatte;
 
+GBEXPORT int gambatte_revision() {
+	return REVISION;
+}
+
 GBEXPORT GB * gambatte_create() {
 	return new GB();
 }
@@ -41,6 +45,10 @@ GBEXPORT int gambatte_loadbios(GB *g, char const *biosfile, unsigned size, unsig
 
 GBEXPORT int gambatte_runfor(GB *g, unsigned *videoBuf, int pitch, unsigned *audioBuf, unsigned *samples) {
 	return g->runFor(videoBuf, pitch, audioBuf, *(std::size_t *)samples);
+}
+
+GBEXPORT void gambatte_reset(GB *g) {
+	g->reset();
 }
 
 GBEXPORT void gambatte_setinputgetter(GB *g, InputGetter *getInput, void *p) {
@@ -67,12 +75,20 @@ GBEXPORT void gambatte_getregs(GB *g, int *dest) {
 	g->getRegs(dest);
 }
 
+GBEXPORT void gambatte_setregs(GB *g, int *src) {
+	g->setRegs(src);
+}
+
 GBEXPORT void gambatte_setinterruptaddresses(GB *g, int *addrs, int numAddrs) {
 	g->setInterruptAddresses(addrs, numAddrs);
 }
 
 GBEXPORT int gambatte_gethitinterruptaddress(GB *g) {
 	return g->getHitInterruptAddress();
+}
+
+GBEXPORT unsigned gambatte_timenow(GB *g) {
+	return g->timeNow();
 }
 
 GBEXPORT int gambatte_getdivstate(GB *g) {

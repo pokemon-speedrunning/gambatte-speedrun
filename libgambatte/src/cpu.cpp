@@ -39,6 +39,7 @@ CPU::CPU()
 , h(0x01)
 , l(0x4D)
 , skip_(false)
+, numInterruptAddresses(0)
 {
 }
 
@@ -2067,6 +2068,21 @@ void CPU::getRegs(int *dest) {
 	dest[7] = toF(hf2, cf, zf);
 	dest[8] = h;
 	dest[9] = l;
+}
+
+void CPU::setRegs(int *src) {
+	pc_ = src[0];
+	sp = src[1];
+	a_ = src[2];
+	b = src[3];
+	c = src[4];
+	d = src[5];
+	e = src[6];
+	zf  =  zfFromF(src[7]);
+	hf2 = hf2FromF(src[7]);
+	cf  =  cfFromF(src[7]);
+	h = src[8];
+	l = src[9];
 }
 
 void CPU::setInterruptAddresses(int *addrs, int numAddrs) {
