@@ -32,6 +32,7 @@
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
 #endif
+#include <fstream>
 #include <iostream>
 
 #define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
@@ -464,6 +465,10 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 		foreach (QAction *action, frameRateAdjuster->actions())
 			playm->addAction(romLoadedActions->addAction(action));
+
+		playm->addSeparator();
+		romLoadedActions->addAction(playm->addAction(
+			tr("&Save Input Log As..."), this, SLOT(saveInputLogAs())));
 
 		cmdactions += playm->actions();
 	}
@@ -1032,6 +1037,34 @@ struct LoadStateFromFun {
 	}
 };
 
+struct SaveInputLogAsFun {
+	GambatteSource &source;
+	QString fileName;
+	void operator()() const {
+		std::ofstream file(fileName.toLocal8Bit().constData(),
+			std::ios::out | std::ios::binary);
+
+		file.put(0xFE);
+		file.put(0x01); // MOVIE_VERSION
+
+		std::vector<char> state = source.inputLogState();
+		file.put(state.size() >> 16);
+		file.put(state.size() >> 8);
+		file.put(state.size());
+		file.write(state.data(), state.size());
+
+		for (std::pair<std::uint32_t, std::uint8_t> i : source.inputLog()) {
+			file.put(i.first >> 24);
+			file.put(i.first >> 16);
+			file.put(i.first >> 8);
+			file.put(i.first);
+			file.put(i.second);
+		}
+
+		file.close();
+	}
+};
+
 struct ResetFun {
 	GambatteSource &source;
 	void operator()() const { source.tryReset(); }
@@ -1095,6 +1128,21 @@ void GambatteMenuHandler::loadStateFrom() {
 		tr("Gambatte Quick Save Files (*.gqs);;All Files (*)"));
 	if (!fileName.isEmpty()) {
 		LoadStateFromFun fun = { source_, fileName };
+		mw_.callInWorkerThread(fun);
+	}
+}
+
+void GambatteMenuHandler::saveInputLogAs() {
+	if (isResetting_)
+		return;
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	QString const &fileName = QFileDialog::getSaveFileName(
+		&mw_, tr("Save Input Log"), QString(),
+		tr("Gambatte Movie Files (*.gm);;All Files(*)"));
+	if (!fileName.isEmpty()) {
+		SaveInputLogAsFun fun = { source_, fileName };
 		mw_.callInWorkerThread(fun);
 	}
 }

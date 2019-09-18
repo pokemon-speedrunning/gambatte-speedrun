@@ -232,6 +232,7 @@ private slots:
 	void saveStateAs();
 	void loadState();
 	void loadStateFrom();
+	void saveInputLogAs();
     void openSaveFolder();
 	void reset();
 	void pauseChange();

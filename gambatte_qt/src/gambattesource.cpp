@@ -301,6 +301,7 @@ std::ptrdiff_t GambatteSource::update(
 	std::ptrdiff_t const vidFrameSampleNo =
 		gb_.runFor(gbvidbuf.pixels, gbvidbuf.pitch,
 		           ptr_cast<quint32>(soundBuf), samples);
+	inputLog_.push(samples, inputGetter_.is);
 	if (vidFrameSampleNo >= 0)
 		inputDialog_->consumeAutoPress();
 
