@@ -57,7 +57,6 @@ public:
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch);
 	void setCgb(bool cgb);
 	void copyCgbPalettesToDmg();
-    void blackScreen();
 	void setTrueColors(bool trueColors);
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) { osdElement_ = osdElement; }
 
@@ -98,6 +97,7 @@ public:
 	}
 
 	void updateScreen(bool blanklcd, unsigned long cc, unsigned stage);
+	void blackScreen();
 	void resetCc(unsigned long oldCC, unsigned long newCc);
 	void speedChange(unsigned long cycleCounter);
 	bool vramAccessible(unsigned long cycleCounter);

@@ -156,11 +156,13 @@ GambatteSource::GambatteSource()
 , dpadRight_(false)
 , dpadUpLast_(false)
 , dpadLeftLast_(false)
+, tryReset_(false)
 , isResetting_(false)
 , resetFrameCount_(0)
 , resetBefore_(4)
 , resetFade_(32)
 , resetLimit_(37)
+, resetStall_(101 * (2 << 14))
 {
 	gb_.setInputGetter((gambatte::InputGetter *)&GetInput::get, &inputGetter_);
 }
@@ -225,7 +227,7 @@ void GambatteSource::joystickEvent(SDL_Event const &e) {
 }
 
 void GambatteSource::clearKeyPresses() {
-    inputDialog_->clearKeyPresses();
+	inputDialog_->clearKeyPresses();
 }
 
 struct GambatteSource::GbVidBuf {
@@ -305,33 +307,17 @@ std::ptrdiff_t GambatteSource::update(
 	if (vidFrameSampleNo >= 0)
 		inputDialog_->consumeAutoPress();
 
+	if (samplesToStall_ > 0)
+		samplesToStall_ = std::max((int)(samplesToStall_ - samples), 0);
+
 	return vidFrameSampleNo;
 }
 
 void GambatteSource::generateVideoFrame(PixelBuffer const &pb) {
 	if (void *const pbdata = getpbdata(pb, vsrci_)) {
-        if(isResetting_) {
-            resetFrameCount_++;
-            if(resetFrameCount_ == 1)
-                emit startResetting();
-            unsigned pos = std::max((int)(std::min(resetFrameCount_, resetFade_) - resetBefore_), 0);
-            float multiplier = 1 - pos / (float)(resetFade_ - resetBefore_);
-            gambatte::uint_least32_t * intData = static_cast<gambatte::uint_least32_t *> (cconvert_ ? cconvert_->inBuf() : pbdata);
-            std::ptrdiff_t pitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
-            for(unsigned y=0;y<pb.height;y++) {
-                for(unsigned x=0;x<pb.width;x++) {
-                    int b = (int) (multiplier * (intData[x] & 0xFF));
-                    int g = (int) (multiplier * ((intData[x] >> 8) & 0xFF));
-                    int r = (int) (multiplier * ((intData[x] >> 16) & 0xFF));
-                    intData[x] = b | (g << 8) | (r << 16);
-                }
-                intData += pitch;
-            }
-            
-            if(resetFrameCount_ == resetLimit_) {
-                emit pauseAndReset();
-            }
-        }
+		if (tryReset_)
+			resetStep(pb, pbdata);
+
 		setPixelBuffer(pbdata, pb.pixelFormat, pb.pitch);
 		if (vfilter_) {
 			void          *dstbuf   = cconvert_ ? cconvert_->inBuf()   : pbdata;
@@ -367,14 +353,54 @@ void GambatteSource::saveState(PixelBuffer const &pb, std::string const &filepat
 }
 
 void GambatteSource::tryReset() {
-    if(!isResetting_) {
-        isResetting_ = true;
-        resetFrameCount_ = 0;
-    }
+	if(isResetting_)
+		return;
+	tryReset_ = true;
+	resetFrameCount_ = 0;
 }
 
-void GambatteSource::setResetParams(unsigned before, unsigned fade, unsigned limit) {
+void GambatteSource::setResetting(bool state) {
+	isResetting_ = state;
+	emit resetting(state);
+}
+
+void GambatteSource::resetStep(PixelBuffer const &pb, void *const pbdata) {
+	resetFrameCount_++;
+
+	if (resetFrameCount_ == 1)
+		setResetting(true);
+
+	unsigned pos = std::max((int)(std::min(resetFrameCount_, resetFade_) - resetBefore_), 0);
+	float multiplier = 1 - pos / (float)(resetFade_ - resetBefore_);
+	gambatte::uint_least32_t *intData =
+		static_cast<gambatte::uint_least32_t *>(cconvert_ ? cconvert_->inBuf() : pbdata);
+	std::ptrdiff_t pitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
+
+	for (unsigned y = 0; y < pb.height; y++) {
+		for (unsigned x = 0; x < pb.width; x++) {
+			int b = (int)(multiplier * ( intData[x]        & 0xFF));
+			int g = (int)(multiplier * ((intData[x] >>  8) & 0xFF));
+			int r = (int)(multiplier * ((intData[x] >> 16) & 0xFF));
+			intData[x] = b | (g << 8) | (r << 16);
+		}
+		intData += pitch;
+	}
+
+	if (resetFrameCount_ == resetLimit_) {
+		reset();
+		samplesToStall_ = resetStall_;
+	}
+
+	if (resetFrameCount_ >= resetLimit_ && samplesToStall_ == 0) {
+		tryReset_ = false;
+		setResetting(false);
+	}
+}
+
+void GambatteSource::setResetParams(unsigned before, unsigned fade,
+		unsigned limit, unsigned stall) {
 	resetBefore_ = before;
 	resetFade_ = fade;
 	resetLimit_ = limit;
+	resetStall_ = stall;
 }

@@ -55,6 +55,7 @@ public:
 	}
 
 	unsigned long stop(unsigned long cycleCounter);
+	void stall(unsigned long cycleCounter, unsigned long cycles);
 	bool isCgb() const { return lcd_.isCgb(); }
 	bool ime() const { return intreq_.ime(); }
 	bool halted() const { return intreq_.halted(); }
@@ -127,10 +128,6 @@ public:
 		if (!gbIsSgb_)
 			lcd_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
-    
-    void blackScreen() {
-        lcd_.blackScreen();
-    }
 
 	void setTrueColors(bool trueColors) {
 		lcd_.setTrueColors(trueColors);

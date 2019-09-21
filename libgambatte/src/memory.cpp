@@ -186,9 +186,14 @@ unsigned long Memory::event(unsigned long cc) {
 	case intevent_unhalt:
 		intreq_.unhalt();
 		intreq_.setEventTime<intevent_unhalt>(disabled_time);
-		nontrivial_ff_write(0xFF04, 0, cc);
-		pc_ = (pc_ + 1) & 0xFFFF;
-		cc += 4;
+
+		if (stopped_) {
+			nontrivial_ff_write(0xFF04, 0, cc);
+			pc_ = (pc_ + 1) & 0xFFFF;
+			cc += 4;
+			stopped_ = false;
+		}
+
 		break;
 	case intevent_end:
 		intreq_.setEventTime<intevent_end>(disabled_time - 1);
@@ -207,10 +212,15 @@ unsigned long Memory::event(unsigned long cc) {
 			unsigned long blitTime = intreq_.eventTime(intevent_blit);
 
 			if (lcden | blanklcd_) {
-				lcd_.updateScreen(blanklcd_, cc, 0);
-				if (gbIsSgb_)
-					sgb_.updateScreen();
-				lcd_.updateScreen(blanklcd_, cc, 1);
+				if (intreq_.eventTime(intevent_unhalt) == disabled_time) {
+					lcd_.updateScreen(blanklcd_, cc, 0);
+					if (gbIsSgb_)
+						sgb_.updateScreen();
+					lcd_.updateScreen(blanklcd_, cc, 1);
+				} else {
+					lcd_.blackScreen();
+				}
+
 				intreq_.setEventTime<intevent_blit>(disabled_time);
 				intreq_.setEventTime<intevent_end>(disabled_time);
 
@@ -379,13 +389,18 @@ unsigned long Memory::stop(unsigned long cc) {
 		}
         intreq_.halt();
         intreq_.setEventTime<intevent_unhalt>(cc + 0x20000);
-	}
-	else {
-		stopped_ = true;
+	} else {
 		intreq_.halt();
+		intreq_.setEventTime<intevent_unhalt>(disabled_time);
 	}
 
+	stopped_ = true;
 	return cc;
+}
+
+void Memory::stall(unsigned long cc, unsigned long cycles) {
+	intreq_.halt();
+	intreq_.setEventTime<intevent_unhalt>(cc + cycles);
 }
 
 static void decCycles(unsigned long &counter, unsigned long dec) {

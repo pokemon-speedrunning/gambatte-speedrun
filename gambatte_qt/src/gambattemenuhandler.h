@@ -165,6 +165,7 @@ public:
 	GambatteMenuHandler(MainWindow &mw, GambatteSource &source,
 	                    int argc, char const *const argv[]);
 	~GambatteMenuHandler();
+	bool isResetting() const { return isResetting_; }
 
 private:
 	Q_OBJECT
@@ -182,7 +183,7 @@ private:
 	QAction *syncFrameRateAction_;
 	QAction *cycleBasedAction_;
 	QAction *realTimeAction_;
-    QAction *trueColorsAction_;
+	QAction *trueColorsAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
 	PaletteDialog *globalPaletteDialog_;
@@ -191,17 +192,13 @@ private:
 	WindowSizeMenu windowSizeMenu_;
 	GambattePlatformMenu gambattePlatformMenu_;
 	int pauseInc_;
-    bool isResetting_;
-	unsigned resetDelay_;
-	bool rtcMode_;
+	bool isResetting_;
 
 	void loadFile(QString const &fileName);
 	void setCurrentFile(QString const &fileName);
 	void setDmgPaletteColors();
 	void updateRecentFileActions();
 	void openBios(GambatteBiosInfo const &info);
-	void setResetParams(unsigned before, unsigned fade,
-	                    unsigned limit, unsigned delay);
 
 signals:
 	void romLoaded(bool);
@@ -233,11 +230,10 @@ private slots:
 	void loadState();
 	void loadStateFrom();
 	void saveInputLogAs();
-    void openSaveFolder();
+	void openSaveFolder();
 	void reset();
+	void setResetting(bool state);
 	void pauseChange();
-    void pauseAndReset();
-    void doReset();
 	void frameStep();
 	void escPressed();
 	void videoBlitterFailure();
@@ -245,7 +241,6 @@ private slots:
 	void setRtcMode();
 	void toggleFullScreen();
 	void saveWindowSizeIfNotFullScreen();
-    void startResetting();
 };
 
 #endif

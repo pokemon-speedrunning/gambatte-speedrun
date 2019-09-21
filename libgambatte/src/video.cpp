@@ -215,23 +215,6 @@ void LCD::copyCgbPalettesToDmg() {
 	}
 }
 
-void LCD::blackScreen() {
-    if (ppu_.cgb()) {
-        for (unsigned i = 0; i < 8 * 8; i += 2) {
-			ppu_.bgPalette()[i >> 1] = 0;
-			ppu_.spPalette()[i >> 1] = 0;
-		}
-    }
-    else {
-        for(unsigned i = 0; i < 4; i++) {
-            dmgColorsBgr15_[i] = 0;
-        }
-        for(unsigned i = 0; i < 8; i++) {
-            dmgColorsBgr15_[i + 4] = 0;
-        }
-    }
-}
-
 void LCD::setTrueColors(bool trueColors) {
 	ppu_.setTrueColors(trueColors);
 	refreshPalettes();
@@ -310,6 +293,12 @@ void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter, un
 				osdElement_.reset();
 		}
 		break;
+	}
+}
+
+void LCD::blackScreen() {
+	if (ppu_.frameBuf().fb()) {
+		clear(ppu_.frameBuf().fb(), gbcToRgb32(0x0000, isTrueColors()), ppu_.frameBuf().pitch());
 	}
 }
 

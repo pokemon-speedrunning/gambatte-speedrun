@@ -81,7 +81,7 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	     : cyclesSinceBlit;
 }
 
-void GB::reset(std::string const &build) {
+void GB::reset(std::size_t samplesToStall, std::string const &build) {
 	if (p_->cpu.loaded()) {
 		if (p_->implicitSave())
 			p_->cpu.saveSavedata();
@@ -92,6 +92,9 @@ void GB::reset(std::string const &build) {
 		unsigned flags = p_->loadflags;
 		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
+
+		if (samplesToStall > 0)
+			p_->cpu.stall(samplesToStall * 2);
 
 		if (!build.empty())
 			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
