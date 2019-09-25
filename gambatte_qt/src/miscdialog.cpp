@@ -57,13 +57,13 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 
 	addLayout(topLayout, new QHBoxLayout)->addWidget(pauseOnDialogs_.checkBox());
 	addLayout(topLayout, new QHBoxLayout)->addWidget(pauseOnFocusOut_.checkBox());
-
+#ifdef ENABLE_TURBO_BUTTONS
 	{
 		QHBoxLayout *hLayout = addLayout(topLayout, new QHBoxLayout);
 		hLayout->addWidget(new QLabel(tr("Base frame rate:")));
 		hLayout->addWidget(fpsSelector_.widget());
 	}
-
+#endif
 	if (MainWindow::hasDwmCapability()) {
 		dwmTripleBuf_.checkBox()->setToolTip(tr(
 			"Avoids excessive frame duplication when DWM composition is active. Recommended."));

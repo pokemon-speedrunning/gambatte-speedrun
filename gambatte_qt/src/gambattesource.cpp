@@ -177,9 +177,11 @@ InputDialog * GambatteSource::createInputDialog() {
 	addButton(v, &buttonInfoGbSelect, SetPressedAct(inputState_[select_but]));
 	addButton(v, &buttonInfoPause, &GambatteSource::emitPause, this);
 	addButton(v, &buttonInfoFrameStep, &GambatteSource::emitFrameStep, this);
+#ifdef ENABLE_TURBO_BUTTONS
 	addButton(v, &buttonInfoDecFrameRate, &GambatteSource::emitDecFrameRate, this);
 	addButton(v, &buttonInfoIncFrameRate, &GambatteSource::emitIncFrameRate, this);
 	addButton(v, &buttonInfoResetFrameRate, &GambatteSource::emitResetFrameRate, this);
+#endif
 	addButton(v, &buttonInfoFastFwd, CallSetterAct<&GambatteSource::emitSetTurbo>(this));
 	addButton(v, &buttonInfoReset, &GambatteSource::emitReset, this);
 	addButton(v, &buttonInfoSaveState, &GambatteSource::emitSaveState, this);

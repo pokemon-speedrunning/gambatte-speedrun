@@ -85,9 +85,11 @@ FrameRateAdjuster::FrameRateAdjuster(MiscDialog const &miscDialog, MainWindow &m
 , resetFrameRateAction_(new QAction(tr("&Reset Frame Rate"), &mw))
 , enabled_(true)
 {
+#ifdef ENABLE_TURBO_BUTTONS
 	decFrameRateAction_->setShortcut(QString("Ctrl+D"));
 	incFrameRateAction_->setShortcut(QString("Ctrl+I"));
 	resetFrameRateAction_->setShortcut(QString("Ctrl+U"));
+#endif
 
 	connect(decFrameRateAction_,   SIGNAL(triggered()), this, SLOT(decFrameRate()));
 	connect(incFrameRateAction_,   SIGNAL(triggered()), this, SLOT(incFrameRate()));
@@ -116,17 +118,21 @@ void FrameRateAdjuster::setDisabled(bool disabled) {
 }
 
 void FrameRateAdjuster::decFrameRate() {
+#ifdef ENABLE_TURBO_BUTTONS
 	if (enabled_) {
 		frameTime_.inc();
 		changed();
 	}
+#endif
 }
 
 void FrameRateAdjuster::incFrameRate() {
+#ifdef ENABLE_TURBO_BUTTONS
 	if (enabled_) {
 		frameTime_.dec();
 		changed();
 	}
+#endif
 }
 
 void FrameRateAdjuster::resetFrameRate() {
