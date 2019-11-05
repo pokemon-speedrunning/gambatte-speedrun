@@ -27,12 +27,13 @@ static unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
 	unsigned long const r = bgr15       & 0x1F;
 	unsigned long const g = bgr15 >>  5 & 0x1F;
 	unsigned long const b = bgr15 >> 10 & 0x1F;
-    
-    if (trueColor) {
-        return (r << 19) | (g << 11) | (b << 3);
-    }
 
-	return ((r * 13 + g * 2 + b) >> 1) << 16
+	if (trueColor) {
+		return (0xFF << 24) | (r << 19) | (g << 11) | (b << 3);
+	}
+
+	return 0xFF << 24
+	     | ((r * 13 + g * 2 + b) >> 1) << 16
 	     | (g * 3 + b) << 9
 	     | (r * 3 + g * 2 + b * 11) >> 1;
 }
@@ -230,7 +231,7 @@ static void blitOsdElement(uint_least32_t *d, uint_least32_t const *s,
 	while (h--) {
 		for (unsigned w = width; w--;) {
 			if (*s != OsdElement::pixel_transparent)
-				*d = blend(*s, *d);
+				*d = blend(*s & 0x00FFFFFF, *d & 0x00FFFFFF) | 0xFF000000;
 
 			++d;
 			++s;
