@@ -71,10 +71,11 @@ sys_libs = ['z']
 if sys.platform == 'darwin':
 	sys_libs.append('System')
 
-slib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
-                         CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
-                         LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
-                         LIBS = sys_libs)
+shlib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
+                          CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
+                          LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
+                          LIBS = sys_libs,
+                          SHLIBPREFIX = "lib")
 
 env.Default(lib)
-env.Alias('slib', slib)
+env.Alias('shlib', shlib)
