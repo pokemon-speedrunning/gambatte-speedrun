@@ -145,6 +145,7 @@ public:
 	bool isCgb() const { return ppu_.cgb(); }
 	bool isDoubleSpeed() const { return ppu_.lyCounter().isDoubleSpeed(); }
     bool isTrueColors() const { return ppu_.trueColors(); }
+	void setSpeedupFlags(unsigned flags) { ppu_.setSpeedupFlags(flags); }
 
 private:
 	enum Event { event_mem,

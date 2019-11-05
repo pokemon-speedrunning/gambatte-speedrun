@@ -93,6 +93,7 @@ struct PPUPriv {
 	bool cgb;
 	bool weMaster;
     bool trueColors;
+	unsigned speedupFlags;
 
 	PPUPriv(NextM0Time &nextM0Time, unsigned char const *oamram, unsigned char const *vram);
 };
@@ -139,6 +140,7 @@ public:
 	void update(unsigned long cc);
 	void setCgb(bool cgb) { p_.cgb = cgb; }
     void setTrueColors(bool trueColors) { p_.trueColors = trueColors; }
+	void setSpeedupFlags(unsigned flags) { p_.speedupFlags = flags; }
 
 private:
 	PPUPriv p_;

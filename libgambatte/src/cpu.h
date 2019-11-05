@@ -96,6 +96,8 @@ public:
     unsigned long getDivLastUpdate() { return mem_.getDivLastUpdate(); }
     unsigned char getRawIOAMHRAM(int offset) { return mem_.getRawIOAMHRAM(offset); }
 
+	void setSpeedupFlags(unsigned flags) { mem_.setSpeedupFlags(flags); }
+
 private:
 	Memory mem_;
 	unsigned long cycleCounter_;

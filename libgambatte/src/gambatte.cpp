@@ -332,4 +332,8 @@ int GB::getDivState() {
     return (((div << 8) + divOff) >> 2) & 0x3FFF;
 }
 
+void GB::setSpeedupFlags(unsigned flags) {
+	p_->cpu.setSpeedupFlags(flags);
+}
+
 }

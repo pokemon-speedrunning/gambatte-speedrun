@@ -17,6 +17,7 @@
 //
 
 #include "ppu.h"
+#include "gambatte.h"
 #include "savestate.h"
 #include <algorithm>
 #include <cstring>
@@ -382,29 +383,31 @@ static void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *c
 			uint_least32_t *const dstend = dst + n;
 			xpos += n;
 
-			if (!lcdcBgEn(p)) {
-				do { *dst++ = p.bgPalette[0]; } while (dst != dstend);
-				tileMapXpos += n >> 3;
+			if (!(p.speedupFlags & GB::NO_VIDEO)) {
+				if (!lcdcBgEn(p)) {
+					do { *dst++ = p.bgPalette[0]; } while (dst != dstend);
+					tileMapXpos += n >> 3;
 
-				unsigned const tno = tileMapLine[(tileMapXpos - 1) & 0x1F];
-				ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
-				          + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
-			} else do {
-				dst[0] = p.bgPalette[ ntileword & 0x0003       ];
-				dst[1] = p.bgPalette[(ntileword & 0x000C) >>  2];
-				dst[2] = p.bgPalette[(ntileword & 0x0030) >>  4];
-				dst[3] = p.bgPalette[(ntileword & 0x00C0) >>  6];
-				dst[4] = p.bgPalette[(ntileword & 0x0300) >>  8];
-				dst[5] = p.bgPalette[(ntileword & 0x0C00) >> 10];
-				dst[6] = p.bgPalette[(ntileword & 0x3000) >> 12];
-				dst[7] = p.bgPalette[ ntileword           >> 14];
-				dst += 8;
+					unsigned const tno = tileMapLine[(tileMapXpos - 1) & 0x1F];
+					ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
+							  + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
+				} else do {
+					dst[0] = p.bgPalette[ ntileword & 0x0003       ];
+					dst[1] = p.bgPalette[(ntileword & 0x000C) >>  2];
+					dst[2] = p.bgPalette[(ntileword & 0x0030) >>  4];
+					dst[3] = p.bgPalette[(ntileword & 0x00C0) >>  6];
+					dst[4] = p.bgPalette[(ntileword & 0x0300) >>  8];
+					dst[5] = p.bgPalette[(ntileword & 0x0C00) >> 10];
+					dst[6] = p.bgPalette[(ntileword & 0x3000) >> 12];
+					dst[7] = p.bgPalette[ ntileword           >> 14];
+					dst += 8;
 
-				unsigned const tno = tileMapLine[tileMapXpos & 0x1F];
-				tileMapXpos = (tileMapXpos & 0x1F) + 1;
-				ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
-				          + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
-			} while (dst != dstend);
+					unsigned const tno = tileMapLine[tileMapXpos & 0x1F];
+					tileMapXpos = (tileMapXpos & 0x1F) + 1;
+					ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
+							  + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
+				} while (dst != dstend);
+			}
 
 			p.ntileword = ntileword;
 			continue;
@@ -416,7 +419,7 @@ static void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *c
 			p.cycles = cycles;
 		}
 
-		{
+		if (!(p.speedupFlags & GB::NO_VIDEO)) {
 			uint_least32_t *const dst = dbufline + (xpos - 8);
 			unsigned const tileword = -(p.lcdc & 1U) & p.ntileword;
 
@@ -563,29 +566,31 @@ static void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *c
 			uint_least32_t *const dstend = dst + n;
 			xpos += n;
 
-			do {
-				unsigned long const *const bgPalette = p.bgPalette + (nattrib & 7) * 4;
-				dst[0] = bgPalette[ ntileword & 0x0003       ];
-				dst[1] = bgPalette[(ntileword & 0x000C) >>  2];
-				dst[2] = bgPalette[(ntileword & 0x0030) >>  4];
-				dst[3] = bgPalette[(ntileword & 0x00C0) >>  6];
-				dst[4] = bgPalette[(ntileword & 0x0300) >>  8];
-				dst[5] = bgPalette[(ntileword & 0x0C00) >> 10];
-				dst[6] = bgPalette[(ntileword & 0x3000) >> 12];
-				dst[7] = bgPalette[ ntileword           >> 14];
-				dst += 8;
+			if (!(p.speedupFlags & GB::NO_VIDEO)) {
+				do {
+					unsigned long const *const bgPalette = p.bgPalette + (nattrib & 7) * 4;
+					dst[0] = bgPalette[ ntileword & 0x0003       ];
+					dst[1] = bgPalette[(ntileword & 0x000C) >>  2];
+					dst[2] = bgPalette[(ntileword & 0x0030) >>  4];
+					dst[3] = bgPalette[(ntileword & 0x00C0) >>  6];
+					dst[4] = bgPalette[(ntileword & 0x0300) >>  8];
+					dst[5] = bgPalette[(ntileword & 0x0C00) >> 10];
+					dst[6] = bgPalette[(ntileword & 0x3000) >> 12];
+					dst[7] = bgPalette[ ntileword           >> 14];
+					dst += 8;
 
-				unsigned const tno = tileMapLine[ tileMapXpos & 0x1F          ];
-				nattrib            = tileMapLine[(tileMapXpos & 0x1F) + 0x2000];
-				tileMapXpos = (tileMapXpos & 0x1F) + 1;
+					unsigned const tno = tileMapLine[ tileMapXpos & 0x1F          ];
+					nattrib            = tileMapLine[(tileMapXpos & 0x1F) + 0x2000];
+					tileMapXpos = (tileMapXpos & 0x1F) + 1;
 
-				unsigned const tdo = tdoffset & ~(tno << 5);
-				unsigned char const *const td = vram + tno * 16
-				                                     + (nattrib & attr_yflip ? tdo ^ 14 : tdo)
-				                                     + (nattrib << 10 & 0x2000);
-				unsigned short const *const explut = expand_lut + (nattrib << 3 & 0x100);
-				ntileword = explut[td[0]] + explut[td[1]] * 2;
-			} while (dst != dstend);
+					unsigned const tdo = tdoffset & ~(tno << 5);
+					unsigned char const *const td = vram + tno * 16
+														 + (nattrib & attr_yflip ? tdo ^ 14 : tdo)
+														 + (nattrib << 10 & 0x2000);
+					unsigned short const *const explut = expand_lut + (nattrib << 3 & 0x100);
+					ntileword = explut[td[0]] + explut[td[1]] * 2;
+				} while (dst != dstend);
+			}
 
 			p.ntileword = ntileword;
 			p.nattrib   = nattrib;
@@ -599,7 +604,7 @@ static void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *c
 			p.cycles = cycles;
 		}
 
-		{
+		if (!(p.speedupFlags & GB::NO_VIDEO)) {
 			uint_least32_t *const dst = dbufline + (xpos - 8);
 			unsigned const tileword = p.ntileword;
 			unsigned const attrib   = p.nattrib;
@@ -792,62 +797,65 @@ static void doFullTilesUnrolled(PPUPriv &p) {
 static void plotPixel(PPUPriv &p) {
 	int const xpos = p.xpos;
 	unsigned const tileword = p.tileword;
-	uint_least32_t *const fbline = p.framebuf.fbline();
 
-	if (static_cast<int>(p.wx) == xpos
-			&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
-			&& xpos < 167) {
-		if (p.winDrawState == 0 && lcdcWinEn(p)) {
-			p.winDrawState = win_draw_start | win_draw_started;
-			++p.winYPos;
-		} else if (!p.cgb && (p.winDrawState == 0 || xpos == 166))
-			p.winDrawState |= win_draw_start;
-	}
+	if (!(p.speedupFlags & GB::NO_VIDEO)) {
+		uint_least32_t *const fbline = p.framebuf.fbline();
 
-	unsigned const twdata = tileword & ((p.lcdc & 1) | p.cgb) * 3;
-	unsigned long pixel = p.bgPalette[twdata + (p.attrib & 7) * 4];
-	int i = static_cast<int>(p.nextSprite) - 1;
-
-	if (i >= 0 && int(p.spriteList[i].spx) > xpos - 8) {
-		unsigned spdata = 0;
-		unsigned attrib = 0;
-
-		if (p.cgb) {
-			unsigned minId = 0xFF;
-
-			do {
-				if ((p.spwordList[i] & 3) && p.spriteList[i].oampos < minId) {
-					spdata = p.spwordList[i] & 3;
-					attrib = p.spriteList[i].attrib;
-					minId  = p.spriteList[i].oampos;
-				}
-
-				p.spwordList[i] >>= 2;
-				--i;
-			} while (i >= 0 && int(p.spriteList[i].spx) > xpos - 8);
-
-			if (spdata && lcdcObjEn(p)
-					&& (!((attrib | p.attrib) & attr_bgpriority) || !twdata || !lcdcBgEn(p))) {
-				pixel = p.spPalette[(attrib & 7) * 4 + spdata];
-			}
-		} else {
-			do {
-				if (p.spwordList[i] & 3) {
-					spdata = p.spwordList[i] & 3;
-					attrib = p.spriteList[i].attrib;
-				}
-
-				p.spwordList[i] >>= 2;
-				--i;
-			} while (i >= 0 && int(p.spriteList[i].spx) > xpos - 8);
-
-			if (spdata && lcdcObjEn(p) && (!(attrib & attr_bgpriority) || !twdata))
-				pixel = p.spPalette[(attrib >> 2 & 4) + spdata];
+		if (static_cast<int>(p.wx) == xpos
+				&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
+				&& xpos < 167) {
+			if (p.winDrawState == 0 && lcdcWinEn(p)) {
+				p.winDrawState = win_draw_start | win_draw_started;
+				++p.winYPos;
+			} else if (!p.cgb && (p.winDrawState == 0 || xpos == 166))
+				p.winDrawState |= win_draw_start;
 		}
-	}
 
-	if (xpos - 8 >= 0)
-		fbline[xpos - 8] = pixel;
+		unsigned const twdata = tileword & ((p.lcdc & 1) | p.cgb) * 3;
+		unsigned long pixel = p.bgPalette[twdata + (p.attrib & 7) * 4];
+		int i = static_cast<int>(p.nextSprite) - 1;
+
+		if (i >= 0 && int(p.spriteList[i].spx) > xpos - 8) {
+			unsigned spdata = 0;
+			unsigned attrib = 0;
+
+			if (p.cgb) {
+				unsigned minId = 0xFF;
+
+				do {
+					if ((p.spwordList[i] & 3) && p.spriteList[i].oampos < minId) {
+						spdata = p.spwordList[i] & 3;
+						attrib = p.spriteList[i].attrib;
+						minId  = p.spriteList[i].oampos;
+					}
+
+					p.spwordList[i] >>= 2;
+					--i;
+				} while (i >= 0 && int(p.spriteList[i].spx) > xpos - 8);
+
+				if (spdata && lcdcObjEn(p)
+						&& (!((attrib | p.attrib) & attr_bgpriority) || !twdata || !lcdcBgEn(p))) {
+					pixel = p.spPalette[(attrib & 7) * 4 + spdata];
+				}
+			} else {
+				do {
+					if (p.spwordList[i] & 3) {
+						spdata = p.spwordList[i] & 3;
+						attrib = p.spriteList[i].attrib;
+					}
+
+					p.spwordList[i] >>= 2;
+					--i;
+				} while (i >= 0 && int(p.spriteList[i].spx) > xpos - 8);
+
+				if (spdata && lcdcObjEn(p) && (!(attrib & attr_bgpriority) || !twdata))
+					pixel = p.spPalette[(attrib >> 2 & 4) + spdata];
+			}
+		}
+
+		if (xpos - 8 >= 0)
+			fbline[xpos - 8] = pixel;
+	}
 
 	p.xpos = xpos + 1;
 	p.tileword = tileword >> 2;
@@ -1514,6 +1522,7 @@ PPUPriv::PPUPriv(NextM0Time &nextM0Time, unsigned char const *const oamram, unsi
 , cgb(false)
 , weMaster(false)
 , trueColors(false)
+, speedupFlags(0)
 {
 	std::memset(spriteList, 0, sizeof spriteList);
 	std::memset(spwordList, 0, sizeof spwordList);
@@ -1787,7 +1796,9 @@ void PPU::update(unsigned long const cc) {
 
 	if (p_.cycles >= 0) {
 		p_.framebuf.setFbline(p_.lyCounter.ly());
-		p_.nextCallPtr->f(p_);
+
+		if (!(p_.speedupFlags & GB::NO_PPU_CALL))
+			p_.nextCallPtr->f(p_);
 	}
 }
 

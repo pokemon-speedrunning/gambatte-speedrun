@@ -71,6 +71,8 @@ public:
 	void mapSo(unsigned nr51);
 	unsigned getStatus() const;
 
+	void setSpeedupFlags(unsigned flags) { speedupFlags_ = flags; }
+
 private:
 	Channel1 ch1_;
 	Channel2 ch2_;
@@ -82,6 +84,8 @@ private:
 	unsigned long soVol_;
 	uint_least32_t rsum_;
 	bool enabled_;
+
+	unsigned speedupFlags_;
 
 	void accumulateChannels(unsigned long cycles);
 };

@@ -155,6 +155,11 @@ public:
     unsigned long getDivLastUpdate() { return divLastUpdate_; }
     unsigned char getRawIOAMHRAM(int offset) { return ioamhram_[offset]; }
 
+	void setSpeedupFlags(unsigned flags) {
+		lcd_.setSpeedupFlags(flags);
+		psg_.setSpeedupFlags(flags);
+	}
+
 private:
 	Cartridge cart_;
 	Sgb sgb_;

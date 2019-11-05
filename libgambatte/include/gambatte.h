@@ -265,6 +265,15 @@ public:
     /** Return a value in range 0-3FFF representing current "position" of internal divider */
     int getDivState();
 
+	enum SpeedupFlag {
+		NO_SOUND    = 1,  /**< Skip generating sound samples. */
+		NO_PPU_CALL = 2,  /**< Skip PPU calls. (breaks LCD interrupt) */
+		NO_VIDEO    = 4   /**< Skip writing to the video buffer. */
+	};
+
+	/** Sets flags to control non-critical processes for CPU-concerned emulation. */
+	void setSpeedupFlags(unsigned flags);
+
 private:
 	struct Priv;
 	Priv *const p_;
