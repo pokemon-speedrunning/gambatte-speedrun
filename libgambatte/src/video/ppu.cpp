@@ -390,7 +390,7 @@ static void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *c
 
 					unsigned const tno = tileMapLine[(tileMapXpos - 1) & 0x1F];
 					ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
-							  + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
+					          + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
 				} else do {
 					dst[0] = p.bgPalette[ ntileword & 0x0003       ];
 					dst[1] = p.bgPalette[(ntileword & 0x000C) >>  2];
@@ -405,7 +405,7 @@ static void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *c
 					unsigned const tno = tileMapLine[tileMapXpos & 0x1F];
 					tileMapXpos = (tileMapXpos & 0x1F) + 1;
 					ntileword = expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[0]]
-							  + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
+					          + expand_lut[(tileDataLine + tno * 16 - (tno & tileIndexSign) * 32)[1]] * 2;
 				} while (dst != dstend);
 			}
 
@@ -585,8 +585,8 @@ static void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *c
 
 					unsigned const tdo = tdoffset & ~(tno << 5);
 					unsigned char const *const td = vram + tno * 16
-														 + (nattrib & attr_yflip ? tdo ^ 14 : tdo)
-														 + (nattrib << 10 & 0x2000);
+					                                     + (nattrib & attr_yflip ? tdo ^ 14 : tdo)
+					                                     + (nattrib << 10 & 0x2000);
 					unsigned short const *const explut = expand_lut + (nattrib << 3 & 0x100);
 					ntileword = explut[td[0]] + explut[td[1]] * 2;
 				} while (dst != dstend);

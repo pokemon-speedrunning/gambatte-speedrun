@@ -1006,6 +1006,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		if(cgbSwitching_) {
 			lcd_.copyCgbPalettesToDmg();
 			lcd_.setCgb(false);
+			cgbSwitching_ = false;
 		}
 		return;
 	case 0x51:
