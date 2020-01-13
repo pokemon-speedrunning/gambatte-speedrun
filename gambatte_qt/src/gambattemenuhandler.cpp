@@ -120,7 +120,7 @@ void FrameRateAdjuster::setDisabled(bool disabled) {
 
 void FrameRateAdjuster::decFrameRate() {
 #ifdef ENABLE_TURBO_BUTTONS
-	if (dynamic_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
 		return;
 	if (enabled_) {
 		frameTime_.inc();
@@ -131,7 +131,7 @@ void FrameRateAdjuster::decFrameRate() {
 
 void FrameRateAdjuster::incFrameRate() {
 #ifdef ENABLE_TURBO_BUTTONS
-	if (dynamic_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
 		return;
 	if (enabled_) {
 		frameTime_.dec();
@@ -141,7 +141,7 @@ void FrameRateAdjuster::incFrameRate() {
 }
 
 void FrameRateAdjuster::resetFrameRate() {
-	if (dynamic_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
 		return;
 	if (enabled_) {
 		frameTime_.reset();

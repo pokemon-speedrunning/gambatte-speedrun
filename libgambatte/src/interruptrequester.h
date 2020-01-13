@@ -43,7 +43,6 @@ public:
 	void loadState(SaveState const &);
 	void resetCc(unsigned long oldCc, unsigned long newCc);
 	unsigned ifreg() const { return ifreg_; }
-    unsigned iereg() const { return iereg_; }
 	unsigned pendingIrqs() const { return ifreg_ & iereg_; }
 	bool ime() const { return intFlags_.ime(); }
 	bool halted() const { return intFlags_.halted(); }
@@ -52,9 +51,11 @@ public:
 	void halt();
 	void unhalt();
 	void flagIrq(unsigned bit);
-	void ackIrq(unsigned bit);
+	void flagIrq(unsigned bit, unsigned long cc);
+	void ackIrq(unsigned bit) { ifreg_ &= ~bit; }
 	void setIereg(unsigned iereg);
 	void setIfreg(unsigned ifreg);
+	void setMinIntTime(unsigned long cc);
 
 	IntEventId minEventId() const { return static_cast<IntEventId>(eventTimes_.min()); }
 	unsigned long minEventTime() const { return eventTimes_.minValue(); }
@@ -70,9 +71,9 @@ private:
 		bool halted() const { return flags_ & flag_halted; }
 		bool imeOrHalted() const { return flags_; }
 		void setIme() { flags_ |= flag_ime; }
-		void unsetIme() { flags_ &= ~flag_ime; }
+		void unsetIme() { flags_ &= ~(1u * flag_ime); }
 		void setHalted() { flags_ |= flag_halted; }
-		void unsetHalted() { flags_ &= ~flag_halted; }
+		void unsetHalted() { flags_ &= ~(1u * flag_halted); }
 		void set(bool ime, bool halted) { flags_ = halted * flag_halted + ime * flag_ime; }
 
 	private:

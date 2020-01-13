@@ -1,5 +1,8 @@
 .size 8000
 
+.data@143
+	80
+
 .text@100
 	jp lbegin
 
@@ -27,6 +30,8 @@ lprint_a:
 	call lwaitly_b
 	xor a, a
 	ldff(40), a
+	pop af
+	ld(9800), a
 	ld bc, 7a00
 	ld hl, 8000
 	ld d, a0
@@ -36,10 +41,21 @@ lprint_copytiles:
 	ld(hl++), a
 	dec d
 	jrnz lprint_copytiles
-	pop af
-	ld(9800), a
 	ld a, c0
 	ldff(47), a
+	ld a, 80
+	ldff(68), a
+	ld a, ff
+	ldff(69), a
+	ldff(69), a
+	ldff(69), a
+	ldff(69), a
+	ldff(69), a
+	ldff(69), a
+	xor a, a
+	ldff(69), a
+	ldff(69), a
+	ldff(43), a
 	ld a, 91
 	ldff(40), a
 lprint_limbo:

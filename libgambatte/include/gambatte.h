@@ -262,8 +262,8 @@ public:
 	/** Returns the current cycle-based time counter as dividers. (2^21/sec) */
 	unsigned timeNow() const;
 
-    /** Return a value in range 0-3FFF representing current "position" of internal divider */
-    int getDivState();
+	/** Return a value in range 0-3FFF representing current "position" of internal divider */
+	int getDivState();
 
 	enum SpeedupFlag {
 		NO_SOUND    = 1,  /**< Skip generating sound samples. */

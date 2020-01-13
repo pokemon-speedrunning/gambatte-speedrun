@@ -19,6 +19,7 @@
 #include "statesaver.h"
 #include "savestate.h"
 #include "array.h"
+
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -50,64 +51,64 @@ struct Saver {
 	std::size_t labelsize;
 };
 
-static inline bool operator<(Saver const &l, Saver const &r) {
+inline bool operator<(Saver const &l, Saver const &r) {
 	return std::strcmp(l.label, r.label) < 0;
 }
 
-static void put24(std::ostringstream &file, unsigned long data) {
+void put24(std::ostringstream &file, unsigned long data) {
 	file.put(data >> 16 & 0xFF);
 	file.put(data >>  8 & 0xFF);
 	file.put(data       & 0xFF);
 }
 
-static void put32(std::ostringstream &file, unsigned long data) {
+void put32(std::ostringstream &file, unsigned long data) {
 	file.put(data >> 24 & 0xFF);
 	file.put(data >> 16 & 0xFF);
 	file.put(data >>  8 & 0xFF);
 	file.put(data       & 0xFF);
 }
 
-static void write(std::ostringstream &file, unsigned char data) {
+void write(std::ostringstream &file, unsigned char data) {
 	static char const inf[] = { 0x00, 0x00, 0x01 };
 	file.write(inf, sizeof inf);
 	file.put(data & 0xFF);
 }
 
-static void write(std::ostringstream &file, unsigned short data) {
+void write(std::ostringstream &file, unsigned short data) {
 	static char const inf[] = { 0x00, 0x00, 0x02 };
 	file.write(inf, sizeof inf);
 	file.put(data >> 8 & 0xFF);
 	file.put(data      & 0xFF);
 }
 
-static void write(std::ostringstream &file, unsigned long data) {
+void write(std::ostringstream &file, unsigned long data) {
 	static char const inf[] = { 0x00, 0x00, 0x04 };
 	file.write(inf, sizeof inf);
 	put32(file, data);
 }
 
-static void write(std::ostringstream &file, unsigned char const *data, std::size_t size) {
+void write(std::ostringstream &file, unsigned char const *data, std::size_t size) {
 	put24(file, size);
 	file.write(reinterpret_cast<char const *>(data), size);
 }
 
-static void write(std::ostringstream &file, bool const *data, std::size_t size) {
+void write(std::ostringstream &file, bool const *data, std::size_t size) {
 	put24(file, size);
 	std::for_each(data, data + size,
 		std::bind1st(std::mem_fun(&std::ostringstream::put), &file));
 }
 
-static void write(std::ostringstream &file, unsigned short const *data, std::size_t size) {
+void write(std::ostringstream &file, unsigned short const *data, std::size_t size) {
 	write(file, (unsigned char const *)data, size * sizeof data[0]);
 }
 
-static unsigned long get24(std::istringstream &file) {
+unsigned long get24(std::istringstream &file) {
 	unsigned long tmp = file.get() & 0xFF;
 	tmp =   tmp << 8 | (file.get() & 0xFF);
 	return  tmp << 8 | (file.get() & 0xFF);
 }
 
-static unsigned long read(std::istringstream &file) {
+unsigned long read(std::istringstream &file) {
 	unsigned long size = get24(file);
 	if (size > 4) {
 		file.ignore(size - 4);
@@ -116,28 +117,28 @@ static unsigned long read(std::istringstream &file) {
 
 	unsigned long out = 0;
 	switch (size) {
-	case 4: out = (out | (file.get() & 0xFF)) << 8; // fallthrough
-	case 3: out = (out | (file.get() & 0xFF)) << 8; // fallthrough
-	case 2: out = (out | (file.get() & 0xFF)) << 8; // fallthrough
+	case 4: out = (out | (file.get() & 0xFF)) << 8; // fall through.
+	case 3: out = (out | (file.get() & 0xFF)) << 8; // fall through.
+	case 2: out = (out | (file.get() & 0xFF)) << 8; // fall through.
 	case 1: out =  out | (file.get() & 0xFF);
 	}
 
 	return out;
 }
 
-static inline void read(std::istringstream &file, unsigned char &data) {
+inline void read(std::istringstream &file, unsigned char &data) {
 	data = read(file) & 0xFF;
 }
 
-static inline void read(std::istringstream &file, unsigned short &data) {
+inline void read(std::istringstream &file, unsigned short &data) {
 	data = read(file) & 0xFFFF;
 }
 
-static inline void read(std::istringstream &file, unsigned long &data) {
+inline void read(std::istringstream &file, unsigned long &data) {
 	data = read(file);
 }
 
-static void read(std::istringstream &file, unsigned char *buf, std::size_t bufsize) {
+void read(std::istringstream &file, unsigned char *buf, std::size_t bufsize) {
 	std::size_t const size = get24(file);
 	std::size_t const minsize = std::min(size, bufsize);
 	file.read(reinterpret_cast<char*>(buf), minsize);
@@ -149,7 +150,7 @@ static void read(std::istringstream &file, unsigned char *buf, std::size_t bufsi
 	}
 }
 
-static void read(std::istringstream &file, bool *buf, std::size_t bufsize) {
+void read(std::istringstream &file, bool *buf, std::size_t bufsize) {
 	std::size_t const size = get24(file);
 	std::size_t const minsize = std::min(size, bufsize);
 	for (std::size_t i = 0; i < minsize; ++i)
@@ -158,7 +159,7 @@ static void read(std::istringstream &file, bool *buf, std::size_t bufsize) {
 	file.ignore(size - minsize);
 }
 
-static void read(std::istringstream &file, unsigned short *buf, std::size_t bufsize) {
+void read(std::istringstream &file, unsigned short *buf, std::size_t bufsize) {
 	read(file, (unsigned char *)buf, bufsize * sizeof buf[0]);
 }
 
@@ -181,7 +182,7 @@ private:
 	std::size_t maxLabelsize_;
 };
 
-static void pushSaver(SaverList::list_t &list, char const *label,
+static void push(SaverList::list_t &list, char const *label,
 		void (*save)(std::ostringstream &file, SaveState const &state),
 		void (*load)(std::istringstream &file, SaveState &state),
 		std::size_t labelsize) {
@@ -189,13 +190,15 @@ static void pushSaver(SaverList::list_t &list, char const *label,
 	list.push_back(saver);
 }
 
-SaverList::SaverList() {
+SaverList::SaverList()
+: maxLabelsize_(0)
+{
 #define ADD(arg) do { \
 	struct Func { \
 		static void save(std::ostringstream &file, SaveState const &state) { write(file, state.arg); } \
 		static void load(std::istringstream &file, SaveState &state) { read(file, state.arg); } \
 	}; \
-	pushSaver(list, label, Func::save, Func::load, sizeof label); \
+	push(list, label, Func::save, Func::load, sizeof label); \
 } while (0)
 
 #define ADDPTR(arg) do { \
@@ -207,7 +210,7 @@ SaverList::SaverList() {
 			read(file, state.arg.ptr, state.arg.size()); \
 		} \
 	}; \
-	pushSaver(list, label, Func::save, Func::load, sizeof label); \
+	push(list, label, Func::save, Func::load, sizeof label); \
 } while (0)
 
 #define ADDARRAY(arg) do { \
@@ -219,7 +222,7 @@ SaverList::SaverList() {
 			read(file, state.arg, sizeof state.arg); \
 		} \
 	}; \
-	pushSaver(list, label, Func::save, Func::load, sizeof label); \
+	push(list, label, Func::save, Func::load, sizeof label); \
 } while (0)
 
 	{ static char const label[] = { c,c,           NUL }; ADD(cpu.cycleCounter); }
@@ -233,6 +236,8 @@ SaverList::SaverList() {
 	{ static char const label[] = { f,             NUL }; ADD(cpu.f); }
 	{ static char const label[] = { h,             NUL }; ADD(cpu.h); }
 	{ static char const label[] = { l,             NUL }; ADD(cpu.l); }
+	{ static char const label[] = { o,p,           NUL }; ADD(cpu.opcode); }
+	{ static char const label[] = { f,e,t,c,h,e,d, NUL }; ADD(cpu.prefetched); }
 	{ static char const label[] = { s,k,i,p,       NUL }; ADD(cpu.skip); }
 	{ static char const label[] = { h,a,l,t,       NUL }; ADD(mem.halted); }
 	{ static char const label[] = { v,r,a,m,       NUL }; ADDPTR(mem.vram); }
@@ -240,19 +245,18 @@ SaverList::SaverList() {
 	{ static char const label[] = { w,r,a,m,       NUL }; ADDPTR(mem.wram); }
 	{ static char const label[] = { h,r,a,m,       NUL }; ADDPTR(mem.ioamhram); }
 	{ static char const label[] = { l,d,i,v,u,p,   NUL }; ADD(mem.divLastUpdate); }
-	{ static char const label[] = { t,i,m,a,b,t,   NUL }; ADD(mem.timaBasetime); }
 	{ static char const label[] = { l,t,i,m,a,u,p, NUL }; ADD(mem.timaLastUpdate); }
 	{ static char const label[] = { t,m,a,t,i,m,e, NUL }; ADD(mem.tmatime); }
 	{ static char const label[] = { s,e,r,i,a,l,t, NUL }; ADD(mem.nextSerialtime); }
 	{ static char const label[] = { l,o,d,m,a,u,p, NUL }; ADD(mem.lastOamDmaUpdate); }
 	{ static char const label[] = { m,i,n,i,n,t,t, NUL }; ADD(mem.minIntTime); }
 	{ static char const label[] = { u,n,h,a,l,t,t, NUL }; ADD(mem.unhaltTime); }
-	{ static char const label[] = { h,a,l,t,t,     NUL }; ADD(mem.halttime); }
 	{ static char const label[] = { r,o,m,b,a,n,k, NUL }; ADD(mem.rombank); }
 	{ static char const label[] = { d,m,a,s,r,c,   NUL }; ADD(mem.dmaSource); }
 	{ static char const label[] = { d,m,a,d,s,t,   NUL }; ADD(mem.dmaDestination); }
 	{ static char const label[] = { r,a,m,b,a,n,k, NUL }; ADD(mem.rambank); }
 	{ static char const label[] = { o,d,m,a,p,o,s, NUL }; ADD(mem.oamDmaPos); }
+	{ static char const label[] = { h,l,t,h,d,m,a, NUL }; ADD(mem.haltHdmaState); }
 	{ static char const label[] = { i,m,e,         NUL }; ADD(mem.IME); }
 	{ static char const label[] = { s,r,a,m,o,n,   NUL }; ADD(mem.enableRam); }
 	{ static char const label[] = { r,a,m,b,m,o,d, NUL }; ADD(mem.rambankMode); }
@@ -263,7 +267,7 @@ SaverList::SaverList() {
 	{ static char const label[] = { b,i,o,s,c,g,b, NUL }; ADD(mem.gbIsCgb); }
 	{ static char const label[] = { i,s,s,g,b,     NUL }; ADD(mem.gbIsSgb); }
 	{ static char const label[] = { s,t,o,p,p,e,d, NUL }; ADD(mem.stopped); }
-    { static char const label[] = { h,u,c,NO3,r,a,m, NUL }; ADD(mem.HuC3RAMflag); }
+	{ static char const label[] = { h,u,c,NO3,r,a,m, NUL }; ADD(mem.HuC3RAMflag); }
 	{ static char const label[] = { s,g,b,s,y,s,   NUL }; ADDPTR(mem.sgb.systemColors); }
 	{ static char const label[] = { s,g,b,c,o,l,s, NUL }; ADDPTR(mem.sgb.colors); }
 	{ static char const label[] = { s,g,b,a,t,t,r, NUL }; ADDPTR(mem.sgb.attributes); }
@@ -309,9 +313,10 @@ SaverList::SaverList() {
 	{ static char const label[] = { l,c,d,s,i,r,q, NUL }; ADD(ppu.pendingLcdstatIrq); }
 	{ static char const label[] = { i,s,c,g,b,     NUL }; ADD(ppu.isCgb); }
 	{ static char const label[] = { s,p,u,c,n,t,r, NUL }; ADD(spu.cycleCounter); }
+	{ static char const label[] = { s,p,u,c,n,t,l, NUL }; ADD(spu.lastUpdate); }
 	{ static char const label[] = { s,w,p,c,n,t,r, NUL }; ADD(spu.ch1.sweep.counter); }
 	{ static char const label[] = { s,w,p,s,h,d,w, NUL }; ADD(spu.ch1.sweep.shadow); }
-	{ static char const label[] = { s,w,p,n,e,g,   NUL }; ADD(spu.ch1.sweep.negging); }
+	{ static char const label[] = { s,w,p,n,e,g,   NUL }; ADD(spu.ch1.sweep.neg); }
 	{ static char const label[] = { d,u,t,NO1,c,t,r, NUL }; ADD(spu.ch1.duty.nextPosUpdate); }
 	{ static char const label[] = { d,u,t,NO1,p,o,s, NUL }; ADD(spu.ch1.duty.pos); }
 	{ static char const label[] = { d,u,t,NO1,h,i,   NUL }; ADD(spu.ch1.duty.high); }
@@ -362,84 +367,77 @@ SaverList::SaverList() {
 	{ static char const label[] = { r,t,c,m,       NUL }; ADD(rtc.dataM); }
 	{ static char const label[] = { r,t,c,s,       NUL }; ADD(rtc.dataS); }
 	{ static char const label[] = { r,t,c,l,l,d,   NUL }; ADD(rtc.lastLatchData); }
-    { static char const label[] = { h,NO3,h,a,l,t,t, NUL }; ADD(huc3.haltTime); }
-    { static char const label[] = { h,NO3,d,a,t,a,t, NUL }; ADD(huc3.dataTime); }
-    { static char const label[] = { h,NO3,w,r,i,t,t, NUL }; ADD(huc3.writingTime); }
-    { static char const label[] = { h,NO3,h,a,l,t, NUL }; ADD(huc3.halted); }
-    { static char const label[] = { h,NO3,s,h,f,t, NUL }; ADD(huc3.shift); }
-    { static char const label[] = { h,NO3,r,v,     NUL }; ADD(huc3.ramValue); }
-    { static char const label[] = { h,NO3,m,f,     NUL }; ADD(huc3.modeflag); }
-    { static char const label[] = { h,NO3,i,r,c,y, NUL }; ADD(huc3.irBaseCycle); }
-    { static char const label[] = { h,NO3,i,r,a,c, NUL }; ADD(huc3.irReceivingPulse); }
+	{ static char const label[] = { h,NO3,h,a,l,t,t, NUL }; ADD(huc3.haltTime); }
+	{ static char const label[] = { h,NO3,d,a,t,a,t, NUL }; ADD(huc3.dataTime); }
+	{ static char const label[] = { h,NO3,w,r,i,t,t, NUL }; ADD(huc3.writingTime); }
+	{ static char const label[] = { h,NO3,h,a,l,t, NUL }; ADD(huc3.halted); }
+	{ static char const label[] = { h,NO3,s,h,f,t, NUL }; ADD(huc3.shift); }
+	{ static char const label[] = { h,NO3,r,v,     NUL }; ADD(huc3.ramValue); }
+	{ static char const label[] = { h,NO3,m,f,     NUL }; ADD(huc3.modeflag); }
+	{ static char const label[] = { h,NO3,i,r,c,y, NUL }; ADD(huc3.irBaseCycle); }
+	{ static char const label[] = { h,NO3,i,r,a,c, NUL }; ADD(huc3.irReceivingPulse); }
 
 #undef ADD
 #undef ADDPTR
 #undef ADDARRAY
 
-	list.resize(list.size());
+	// sort list for binary search/std::lower_bound use.
 	std::sort(list.begin(), list.end());
-
-	maxLabelsize_ = 0;
-
-	for (std::size_t i = 0; i < list.size(); ++i) {
-		if (list[i].labelsize > maxLabelsize_)
-			maxLabelsize_ = list[i].labelsize;
-	}
+	for (const_iterator it = list.begin(); it != list.end(); ++it)
+		maxLabelsize_ = std::max(maxLabelsize_, it->labelsize);
 }
 
 }
 
 namespace {
 
-struct PxlSum { unsigned long rb, g; };
+struct RgbSum { unsigned long rb, g; };
 
-static void addPxlPairs(PxlSum *const sum, uint_least32_t const *const p) {
+void addPairs(RgbSum *const sum, uint_least32_t const *const p) {
 	sum[0].rb += (p[0] & 0xFF00FF) + (p[3] & 0xFF00FF);
 	sum[0].g  += (p[0] & 0x00FF00) + (p[3] & 0x00FF00);
 	sum[1].rb += (p[1] & 0xFF00FF) + (p[2] & 0xFF00FF);
 	sum[1].g  += (p[1] & 0x00FF00) + (p[2] & 0x00FF00);
 }
 
-static void blendPxlPairs(PxlSum *const dst, PxlSum const *const sums) {
+void blendPairs(RgbSum *const dst, RgbSum const *const sums) {
 	dst->rb = sums[1].rb * 8 + (sums[0].rb - sums[1].rb) * 3;
 	dst->g  = sums[1].g  * 8 + (sums[0].g  - sums[1].g ) * 3;
 }
 
-static void writeSnapShot(std::ostringstream &file, uint_least32_t const *pixels, std::ptrdiff_t const pitch) {
-	put24(file, pixels ? StateSaver::ss_width * StateSaver::ss_height * sizeof(uint_least32_t) : 0);
+void writeSnapShot(std::ostringstream &file, uint_least32_t const *src, std::ptrdiff_t const pitch) {
+	put24(file, src ? StateSaver::ss_width * StateSaver::ss_height * sizeof *src : 0);
 
-	if (pixels) {
+	if (src) {
 		uint_least32_t buf[StateSaver::ss_width];
 
 		for (unsigned h = StateSaver::ss_height; h--;) {
 			for (unsigned x = 0; x < StateSaver::ss_width; ++x) {
-				uint_least32_t const *const p = pixels + x * StateSaver::ss_div;
-				PxlSum pxlsum[4] = { {0, 0}, {0, 0}, {0, 0}, {0, 0} };
+				uint_least32_t const *const p = src + x * StateSaver::ss_div;
+				RgbSum sum[] = { {0, 0}, {0, 0}, {0, 0}, {0, 0} };
 
-				addPxlPairs(pxlsum    , p            );
-				addPxlPairs(pxlsum + 2, p + pitch    );
-				addPxlPairs(pxlsum + 2, p + pitch * 2);
-				addPxlPairs(pxlsum    , p + pitch * 3);
+				addPairs(sum    , p            );
+				addPairs(sum + 2, p + pitch    );
+				addPairs(sum + 2, p + pitch * 2);
+				addPairs(sum    , p + pitch * 3);
 
-				blendPxlPairs(pxlsum    , pxlsum    );
-				blendPxlPairs(pxlsum + 1, pxlsum + 2);
+				blendPairs(sum, sum);
+				blendPairs(sum + 1, sum + 2);
 
-				blendPxlPairs(pxlsum    , pxlsum    );
+				blendPairs(sum, sum);
 
-				buf[x] = ((pxlsum[0].rb & 0xFF00FF00U) | (pxlsum[0].g & 0x00FF0000U)) >> 8;
+				buf[x] = ((sum[0].rb & 0xFF00FF00) | (sum[0].g & 0x00FF0000)) >> 8;
 			}
 
 			file.write(reinterpret_cast<char const *>(buf), sizeof buf);
-			pixels += pitch * StateSaver::ss_div;
+			src += pitch * StateSaver::ss_div;
 		}
 	}
 }
 
-static SaverList list;
+SaverList list;
 
 } // anon namespace
-
-namespace gambatte {
 
 std::size_t StateSaver::saveState(SaveState const &state,
 		uint_least32_t const *const videoBuf, std::ptrdiff_t const pitch,
@@ -495,7 +493,6 @@ bool StateSaver::loadState(SaveState &state,
 		SaverList::const_iterator it = done;
 		if (std::strcmp(labelbuf, it->label)) {
 			it = std::lower_bound(it + 1, list.end(), labelbufSaver);
-
 			if (it == list.end() || std::strcmp(labelbuf, it->label)) {
 				file.ignore(get24(file));
 				continue;
@@ -539,6 +536,4 @@ bool StateSaver::loadState(SaveState &state,
 	std::string const &stateBuf(fileBuf.str());
 
 	return loadState(state, stateBuf.c_str(), stateBuf.size(), checkMode, mode);
-}
-
 }

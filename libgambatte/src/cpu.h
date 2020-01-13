@@ -92,9 +92,9 @@ public:
 
 	unsigned timeNow() const { return mem_.timeNow(cycleCounter_); }
 
-    unsigned long getCycleCounter() { return cycleCounter_; }
-    unsigned long getDivLastUpdate() { return mem_.getDivLastUpdate(); }
-    unsigned char getRawIOAMHRAM(int offset) { return mem_.getRawIOAMHRAM(offset); }
+	unsigned long getCycleCounter() { return cycleCounter_; }
+	unsigned long getDivLastUpdate() { return mem_.getDivLastUpdate(); }
+	unsigned char getRawIOAMHRAM(int offset) { return mem_.getRawIOAMHRAM(offset); }
 
 	void setSpeedupFlags(unsigned flags) { mem_.setSpeedupFlags(flags); }
 
@@ -105,7 +105,8 @@ private:
 	unsigned short sp;
 	unsigned hf1, hf2, zf, cf;
 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
-	bool skip_;
+	unsigned char opcode_;
+	bool prefetched_;
 
 	int *interruptAddresses;
 	int numInterruptAddresses;
