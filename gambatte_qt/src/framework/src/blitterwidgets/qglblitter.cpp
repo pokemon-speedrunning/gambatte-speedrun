@@ -27,6 +27,7 @@
 #include <QSettings>
 #include <QSizePolicy>
 #include <QVBoxLayout>
+#include <QWindow>
 
 #ifdef PLATFORM_WIN32
 #include <GL/glext.h>
@@ -54,7 +55,8 @@ public:
 	void forcedResize() {
 		if (initialized_) {
 			makeCurrent();
-			resizeGL(width(), height());
+			qreal dpr = devicePixelRatio();
+			resizeGL(dpr * width(), dpr * height());
 		}
 	}
 
@@ -80,6 +82,7 @@ private:
 	bool initialized_;
 	bool bf_;
 
+	qreal devicePixelRatio() const;
 	unsigned textureRes() const;
 	void draw();
 };
@@ -120,6 +123,10 @@ static unsigned ceiledPow2(unsigned v) {
 	++v;
 
 	return v;
+}
+
+qreal SubWidget::devicePixelRatio() const {
+	return windowHandle()->devicePixelRatio();
 }
 
 unsigned SubWidget::textureRes() const {
@@ -165,7 +172,8 @@ void SubWidget::initializeGL() {
 		             GL_UNSIGNED_INT_8_8_8_8_REV, &nulltexture[0]);
 	}
 
-	resizeGL(width(), height());
+	qreal dpr = devicePixelRatio();
+	resizeGL(dpr * width(), dpr * height());
 	initialized_ = true;
 }
 
@@ -182,12 +190,16 @@ void SubWidget::resizeGL(int const w, int const h) {
 	clear_ = max_buffer_cnt;
 	glViewport(0, 0, w, h);
 
-	int const itop  = (h - correctedSize_.height()) >> 1;
-	int const ileft = (w - correctedSize_.width()) >> 1;
+	qreal dpr = devicePixelRatio();
+	int const corrected_h = dpr * correctedSize_.height();
+	int const corrected_w = dpr * correctedSize_.width();
+
+	int const itop  = (h - corrected_h) >> 1;
+	int const ileft = (w - corrected_w) >> 1;
 	double const top   = double(itop) / h;
 	double const left  = double(ileft) / w;
-	double const bot   = double(itop + correctedSize_.height()) / h;
-	double const right = double(ileft + correctedSize_.width()) / w;
+	double const bot   = double(itop + corrected_h) / h;
+	double const right = double(ileft + corrected_w) / w;
 	double const ttop   = 1.0 - double(inSize_.height()) / textureRes();
 	double const tright = double(inSize_.width()) / textureRes();
 
