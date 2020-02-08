@@ -97,6 +97,7 @@ struct PPUPriv {
 	unsigned char endx;
 
 	bool cgb;
+	bool cgbDmg;
 	bool weMaster;
 	bool trueColors;
 	unsigned speedupFlags;
@@ -113,6 +114,7 @@ public:
 
 	unsigned long * bgPalette() { return p_.bgPalette; }
 	bool cgb() const { return p_.cgb; }
+	bool cgbDmg() const { return p_.cgbDmg; }
 	bool trueColors() const { return p_.trueColors; }
 	void doLyCountEvent() { p_.lyCounter.doEvent(); }
 	unsigned long doSpriteMapEvent(unsigned long time) { return p_.spriteMapper.doEvent(time); }
@@ -131,6 +133,7 @@ public:
 	void oamChange(unsigned char const *oamram, unsigned long cc) { p_.spriteMapper.oamChange(oamram, cc); }
 	unsigned long predictedNextXposTime(unsigned xpos) const;
 	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb);
+	void setCgbDmg(bool enabled) { p_.cgbDmg = enabled; }
 	void resetCc(unsigned long oldCc, unsigned long newCc);
 	void saveState(SaveState &ss) const;
 	void setFrameBuf(uint_least32_t *buf, std::ptrdiff_t pitch) { p_.framebuf.setBuf(buf, pitch); }
@@ -144,7 +147,6 @@ public:
 	void speedChange();
 	unsigned long * spPalette() { return p_.spPalette; }
 	void update(unsigned long cc);
-	void setCgb(bool cgb) { p_.cgb = cgb; }
 	void setTrueColors(bool trueColors) { p_.trueColors = trueColors; }
 	void setSpeedupFlags(unsigned flags) { p_.speedupFlags = flags; }
 

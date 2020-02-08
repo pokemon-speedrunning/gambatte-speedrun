@@ -262,10 +262,6 @@ SaverList::SaverList()
 	{ static char const label[] = { r,a,m,b,m,o,d, NUL }; ADD(mem.rambankMode); }
 	{ static char const label[] = { h,d,m,a,       NUL }; ADD(mem.hdmaTransfer); }
 	{ static char const label[] = { b,i,o,s,       NUL }; ADD(mem.biosMode); }
-	{ static char const label[] = { a,g,b,f,l,a,g, NUL }; ADD(mem.agbFlag); }
-	{ static char const label[] = { c,g,b,s,w,     NUL }; ADD(mem.cgbSwitching); }
-	{ static char const label[] = { b,i,o,s,c,g,b, NUL }; ADD(mem.gbIsCgb); }
-	{ static char const label[] = { i,s,s,g,b,     NUL }; ADD(mem.gbIsSgb); }
 	{ static char const label[] = { s,t,o,p,p,e,d, NUL }; ADD(mem.stopped); }
 	{ static char const label[] = { h,u,c,NO3,r,a,m, NUL }; ADD(mem.HuC3RAMflag); }
 	{ static char const label[] = { s,g,b,s,y,s,   NUL }; ADDPTR(mem.sgb.systemColors); }
@@ -311,7 +307,7 @@ SaverList::SaverList()
 	{ static char const label[] = { w,s,c,x,       NUL }; ADD(ppu.wscx); }
 	{ static char const label[] = { w,e,m,a,s,t,r, NUL }; ADD(ppu.weMaster); }
 	{ static char const label[] = { l,c,d,s,i,r,q, NUL }; ADD(ppu.pendingLcdstatIrq); }
-	{ static char const label[] = { i,s,c,g,b,     NUL }; ADD(ppu.isCgb); }
+	{ static char const label[] = { i,s,c,g,b,     NUL }; ADD(ppu.notCgbDmg); }
 	{ static char const label[] = { s,p,u,c,n,t,r, NUL }; ADD(spu.cycleCounter); }
 	{ static char const label[] = { s,p,u,c,n,t,l, NUL }; ADD(spu.lastUpdate); }
 	{ static char const label[] = { s,w,p,c,n,t,r, NUL }; ADD(spu.ch1.sweep.counter); }

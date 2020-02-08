@@ -139,6 +139,13 @@ inline void nextCall(int const cycles, PPUState const &state, PPUPriv &p) {
 	p.nextCallPtr = &state;
 }
 
+inline unsigned long const * cgbSpPalette(PPUPriv const &p, unsigned const attrib) {
+	if (!p.cgbDmg)
+		return p.spPalette + (attrib & attr_cgbpalno) * num_palette_entries;
+	else
+		return p.spPalette + (attrib & attr_dmgpalno ? num_palette_entries : 0);
+}
+
 namespace M2_Ly0 {
 	void f0(PPUPriv &p) {
 		p.weMaster = lcdcWinEn(p) && 0 == p.wy;
@@ -683,8 +690,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 					unsigned char const id = p.spriteList[i].oampos;
 					unsigned const sattrib = p.spriteList[i].attrib;
 					long spword = p.spwordList[i];
-					unsigned long const *const spPalette = p.spPalette
-						+ (sattrib & attr_cgbpalno) * num_palette_entries;
+					unsigned long const *const spPalette = cgbSpPalette(p, sattrib);
 
 					if (!((attrib | sattrib) & bgprioritymask)) {
 						unsigned char  *const idt = idtab + pos;
@@ -873,7 +879,7 @@ void plotPixel(PPUPriv &p) {
 
 				if (spdata && lcdcObjEn(p)
 						&& (!((attrib | p.attrib) & attr_bgpriority) || !twdata || !lcdcBgEn(p))) {
-					pixel = p.spPalette[(attrib & attr_cgbpalno) * num_palette_entries + spdata];
+					pixel = *(cgbSpPalette(p, attrib) + spdata);
 				}
 			} else {
 				do {
@@ -1698,7 +1704,7 @@ void PPU::saveState(SaveState &ss) const {
 	saveSpriteList(p_, ss);
 	ss.ppu.state = p_.nextCallPtr->id;
 	ss.ppu.lastM0Time = p_.now - p_.lastM0Time;
-	ss.ppu.isCgb = p_.cgb;
+	ss.ppu.notCgbDmg = !p_.cgbDmg;
 }
 
 void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
@@ -1731,7 +1737,7 @@ void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 	p_.weMaster = ss.ppu.weMaster;
 	p_.winDrawState = ss.ppu.winDrawState & (win_draw_start | win_draw_started);
 	p_.lastM0Time = p_.now - ss.ppu.lastM0Time;
-	p_.cgb = ss.ppu.isCgb;
+	p_.cgbDmg = !ss.ppu.notCgbDmg;
 	loadSpriteList(p_, ss);
 
 	if (m3loopState && videoCycles < 1l * lcd_vres * lcd_cycles_per_line && p_.xpos < xpos_end
@@ -1766,6 +1772,7 @@ void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 void PPU::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb) {
 	p_.vram = vram;
 	p_.cgb = cgb;
+	p_.cgbDmg = false;
 	p_.spriteMapper.reset(oamram, cgb);
 }
 

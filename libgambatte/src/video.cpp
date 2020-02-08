@@ -143,10 +143,6 @@ void LCD::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb
 	refreshPalettes();
 }
 
-void LCD::setCgb(bool cgb) {
-	ppu_.setCgb(cgb);
-}
-
 void LCD::setStatePtrs(SaveState &state) {
 	state.ppu.dmgColorsBgr15.set(dmgColorsBgr15_, sizeof dmgColorsBgr15_ / sizeof dmgColorsBgr15_[0]);
 	state.ppu.bgpData.set(  bgpData_, sizeof  bgpData_);
@@ -202,7 +198,7 @@ void LCD::loadState(SaveState const &state, unsigned char const *const oamram) {
 }
 
 void LCD::refreshPalettes() {
-	if (ppu_.cgb()) {
+	if (isCgb() && !isCgbDmg()) {
 		for (int i = 0; i < max_num_palettes * num_palette_entries; ++i) {
 			ppu_.bgPalette()[i] = gbcToRgb32( bgpData_[2 * i] |  bgpData_[2 * i + 1] * 0x100l, isTrueColors());
 			ppu_.spPalette()[i] = gbcToRgb32(objpData_[2 * i] | objpData_[2 * i + 1] * 0x100l, isTrueColors());

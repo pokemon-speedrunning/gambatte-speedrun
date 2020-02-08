@@ -51,12 +51,12 @@ public:
 	LCD(unsigned char const *oamram, unsigned char const *vram,
 	    VideoInterruptRequester memEventRequester);
 	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb);
+	void setCgbDmg(bool enabled) { ppu_.setCgbDmg(enabled); }
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state) const;
 	void loadState(SaveState const &state, unsigned char const *oamram);
 	void setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long rgb32);
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch);
-	void setCgb(bool cgb);
 	void copyCgbPalettesToDmg();
 	void setTrueColors(bool trueColors);
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) { osdElement_ = osdElement; }
@@ -146,6 +146,7 @@ public:
 	bool hdmaIsEnabled() const { return eventTimes_(memevent_hdma) != disabled_time; }
 	void update(unsigned long cycleCounter);
 	bool isCgb() const { return ppu_.cgb(); }
+	bool isCgbDmg() const { return ppu_.cgbDmg(); }
 	bool isDoubleSpeed() const { return ppu_.lyCounter().isDoubleSpeed(); }
 	bool isTrueColors() const { return ppu_.trueColors(); }
 	void setSpeedupFlags(unsigned flags) { ppu_.setSpeedupFlags(flags); }

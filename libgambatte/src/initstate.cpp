@@ -1150,7 +1150,7 @@ static void setInitialDmgIoamhram(unsigned char ioamhram[]) {
 
 } // anon namespace
 
-void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bool const sgb) {
+void gambatte::setInitState(SaveState &state, bool const cgb, bool const sgb) {
 	static unsigned char const cgbObjpDump[0x40] = {
 		0x00, 0x00, 0xF2, 0xAB,
 		0x61, 0xC2, 0xD9, 0xBA,
@@ -1187,8 +1187,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.cpu.prefetched = false;
 	state.cpu.skip = false;
 	state.mem.biosMode = true;
-	state.mem.cgbSwitching = false;
-	state.mem.agbFlag = cgb && agb;
 
 	setInitialVram(state.mem.vram.ptr, cgb);
 
@@ -1225,8 +1223,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.mem.enableRam = false;
 	state.mem.rambankMode = false;
 	state.mem.hdmaTransfer = false;
-	state.mem.gbIsCgb = cgb;
-	state.mem.gbIsSgb = sgb;
 	state.mem.stopped = false;
 
 
@@ -1300,7 +1296,7 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const agb, bo
 	state.ppu.nextM0Irq = 0;
 	state.ppu.oldWy = state.mem.ioamhram.get()[0x14A];
 	state.ppu.pendingLcdstatIrq = false;
-	state.ppu.isCgb = cgb;
+	state.ppu.notCgbDmg = true;
 
 	// spu.cycleCounter >> 12 & 7 represents the frame sequencer position.
 	state.spu.cycleCounter = state.cpu.cycleCounter >> 1;
