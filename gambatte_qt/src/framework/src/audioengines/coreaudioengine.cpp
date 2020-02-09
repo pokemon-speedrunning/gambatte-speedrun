@@ -182,6 +182,16 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 	}
 
 	{
+		if (ComponentResult err =
+				AudioUnitSetParameter(outUnit, kHALOutputParam_Volume, kAudioUnitScope_Global, 0,
+				                      pow(10, (log2(volume) - log2(100.0))/2.0), 0)) {
+			std::fprintf(stderr, "Failed to set volume: %d\n",
+			             static_cast<int>(err));
+			return -1;
+		}
+	}
+
+	{
 		AURenderCallbackStruct renderCallback;
 		renderCallback.inputProc = renderProc;
 		renderCallback.inputProcRefCon = this;
