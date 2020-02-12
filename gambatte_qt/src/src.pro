@@ -31,7 +31,7 @@ DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include
 DEPENDPATH  += ../../libgambatte/include
 QT += widgets gui-private
-LIBS += -L../../libgambatte -lgambatte -lz
+LIBS += -L../../libgambatte -l:libgambatte.a -lz
 win32 {
 	LIBS += -lole32
 	#RC_FILE = gambatteicon.rc
