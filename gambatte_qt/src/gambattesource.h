@@ -36,13 +36,20 @@ class GambatteSource : public QObject, public MediaSource {
 public:
 	GambatteSource();
 	std::vector<VideoDialog::VideoSourceInfo> const generateVideoSourceInfos();
-	gambatte::LoadRes load(std::string const &romfile, unsigned flags) { return gb_.load(romfile, flags); }
+
+	gambatte::LoadRes load(std::string const &romfile, unsigned flags) {
+		gambatte::LoadRes res = gb_.load(romfile, flags);
+		inputLog_.restart(gb_);
+		return res;
+	}
+
 	unsigned int loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
 		return gb_.loadBios(biosfile, size, crc);
 	}
+
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { isResetting_ = false; gb_.reset(GAMBATTE_QT_VERSION_STR); }
+	void reset() { gb_.reset(resetStall_, GAMBATTE_QT_VERSION_STR); inputLog_.push(0, 0xFF); }
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
@@ -56,17 +63,19 @@ public:
 	void selectState(int n) { gb_.selectState(n); }
 	int currentState() const { return gb_.currentState(); }
 	void saveState(PixelBuffer const &fb, std::string const &filepath);
-	void loadState(std::string const &filepath) { gb_.loadState(filepath); }
+	void loadState(std::string const &filepath) { gb_.loadState(filepath); inputLog_.restart(gb_); }
 	QDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
-	void loadState() { gb_.loadState(); }
-    void tryReset();
-	void setResetParams(unsigned before, unsigned fade, unsigned limit);
+	void loadState() { gb_.loadState(); inputLog_.restart(gb_); }
+	void tryReset();
+	void setResetParams(unsigned before, unsigned fade, unsigned limit, unsigned stall);
+	std::vector<char> inputLogState() const { return inputLog_.initialState; }
+	std::vector<std::pair<std::uint32_t, std::uint8_t>> inputLog() const { return inputLog_.data; }
 
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
 	virtual void joystickEvent(SDL_Event const &);
-    virtual void clearKeyPresses();
+	virtual void clearKeyPresses();
 	virtual std::ptrdiff_t update(PixelBuffer const &fb, qint16 *soundBuf, std::size_t &samples);
 	virtual void generateVideoFrame(PixelBuffer const &fb);
 
@@ -77,7 +86,6 @@ public slots:
 signals:
 	void setTurbo(bool on);
 	void togglePause();
-    void pauseAndReset();
 	void frameStep();
 	void decFrameRate();
 	void incFrameRate();
@@ -86,7 +94,8 @@ signals:
 	void nextStateSlot();
 	void saveStateSignal();
 	void loadStateSignal();
-    void startResetting();
+	void resetSignal();
+	void resetting(bool state);
 	void quit();
 
 private:
@@ -99,8 +108,30 @@ private:
 		static unsigned get(GetInput *p) { return p->is; }
 	};
 
+	struct InputLog {
+		std::vector<char> initialState;
+		std::vector<std::pair<std::uint32_t, std::uint8_t>> data;
+
+		void restart(gambatte::GB &gb) {
+			initialState.resize(gb.saveState(NULL, 0, NULL));
+			gb.saveState(NULL, 0, initialState.data());
+			data.clear();
+		}
+
+		void push(std::uint32_t samples, std::uint8_t input) {
+			if (!data.empty() && data.back().second == input) {
+				if (data.back().first + samples < 0x80000000) {
+					data.back().first += samples;
+					return;
+				}
+			}
+			data.push_back({ samples, input });
+		}
+	};
+
 	gambatte::GB gb_;
 	GetInput inputGetter_;
+	InputLog inputLog_;
 	InputDialog *const inputDialog_;
 	scoped_ptr<VideoLink> cconvert_;
 	scoped_ptr<VideoLink> vfilter_;
@@ -110,14 +141,20 @@ private:
 	bool dpadUp_, dpadDown_;
 	bool dpadLeft_, dpadRight_;
 	bool dpadUpLast_, dpadLeftLast_;
-    bool isResetting_;
-    unsigned resetFrameCount_;
+	bool tryReset_;
+	bool isResetting_;
+	unsigned resetFrameCount_;
 	unsigned resetBefore_;
 	unsigned resetFade_;
 	unsigned resetLimit_;
+	unsigned resetStall_;
+	unsigned samplesToStall_;
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
+	void setResetting(bool state);
+	void resetStep(PixelBuffer const &pb, void *const pbdata);
+
 	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
 	void emitPause() { if(!isResetting_) { emit togglePause();} }
 	void emitFrameStep() { if(!isResetting_) { emit frameStep();} }
@@ -128,7 +165,7 @@ private:
 	void emitNextStateSlot() { if(!isResetting_) { emit nextStateSlot();} }
 	void emitSaveState() { if(!isResetting_) { emit saveStateSignal();} }
 	void emitLoadState() { if(!isResetting_) { emit loadStateSignal();} }
-	void emitReset() { emit tryReset(); }
+	void emitReset() { emit resetSignal(); }
 	void emitQuit() { emit quit(); }
 };
 

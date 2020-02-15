@@ -32,6 +32,7 @@
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
 #endif
+#include <fstream>
 #include <iostream>
 
 #define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
@@ -119,6 +120,8 @@ void FrameRateAdjuster::setDisabled(bool disabled) {
 
 void FrameRateAdjuster::decFrameRate() {
 #ifdef ENABLE_TURBO_BUTTONS
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+		return;
 	if (enabled_) {
 		frameTime_.inc();
 		changed();
@@ -128,6 +131,8 @@ void FrameRateAdjuster::decFrameRate() {
 
 void FrameRateAdjuster::incFrameRate() {
 #ifdef ENABLE_TURBO_BUTTONS
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+		return;
 	if (enabled_) {
 		frameTime_.dec();
 		changed();
@@ -136,6 +141,8 @@ void FrameRateAdjuster::incFrameRate() {
 }
 
 void FrameRateAdjuster::resetFrameRate() {
+	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
+		return;
 	if (enabled_) {
 		frameTime_.reset();
 		changed();
@@ -369,7 +376,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , gambattePlatformMenu_(mw)
 , pauseInc_(4)
 , isResetting_(false)
-, resetDelay_(1580)
 {
 	QString revision = QString("interim");
 	#ifdef GAMBATTE_QT_VERSION_STR
@@ -465,6 +471,10 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		foreach (QAction *action, frameRateAdjuster->actions())
 			playm->addAction(romLoadedActions->addAction(action));
 
+		playm->addSeparator();
+		romLoadedActions->addAction(playm->addAction(
+			tr("&Save Input Log As..."), this, SLOT(saveInputLogAs())));
+
 		cmdactions += playm->actions();
 	}
 
@@ -493,7 +503,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		connect(rtcModeActions, SIGNAL(triggered(QAction *)), this, SLOT(setRtcMode()));
 	}
 
-    trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
+	trueColorsAction_ = settingsm->addAction(tr("True &Colors"));
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
 	connect(trueColorsAction_, SIGNAL(toggled(bool)), &source, SLOT(setTrueColors(bool)));
@@ -523,8 +533,6 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	mw.setSamplesPerFrame(35112);
 	connect(&source, SIGNAL(setTurbo(bool)), &mw, SLOT(setFastForward(bool)));
 	connect(&source, SIGNAL(togglePause()), pauseAction_, SLOT(trigger()));
-    connect(&source, SIGNAL(startResetting()), this, SLOT(startResetting()));
-    connect(&source, SIGNAL(pauseAndReset()), this, SLOT(pauseAndReset()));
 	connect(&source, SIGNAL(frameStep()), this, SLOT(frameStep()));
 	connect(&source, SIGNAL(decFrameRate()), frameRateAdjuster, SLOT(decFrameRate()));
 	connect(&source, SIGNAL(incFrameRate()), frameRateAdjuster, SLOT(incFrameRate()));
@@ -533,6 +541,8 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	connect(&source, SIGNAL(nextStateSlot()), this, SLOT(nextStateSlot()));
 	connect(&source, SIGNAL(saveStateSignal()), this, SLOT(saveState()));
 	connect(&source, SIGNAL(loadStateSignal()), this, SLOT(loadState()));
+	connect(&source, SIGNAL(resetSignal()), this, SLOT(reset()));
+	connect(&source, SIGNAL(resetting(bool)), this, SLOT(setResetting(bool)));
 	connect(&source, SIGNAL(quit()), qApp, SLOT(closeAllWindows()));
 	connect(videoDialog_, SIGNAL(accepted()), this, SLOT(videoDialogChange()));
 	connect(soundDialog_, SIGNAL(accepted()), this, SLOT(soundDialogChange()));
@@ -584,7 +594,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
 	settings.setValue("rtc-mode", cycleBasedAction_->isChecked());
-    settings.setValue("true-colors", trueColorsAction_->isChecked());
+	settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
 void GambatteMenuHandler::updateRecentFileActions() {
@@ -637,29 +647,29 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	switch (platformId) {
 	case PLATFORM_GB:
 		info = { 0x100, 0x580A33B9, "DMG", "*.gb", "biosFilenameDMG" };
-		setResetParams(0, 1, 1, 0);
+		source_.setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBC:
 		flags |= gambatte::GB::CGB_MODE;
 		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		setResetParams(0, 1, 1, 0);
+		source_.setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBA:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
 		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		setResetParams(0, 1, 1, 0);
+		source_.setResetParams(0, 1, 1, 0);
 		break;
 	case PLATFORM_GBP:
 		flags |= gambatte::GB::CGB_MODE;
 		flags |= gambatte::GB::GBA_FLAG;
 		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		setResetParams(4, 32, 37, 1580);
+		source_.setResetParams(4, 32, 37, 101 * (2 << 14));
 		break;
 	case PLATFORM_SGB:
 		flags |= gambatte::GB::SGB_MODE;
 		info = { 0x100, 0xED48E98E, "SGB", "*.sgb", "biosFilenameSGB" };
-		setResetParams(0, 1, 1, 2000);
+		source_.setResetParams(0, 1, 1, 128 * (2 << 14));
 		break;
 	}
 
@@ -1032,14 +1042,37 @@ struct LoadStateFromFun {
 	}
 };
 
+struct SaveInputLogAsFun {
+	GambatteSource &source;
+	QString fileName;
+	void operator()() const {
+		std::ofstream file(fileName.toLocal8Bit().constData(),
+			std::ios::out | std::ios::binary);
+
+		file.put(0xFE);
+		file.put(0x01); // MOVIE_VERSION
+
+		std::vector<char> state = source.inputLogState();
+		file.put(state.size() >> 16);
+		file.put(state.size() >> 8);
+		file.put(state.size());
+		file.write(state.data(), state.size());
+
+		for (std::pair<std::uint32_t, std::uint8_t> i : source.inputLog()) {
+			file.put(i.first >> 24);
+			file.put(i.first >> 16);
+			file.put(i.first >> 8);
+			file.put(i.first);
+			file.put(i.second);
+		}
+
+		file.close();
+	}
+};
+
 struct ResetFun {
 	GambatteSource &source;
 	void operator()() const { source.tryReset(); }
-};
-
-struct RealResetFun {
-	GambatteSource &source; bool useCycles;
-	void operator()() const { source.reset(); source.setTimeMode(useCycles); }
 };
 
 } // anon ns
@@ -1099,10 +1132,25 @@ void GambatteMenuHandler::loadStateFrom() {
 	}
 }
 
+void GambatteMenuHandler::saveInputLogAs() {
+	if (isResetting_)
+		return;
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	QString const &fileName = QFileDialog::getSaveFileName(
+		&mw_, tr("Save Input Log"), QString(),
+		tr("Gambatte Movie Files (*.gm);;All Files(*)"));
+	if (!fileName.isEmpty()) {
+		SaveInputLogAsFun fun = { source_, fileName };
+		mw_.callInWorkerThread(fun);
+	}
+}
+
 void GambatteMenuHandler::openSaveFolder() {
-    // ref https://stackoverflow.com/questions/3569749/qt-open-default-file-explorer-on-nix
-    QString path = QDir::toNativeSeparators(miscDialog_->savePath());
-    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+	// ref https://stackoverflow.com/questions/3569749/qt-open-default-file-explorer-on-nix
+	QString path = QDir::toNativeSeparators(miscDialog_->savePath());
+	QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
 void GambatteMenuHandler::reset() {
@@ -1110,11 +1158,8 @@ void GambatteMenuHandler::reset() {
 	mw_.callInWorkerThread(fun);
 }
 
-void GambatteMenuHandler::doReset() {
-    mw_.unpause();
-    isResetting_ = false;
-	RealResetFun fun = { source_, rtcMode_ };
-	mw_.callInWorkerThread(fun);
+void GambatteMenuHandler::setResetting(bool state) {
+	isResetting_ = state;
 }
 
 void GambatteMenuHandler::pauseChange() {
@@ -1126,25 +1171,6 @@ void GambatteMenuHandler::pauseChange() {
 		mw_.pause();
 	else
 		mw_.unpause();
-}
-
-void GambatteMenuHandler::setResetParams(unsigned before, unsigned fade,
-		unsigned limit, unsigned delay) {
-	source_.setResetParams(before, fade, limit);
-	resetDelay_ = delay;
-}
-
-void GambatteMenuHandler::pauseAndReset() {
-    mw_.pause();
-    mw_.resetAudio();
-    source_.setTimeMode(false);
-    
-    QTimer::singleShot(resetDelay_, Qt::PreciseTimer, this, SLOT(doReset()));
-}
-
-void GambatteMenuHandler::startResetting() {
-    rtcMode_ = cycleBasedAction_->isChecked();
-    isResetting_ = true;
 }
 
 void GambatteMenuHandler::frameStep() {
@@ -1188,11 +1214,6 @@ void GambatteMenuHandler::audioEngineFailure() {
 }
 
 void GambatteMenuHandler::setRtcMode() {
-	if (isResetting_) {
-		(rtcMode_ ? cycleBasedAction_ : realTimeAction_)->setChecked(true);
-		return;
-	}
-
 	source_.setTimeMode(cycleBasedAction_->isChecked());
 }
 

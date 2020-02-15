@@ -23,9 +23,15 @@
 #include "ly_counter.h"
 #include "sprite_mapper.h"
 #include "gbint.h"
+
 #include <cstddef>
 
 namespace gambatte {
+
+enum {
+	max_num_palettes = 8,
+	num_palette_entries = 4,
+	ppu_force_signed_enum = -1 };
 
 class PPUFrameBuf {
 public:
@@ -53,10 +59,10 @@ struct PPUState {
 };
 
 struct PPUPriv {
-	unsigned long bgPalette[8 * 4];
-	unsigned long spPalette[8 * 4];
-	struct Sprite { unsigned char spx, oampos, line, attrib; } spriteList[11];
-	unsigned short spwordList[11];
+	unsigned long bgPalette[max_num_palettes * num_palette_entries];
+	unsigned long spPalette[max_num_palettes * num_palette_entries];
+	struct Sprite { unsigned char spx, oampos, line, attrib; } spriteList[lcd_max_num_sprites_per_line + 1];
+	unsigned short spwordList[lcd_max_num_sprites_per_line + 1];
 	unsigned char nextSprite;
 	unsigned char currentSprite;
 
@@ -92,7 +98,8 @@ struct PPUPriv {
 
 	bool cgb;
 	bool weMaster;
-    bool trueColors;
+	bool trueColors;
+	unsigned speedupFlags;
 
 	PPUPriv(NextM0Time &nextM0Time, unsigned char const *oamram, unsigned char const *vram);
 };
@@ -106,7 +113,7 @@ public:
 
 	unsigned long * bgPalette() { return p_.bgPalette; }
 	bool cgb() const { return p_.cgb; }
-    bool trueColors() const { return p_.trueColors; }
+	bool trueColors() const { return p_.trueColors; }
 	void doLyCountEvent() { p_.lyCounter.doEvent(); }
 	unsigned long doSpriteMapEvent(unsigned long time) { return p_.spriteMapper.doEvent(time); }
 	PPUFrameBuf const & frameBuf() const { return p_.framebuf; }
@@ -134,11 +141,12 @@ public:
 	void setWx(unsigned wx) { p_.wx = wx; }
 	void setWy(unsigned wy) { p_.wy = wy; }
 	void updateWy2() { p_.wy2 = p_.wy; }
-	void speedChange(unsigned long cycleCounter);
+	void speedChange();
 	unsigned long * spPalette() { return p_.spPalette; }
 	void update(unsigned long cc);
 	void setCgb(bool cgb) { p_.cgb = cgb; }
-    void setTrueColors(bool trueColors) { p_.trueColors = trueColors; }
+	void setTrueColors(bool trueColors) { p_.trueColors = trueColors; }
+	void setSpeedupFlags(unsigned flags) { p_.speedupFlags = flags; }
 
 private:
 	PPUPriv p_;

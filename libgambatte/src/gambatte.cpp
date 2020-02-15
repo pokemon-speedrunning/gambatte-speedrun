@@ -23,21 +23,26 @@
 #include "state_osd_elements.h"
 #include "statesaver.h"
 #include "file/file.h"
+
 #include <cstring>
 #include <sstream>
 #include <zlib.h>
 
-static std::string const itos(int i) {
+using namespace gambatte;
+
+namespace {
+
+std::string to_string(int i) {
 	std::stringstream ss;
 	ss << i;
 	return ss.str();
 }
 
-static std::string const statePath(std::string const &basePath, int stateNo) {
-	return basePath + "_" + itos(stateNo) + ".gqs";
+std::string statePath(std::string const &basePath, int stateNo) {
+	return basePath + '_' + to_string(stateNo) + ".gqs";
 }
 
-namespace gambatte {
+}
 
 struct GB::Priv {
 	CPU cpu;
@@ -81,7 +86,7 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	     : cyclesSinceBlit;
 }
 
-void GB::reset(std::string const &build) {
+void GB::reset(std::size_t samplesToStall, std::string const &build) {
 	if (p_->cpu.loaded()) {
 		if (p_->implicitSave())
 			p_->cpu.saveSavedata();
@@ -92,6 +97,9 @@ void GB::reset(std::string const &build) {
 		unsigned flags = p_->loadflags;
 		setInitState(state, flags & CGB_MODE, flags & GBA_FLAG, flags & SGB_MODE);
 		p_->cpu.loadState(state);
+
+		if (samplesToStall > 0)
+			p_->cpu.stall(samplesToStall * 2);
 
 		if (!build.empty())
 			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -189,7 +197,7 @@ bool GB::loadState(std::string const &filepath) {
 		if (p_->implicitSave())
 			p_->cpu.saveSavedata();
 
-		SaveState state;
+		SaveState state = SaveState();
 		p_->cpu.setStatePtrs(state);
 
 		if (StateSaver::loadState(state, filepath, true, p_->criticalLoadflags())) {
@@ -323,10 +331,12 @@ unsigned GB::timeNow() const {
 }
 
 int GB::getDivState() {
-    int cc = p_->cpu.getCycleCounter();
-    int divOff = cc - p_->cpu.getDivLastUpdate();
-    int div = p_->cpu.getRawIOAMHRAM(0x104);
-    return (((div << 8) + divOff) >> 2) & 0x3FFF;
+	int cc = p_->cpu.getCycleCounter();
+	int divOff = cc - p_->cpu.getDivLastUpdate();
+	int div = p_->cpu.getRawIOAMHRAM(0x104);
+	return (((div << 8) + divOff) >> 2) & 0x3FFF;
 }
 
+void GB::setSpeedupFlags(unsigned flags) {
+	p_->cpu.setSpeedupFlags(flags);
 }

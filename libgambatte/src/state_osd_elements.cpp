@@ -20,6 +20,7 @@
 #include "array.h"
 #include "bitmap_font.h"
 #include "statesaver.h"
+
 #include <fstream>
 #include <cstring>
 
@@ -177,9 +178,9 @@ transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned chec
 			txt[p+11] = (char) (bitmapfont::A + (checksumPart-0x0A));
 		}
 	}
-    for(int b=1;b<4;b++) {
-        txt[b+6] = (char) (build[b] - 0x30 + bitmapfont::N0);
-    }
+	for(int b=1;b<4;b++) {
+		txt[b+6] = (char) (build[b] - 0x30 + bitmapfont::N0);
+	}
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(bitmapfont::getWidth(txt), txt));
 }
 

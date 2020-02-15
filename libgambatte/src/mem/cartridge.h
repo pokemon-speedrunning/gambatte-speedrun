@@ -26,6 +26,7 @@
 #include "huc3.h"
 #include "savestate.h"
 #include "scoped_ptr.h"
+
 #include <string>
 #include <vector>
 
@@ -58,6 +59,7 @@ public:
 	unsigned char * wsrambankptr() const { return memptrs_.wsrambankptr(); }
 	unsigned char * vrambankptr() const { return memptrs_.vrambankptr(); }
 	OamDmaSrc oamDmaSrc() const { return memptrs_.oamDmaSrc(); }
+	bool isInOamDmaConflictArea(unsigned p) const { return memptrs_.isInOamDmaConflictArea(p); }
 	void setVrambank(unsigned bank) { memptrs_.setVrambank(bank); }
 	void setWrambank(unsigned bank) { memptrs_.setWrambank(bank); }
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc) { memptrs_.setOamDmaSrc(oamDmaSrc); }
@@ -78,8 +80,8 @@ public:
 	char const * romTitle() const { return reinterpret_cast<char const *>(memptrs_.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
-    bool isHuC3() const { return huc3_.isHuC3(); }
-    unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
+	bool isHuC3() const { return huc3_.isHuC3(); }
+	unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
 	void HuC3Write(unsigned p, unsigned data, unsigned long const cc) { huc3_.write(p, data, cc); }
 
 private:
@@ -92,7 +94,7 @@ private:
 	MemPtrs memptrs_;
 	Time time_;
 	Rtc rtc_;
-    HuC3Chip huc3_;
+	HuC3Chip huc3_;
 	scoped_ptr<Mbc> mbc_;
 	std::string defaultSaveBasePath_;
 	std::string saveDir_;

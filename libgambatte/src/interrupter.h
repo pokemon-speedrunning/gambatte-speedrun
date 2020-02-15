@@ -34,13 +34,16 @@ class Memory;
 
 class Interrupter {
 public:
-	Interrupter(unsigned short &sp, unsigned short &pc);
-	unsigned long interrupt(unsigned address, unsigned long cycleCounter, Memory &memory);
+	Interrupter(unsigned short &sp, unsigned short &pc, unsigned char &opcode, bool &prefetched);
+	void prefetch(unsigned long cc, Memory &mem);
+	unsigned long interrupt(unsigned long cycleCounter, Memory &memory);
 	void setGameShark(std::string const &codes);
 
 private:
 	unsigned short &sp_;
 	unsigned short &pc_;
+	unsigned char &opcode_;
+	bool &prefetched_;
 	std::vector<GsCode> gsCodes_;
 
 	void applyVblankCheats(unsigned long cc, Memory &mem);

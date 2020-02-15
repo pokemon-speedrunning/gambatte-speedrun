@@ -25,7 +25,7 @@ sourceFiles = Split('''
 			src/tima.cpp
 			src/video.cpp
 			src/mem/cartridge.cpp
-            src/mem/huc3.cpp
+			src/mem/huc3.cpp
 			src/mem/memptrs.cpp
 			src/mem/pakinfo.cpp
 			src/mem/rtc.cpp
@@ -71,10 +71,11 @@ sys_libs = ['z']
 if sys.platform == 'darwin':
 	sys_libs.append('System')
 
-slib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
-                         CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
-                         LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
-                         LIBS = sys_libs)
+shlib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
+                          CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
+                          LINKFLAGS = env['LINKFLAGS'] + ' -static -s',
+                          LIBS = sys_libs,
+                          SHLIBPREFIX = "lib")
 
 env.Default(lib)
-env.Alias('slib', slib)
+env.Alias('shlib', shlib)

@@ -100,7 +100,7 @@ public:
 	  * Reset to initial state.
 	  * Equivalent to reloading a ROM image, or turning a Game Boy Color off and on again.
 	  */
-	void reset(std::string const &build = "");
+	void reset(std::size_t samplesToStall, std::string const &build = "");
 
 	/**
 	  * @param palNum 0 <= palNum < 3. One of BG_PALETTE, SP1_PALETTE and SP2_PALETTE.
@@ -262,8 +262,17 @@ public:
 	/** Returns the current cycle-based time counter as dividers. (2^21/sec) */
 	unsigned timeNow() const;
 
-    /** Return a value in range 0-3FFF representing current "position" of internal divider */
-    int getDivState();
+	/** Return a value in range 0-3FFF representing current "position" of internal divider */
+	int getDivState();
+
+	enum SpeedupFlag {
+		NO_SOUND    = 1,  /**< Skip generating sound samples. */
+		NO_PPU_CALL = 2,  /**< Skip PPU calls. (breaks LCD interrupt) */
+		NO_VIDEO    = 4   /**< Skip writing to the video buffer. */
+	};
+
+	/** Sets flags to control non-critical processes for CPU-concerned emulation. */
+	void setSpeedupFlags(unsigned flags);
 
 private:
 	struct Priv;
