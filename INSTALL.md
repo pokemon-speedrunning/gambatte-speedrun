@@ -12,14 +12,14 @@ Running the hwtests suite requires installing an additional dependency (`libpng`
 * Choice of 32-bit vs 64-bit for MSYS2 doesn't really matter; either is fine
 * There's currently no benefit to building a 64-bit version of Gambatte-Speedrun on Windows, so 32-bit is used for the release binaries
 
-At the end of these steps, to do any build tasks related to Gambatte-Speedrun, open the MSYS2 MinGW 32-bit shell (under the MSYS2 folder in the Start menu; ***\*must be\**** this specific shell in order for building to work).
+***\*NOTE:*** At the end of these steps, to do any build tasks related to Gambatte-Speedrun, open the MSYS2 MinGW 32-bit shell (under the MSYS2 folder in the Start menu; ***\*must be\**** this specific shell in order for building to work).
 
 \
 Do the following: 
 
 \- Install [MSYS2](https://www.msys2.org/) by selecting the one-click installer exe for x86_64
 
-\- Initial setup of MSYS2 (copied from [here](https://github.com/msys2/msys2/wiki/MSYS2-installation#iii-updating-packages))
+\- Initial setup of MSYS2 *(copied from [here](https://github.com/msys2/msys2/wiki/MSYS2-installation#iii-updating-packages))*:
 ```
 Run MSYS2 shell (Command Prompt). C:\msys64\msys2_shell.cmd
 
@@ -31,7 +31,7 @@ Follow the instructions. Repeat this step until it says there are no packages to
 
 See the above link if you have an older installation of MSYS2 and/or pacman.
 ```
-\- Prepare MSYS2 for Qt related build development environment (copied from [here](https://wiki.qt.io/MSYS2#Prepare_MSYS2_for_Qt_related_build_development_environment))
+\- Prepare MSYS2 for general build development environment *(including essential packages for Qt-related building; copied from [here](https://wiki.qt.io/MSYS2#Prepare_MSYS2_for_Qt_related_build_development_environment))*:
 ```
 Start MSYS2-shell. Run/execute below commands to load MinGW-w64 SEH (64bit/x86_64) posix and Dwarf-2
 (32bit/i686) posix toolchains & related other tools, dependencies & components from MSYS2 REPO
@@ -52,16 +52,16 @@ $ pacman -S mingw-w64-i686-zlib
 
 ### Qt-specific steps
 
-\- Acquire and install the Qt 5.6 static library environment *(NOTE: newer versions bundle a lot more into the environment and create much larger builds*)
+\- Acquire and install the Qt 5.6 static library environment *(NOTE: newer versions bundle a lot more into the environment and create much larger builds)*:
 ```
 $ curl -O http://repo.msys2.org/mingw/i686/mingw-w64-i686-qt5-static-5.6.2-4-any.pkg.tar.xz
 $ pacman -U mingw-w64-i686-qt5-static-5.6.2-4-any.pkg.tar.xz
 ```
-\- Install Gambatte-Speedrun dependencies that aren't bundled with Qt 5.6
+\- Install Gambatte-Speedrun dependencies that aren't bundled with Qt 5.6:
 ```
 $ pacman -S mingw-w64-i686-jasper mingw-w64-i686-libwebp mingw-w64-i686-dbus
 ```
-\- Modify .bash_profile (in /c/msys64/home/\<USERNAME\>) add this line to the end of the file:
+\- Modify .bash_profile *(in /c/msys64/home/\<USERNAME\>)* by adding this line to the end of the file:
 ```
 PATH="/mingw32/qt5-static/bin:${PATH}"
 ```
@@ -75,9 +75,9 @@ $ pacman -S mingw-w64-i686-libpng
 
 ## macOS
 
-Open the macOS Terminal and do the following:
+Open a terminal and do the following:
 
-\- Install Homebrew if not already installed (copied from [here](https://brew.sh/)):
+\- Install Homebrew if not already installed *(copied from [here](https://brew.sh/))*:
 ```
 $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
@@ -92,7 +92,7 @@ $ brew install scons zlib
 ```
 $ xcode-select --install
 ```
-\- Install Qt5 package through Homebrew *(NOTE: currently tested to work with XCode 11 and Qt 5.14.1, which supports macOS 10.13+; builds for older macOS versions should also be possible, but you would need to dig up the Homebrew formulae for older versions of Qt5)*
+\- Install Qt5 package through Homebrew *(NOTE: currently tested to work with XCode 11 and Qt 5.14.1, which supports macOS 10.13+; builds for older macOS versions should also be possible, but you would need to dig up the Homebrew formulae for older versions of Qt5)*:
 ```
 $ brew install qt
 ```
@@ -108,7 +108,7 @@ $ macdeployqt gambatte_qt/bin/Gambatte\ Qt.app -dmg
 $ brew install libpng
 ```
 
-## Debian
+## Debian/Ubuntu
 
 Open a terminal and do the following:
 
@@ -119,7 +119,7 @@ $ sudo apt install build-essential git scons zlib1g-dev
 
 ### Qt-specific steps
 
-\- Install qt5 development packages:
+\- Install Qt5 development packages, plus Gambatte-Speedrun dependencies that aren't bundled with Qt5:
 ```
 $ sudo apt install qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev libasound2-dev
 ```
