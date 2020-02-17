@@ -124,6 +124,8 @@ void MemPtrs::setRombank(unsigned bank) {
 	disconnectOamDmaAreas();
 }
 
+// GSR NOTE: Upstream Gambatte introduced a regression in this function that causes ROMs
+// with MBC3 RTC to crash; the bug is still present as of Gambatte r688 (1 Oct 2019)
 void MemPtrs::setRambank(unsigned const flags, unsigned const rambank) {
 	unsigned char *srambankptr = 0;
 	if (!(flags & rtc_en)) {

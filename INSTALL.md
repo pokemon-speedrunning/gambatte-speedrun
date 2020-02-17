@@ -2,10 +2,17 @@
 
 These instructions explain how to set up an environment for building Gambatte-Speedrun from source on different operating systems. Once you've set up your build environment, see the main [README.md](README.md) for build instructions and information on running the test suite.
 
-If all you want to do is build Gambatte-Speedrun's `libgambatte` shared library (for use in scripting, TASing, and other programmatic use of the emulation core), you do not need to perform the Qt-specific steps or the Testrunner-specific steps. The steps listed before the sections with specific steps are still required.
+If all you want to do is build Gambatte-Speedrun's `libgambatte` shared library (for use in scripting, "botting", TASing, and other programmatic use of the emulation core), you do not need to perform the Qt-specific steps or the Testrunner-specific steps. You'll still need to follow the "basic steps" for setting up the build environment.
 
 Running the hwtests suite requires installing an additional dependency (`libpng`); this can be skipped if you have no intention of using the testrunner (we primarily use the test suite to confirm no regressions in accuracy were introduced in our changes). Likewise, the Qt-specific steps can be skipped if you have no intention of building the full Qt UI application.
 
+---
+*Platform-specific instructions:*
+* [Windows](#windows)
+* [macOS](#macos)
+* [Debian/Ubuntu](#debianubuntu)
+
+---
 ## Windows
 
 ***\*NOTE:*** The instructions below assume you're installing 64-bit MSYS2 and using the 32-bit MinGW toolchain (they do work with other configurations, but the commands won't be exactly the same).
@@ -14,8 +21,9 @@ Running the hwtests suite requires installing an additional dependency (`libpng`
 
 ***\*NOTE:*** At the end of these steps, to do any build tasks related to Gambatte-Speedrun, open the MSYS2 MinGW 32-bit shell (under the MSYS2 folder in the Start menu; ***\*must be\**** this specific shell in order for building to work).
 
-\
-Do the following: 
+### Basic steps
+
+*Do the following:*
 
 \- Install [MSYS2](https://www.msys2.org/) by selecting the one-click installer exe for x86_64
 
@@ -23,7 +31,7 @@ Do the following:
 ```
 Run MSYS2 shell (Command Prompt). C:\msys64\msys2_shell.cmd
 
-Update msys2 core components and packages (if you have not done so yet):
+First update MSYS2 core components and packages (if you have not done it yet):
 
 $ pacman -Syuu
 
@@ -75,7 +83,9 @@ $ pacman -S mingw-w64-i686-libpng
 
 ## macOS
 
-Open a terminal and do the following:
+### Basic steps
+
+*Open a terminal and do the following:*
 
 \- Install Homebrew if not already installed *(copied from [here](https://brew.sh/))*:
 ```
@@ -110,7 +120,9 @@ $ brew install libpng
 
 ## Debian/Ubuntu
 
-Open a terminal and do the following:
+### Basic steps
+
+*Open a terminal and do the following:*
 
 \- Install build dependencies:
 ```

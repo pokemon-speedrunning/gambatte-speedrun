@@ -144,6 +144,7 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 		}
 
 		if (data & 4) {
+			// GSR NOTE: "timer quirk" (commit 144e4e9, since r649)
 			if (agbFlag) {
 				unsigned long diff = cc - divLastUpdate_;
 				if (((diff >> (timaClock[tac_ & 3] - 1)) & 1) == 1 && ((diff >> (timaClock[data & 3] - 1)) & 1) == 0)
