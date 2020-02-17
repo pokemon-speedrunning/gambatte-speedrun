@@ -272,6 +272,7 @@ unsigned long Memory::event(unsigned long cc) {
 		lcd_.update(cc);
 		break;
 	case intevent_interrupts:
+		// GSR NOTE: "make stop really stop" (commit 9a79253, since r649)
 		if (stopped_) {
 			intreq_.setEventTime<intevent_interrupts>(disabled_time);
 			break;
@@ -467,6 +468,7 @@ unsigned long Memory::stop(unsigned long cc, bool &skip) {
 		skip = halt(cc);
 		cc += 4;
 
+		// GSR NOTE: "make stop really stop" (commit 9a79253, since r649)
 		stopped_ = true;
 		intreq_.setEventTime<intevent_unhalt>(disabled_time);
 	}

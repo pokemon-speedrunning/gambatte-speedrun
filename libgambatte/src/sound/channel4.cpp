@@ -98,6 +98,9 @@ inline void Channel4::Lfsr::event() {
 void Channel4::Lfsr::nr3Change(unsigned newNr3, unsigned long cc) {
 	updateBackupCounter(cc);
 	nr3_ = newNr3;
+	
+	// GSR NOTE: See "Mickey fix" pull request for info
+	// https://github.com/pokemon-speedrunning/gambatte-speedrun/pull/27
 	counter_ = cc;
 }
 

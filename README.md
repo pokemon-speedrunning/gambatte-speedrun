@@ -1,16 +1,38 @@
 # Gambatte-Speedrun
 
-Fork of https://github.com/sinamas/gambatte with changes related to Pokemon speedrunning. Under GPLv2.
+Fork of [Gambatte](https://github.com/sinamas/gambatte) (authored by sinamas), with local changes for Pokémon Speedruns, as well as other speedrunning communities. Under GPLv2.
 
-Gambatte-Speedrun has been updated to build using Qt5 instead of Qt4. Distributable binaries can be built on Windows using [msys2](https://msys2.github.io/) and the qt5-static package, or on macOS using [Homebrew](https://brew.sh/) and the qt5 package with its `macdeployqt` tool.
+Below is a brief list of the major differences between Gambatte-Speedrun and the upstream version of Gambatte.
 
-## Building
+---
+***Emulation core***
 
-See [INSTALL.md](INSTALL.md) for how to set up the build environment. The amount of setup you need to do depends on exactly what you are planning to build and use.
+* Original Game Boy games playable in Game Boy Color mode (emulated properly)
+* Super Game Boy emulation (to match the SGB2 platform/framerate)
+* Cycle-based RTC option (for *"proper"* RTC behavior when using speedups/pauses/savestates)
+* Other various emulation fixes, improvements, and configuration options
+
+***Speedrun features***
+
+* Timing parity with official consoles (bootroms required; GBP/SGB2 hard reset fades emulated)
+* Emulator version and ROM info displayed in the title bar, and in on-screen display after hard resets
+* Disabling of undesired functionality for speedruns (e.g. cheats, turbo, framerate changes, etc.)
+
+***Software updates***
+
+* Updated to build using Qt5 (instead of Qt4)
+* Buildable as a shared library, for programmatic use of the emulation core
+
+---
+## Building from source
+
+Distributable binaries can be built on Windows using [MSYS2](https://msys2.github.io/) and the qt5-static package, or on macOS using [Homebrew](https://brew.sh/) and the qt package with its `macdeployqt` tool. See [INSTALL.md](INSTALL.md) for detailed information on how to set up the build environment. 
+
+The amount of setup you need to do depends on what parts of the project you are planning to use.
 
 ### Shared Library
 
-If you only wish to build Gambatte-Speedrun's `libgambatte` shared library (for use in scripting, TASing, and other programmatic use of the emulation core), and have the basic build environment set up, you can run the following from the project's root directory, regardless of platform:
+If you only wish to build Gambatte-Speedrun's `libgambatte` shared library (for use in scripting, "botting", TASing, or other programming projects), and have the basic build environment set up, you can run the following from the project's root directory, regardless of platform:
 ```
 $ sh scripts/build_shlib.sh
 ```
