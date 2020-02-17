@@ -58,6 +58,8 @@ public:
 	unsigned long stop(unsigned long cycleCounter, bool &skip);
 	void stall(unsigned long cycleCounter, unsigned long cycles);
 	bool isCgb() const { return lcd_.isCgb(); }
+	bool isCgbDmg() const { return lcd_.isCgbDmg(); }
+	bool isSgb() const { return gbIsSgb_; }
 	bool ime() const { return intreq_.ime(); }
 	bool halted() const { return intreq_.halted(); }
 	unsigned long nextEventTime() const { return intreq_.minEventTime(); }
@@ -111,7 +113,7 @@ public:
 
 	unsigned long event(unsigned long cycleCounter);
 	unsigned long resetCounters(unsigned long cycleCounter);
-	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);
+	LoadRes loadROM(std::string const &romfile, unsigned flags);
 	void setSaveDir(std::string const &dir) { cart_.setSaveDir(dir); }
 
 	void setInputGetter(InputGetter *getInput, void *p) {
@@ -156,7 +158,6 @@ public:
 		std::memcpy(bios_, buffer, size);
 		biosSize_ = size;
 	}
-	bool gbIsCgb() { return gbIsCgb_; }
 
 	unsigned timeNow(unsigned long const cc) const { return cart_.timeNow(cc); }
 
@@ -190,9 +191,7 @@ private:
 	unsigned char serialCnt_;
 	bool blanklcd_;
 	bool biosMode_;
-	bool cgbSwitching_;
 	bool agbFlag_;
-	bool gbIsCgb_;
 	bool gbIsSgb_;
 	bool stopped_;
 	enum HdmaState { hdma_low, hdma_high, hdma_requested } haltHdmaState_;

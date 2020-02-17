@@ -17,6 +17,7 @@
 //
 
 #include "memory.h"
+#include "gambatte.h"
 #include "inputgetter.h"
 #include "savestate.h"
 #include "sound.h"
@@ -92,10 +93,6 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 	state.mem.oamDmaPos = oamDmaPos_;
 	state.mem.haltHdmaState = haltHdmaState_;
 	state.mem.biosMode = biosMode_;
-	state.mem.cgbSwitching = cgbSwitching_;
-	state.mem.agbFlag = agbFlag_;
-	state.mem.gbIsCgb = gbIsCgb_;
-	state.mem.gbIsSgb = gbIsSgb_;
 	state.mem.stopped = stopped_;
 
 	intreq_.saveState(state);
@@ -110,10 +107,6 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 
 void Memory::loadState(SaveState const &state) {
 	biosMode_ = state.mem.biosMode;
-	cgbSwitching_ = state.mem.cgbSwitching;
-	agbFlag_ = state.mem.agbFlag;
-	gbIsCgb_ = state.mem.gbIsCgb;
-	gbIsSgb_ = state.mem.gbIsSgb;
 	stopped_ = state.mem.stopped;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < oam_size ? cart_.rdisabledRam() : ioamhram_);
@@ -232,7 +225,7 @@ unsigned long Memory::event(unsigned long cc) {
 			if (lcden | blanklcd_) {
 				if (intreq_.eventTime(intevent_unhalt) == disabled_time) {
 					lcd_.updateScreen(blanklcd_, cc, 0);
-					if (gbIsSgb_)
+					if (isSgb())
 						sgb_.updateScreen();
 					lcd_.updateScreen(blanklcd_, cc, 1);
 				} else {
@@ -285,7 +278,7 @@ unsigned long Memory::event(unsigned long cc) {
 		}
 
 		if (halted()) {
-			cc += 4 * (gbIsCgb_ || cc - intreq_.eventTime(intevent_interrupts) < 2);
+			cc += 4 * (isCgb() || cc - intreq_.eventTime(intevent_interrupts) < 2);
 			if (cc > lastOamDmaUpdate_)
 				updateOamDma(cc);
 			if ((lcd_.hdmaIsEnabled() && lcd_.isHdmaPeriod(cc) && haltHdmaState_ == hdma_low)
@@ -533,7 +526,7 @@ void Memory::updateInput() {
 			if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
 				intreq_.flagIrq(0x10);
 		}
-	} else if (gbIsSgb_)
+	} else if (isSgb())
 		state -= sgb_.getJoypadIndex();
 
 	ioamhram_[0x100] = (ioamhram_[0x100] & -0x10u) | state;
@@ -725,7 +718,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	switch (p & 0xFF) {
 	case 0x00:
 		if ((data ^ ioamhram_[0x100]) & 0x30) {
-			if (gbIsSgb_) {
+			if (isSgb()) {
 				if ((((data ^ ioamhram_[0x100]) & 0x30) & data) && !biosMode_)
 					sgb_.onJoypad(ioamhram_[0x100]);
 			}
@@ -1027,17 +1020,17 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		oamDmaInitSetup();
 		return;
 	case 0x47:
-		if (!isCgb())
+		if (!isCgb() || isCgbDmg())
 			lcd_.dmgBgPaletteChange(data, cc);
 
 		break;
 	case 0x48:
-		if (!isCgb())
+		if (!isCgb() || isCgbDmg())
 			lcd_.dmgSpPalette1Change(data, cc);
 
 		break;
 	case 0x49:
-		if (!isCgb())
+		if (!isCgb() || isCgbDmg())
 			lcd_.dmgSpPalette2Change(data, cc);
 
 		break;
@@ -1047,26 +1040,33 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 	case 0x4B:
 		lcd_.wxChange(data, cc);
 		break;
+	case 0x4C:
+		if (!biosMode_)
+			return;
 
+		break;
 	case 0x4D:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x14D] = (ioamhram_[0x14D] & ~1u) | (data & 1);
 
 		return;
 	case 0x4F:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			cart_.setVrambank(data & 1);
 			ioamhram_[0x14F] = 0xFE | data;
 		}
 
 		return;
 	case 0x50:
-		biosMode_ = false;
-		if(cgbSwitching_) {
+		if (!biosMode_)
+			return;
+
+		if (isCgb() && (ioamhram_[0x14C] & 0x04)) {
 			lcd_.copyCgbPalettesToDmg();
-			lcd_.setCgb(false);
-			cgbSwitching_ = false;
+			lcd_.setCgbDmg(true);
 		}
+
+		biosMode_ = false;
 		return;
 	case 0x51:
 		dmaSource_ = data << 8 | (dmaSource_ & 0xFF);
@@ -1135,14 +1135,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		if (isCgb()) {
+		if (isCgb())
 			ioamhram_[0x16C] = data | 0xFE;
-			cgbSwitching_ = true;
-		}
 
 		return;
 	case 0x70:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			cart_.setWrambank(data & 0x07 ? data & 0x07 : 1);
 			ioamhram_[0x170] = data | 0xF8;
 		}
@@ -1221,13 +1219,19 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 		ioamhram_[p - mm_oam_begin] = data;
 }
 
-LoadRes Memory::loadROM(std::string const &romfile, bool const cgbMode, bool const multicartCompat) {
+LoadRes Memory::loadROM(std::string const &romfile, unsigned const flags) {
+	bool const cgbMode = flags & GB::LoadFlag::CGB_MODE;
+	bool const multicartCompat = flags & GB::LoadFlag::MULTICART_COMPAT;
+
 	if (LoadRes const fail = cart_.loadROM(romfile, cgbMode, multicartCompat))
 		return fail;
 
 	psg_.init(cart_.isCgb());
 	lcd_.reset(ioamhram_, cart_.vramdata(), cart_.isCgb());
 	interrupter_.setGameShark(std::string());
+
+	agbFlag_ = flags & GB::LoadFlag::GBA_FLAG;
+	gbIsSgb_ = flags & GB::LoadFlag::SGB_MODE;
 
 	return LOADRES_OK;
 }
