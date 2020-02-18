@@ -188,6 +188,7 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 	}
 
 	settings.endGroup();
+	removeDuplicates();
 	restore();
 	resetMapping();
 }
@@ -258,6 +259,42 @@ void InputDialog::store() {
 	}
 
 	resetMapping();
+}
+
+bool InputDialog::checkDuplicates() {
+	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		for(std::size_t j = 0; j < i; ++j) {
+			if(inputBoxes_[i] && inputBoxes_[j]
+					&& !inputBoxes_[i]->isEmpty()
+					&& !inputBoxes_[j]->isEmpty()
+					&& inputBoxes_[i]->data().value == inputBoxes_[j]->data().value
+					&& inputBoxes_[i]->data().id == inputBoxes_[j]->data().id) {
+				QMessageBox msgBox;
+				msgBox.setText("Error");
+				char buffer[512];
+				sprintf(buffer, "Keybind for %s and %s are equal. You may not bind the same keyboard/joystick input to more than one Gameboy input. Please adjust your inputs and try again.", buttons_[i/2]->label().toStdString().c_str(), buttons_[j/2]->label().toStdString().c_str());
+				msgBox.setInformativeText(buffer);
+				msgBox.exec();
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void InputDialog::removeDuplicates() {
+	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		for(std::size_t j = 0; j < i; ++j) {
+			if(inputBoxes_[i] && inputBoxes_[j]
+					&& config_[i].event.value != InputBox::value_null && !(config_[i].event.value == InputBox::value_kbd && config_[i].event.id == 0)
+					&& config_[j].event.value != InputBox::value_null && !(config_[j].event.value == InputBox::value_kbd && config_[j].event.id == 0)
+					&& config_[i].event.value == config_[j].event.value
+					&& config_[i].event.id == config_[j].event.id) {
+				config_[i].event.id = 0;
+				config_[i].event.value = InputBox::value_null;
+			}
+		}
+	}
 }
 
 void InputDialog::restore() {
@@ -361,12 +398,19 @@ void InputDialog::consumeAutoPress() {
 		doConsumeAutoPress(lm->rapidvec);
 }
 
-void InputDialog::accept() {
-	store();
-	QDialog::accept();
-}
-
-void InputDialog::reject() {
-	restore();
-	QDialog::reject();
+void InputDialog::done(int r) {
+	if(QDialog::Accepted == r) {
+		// ok pressed
+		if(!checkDuplicates()) {
+			store();
+			QDialog::done(r);
+			return;
+		}
+	}
+	else {
+		// cancel
+		restore();
+		QDialog::done(r);
+		return;
+	}
 }

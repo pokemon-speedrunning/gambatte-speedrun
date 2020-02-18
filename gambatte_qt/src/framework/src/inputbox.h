@@ -30,6 +30,7 @@ public:
 	void setData(SDL_Event const &data) { setData(data.id, data.value); }
 	void setData(unsigned id, int value = value_kbd);
 	void setNextFocus(QWidget *nextFocus) { nextFocus_ = nextFocus; }
+	bool isEmpty() { return data_.value == value_null || (data_.value == value_kbd && data_.id == 0); }
 	SDL_Event const & data() const { return data_; }
 
 public slots:

@@ -23,6 +23,7 @@
 #include "mutual.h"
 #include "SDL_event.h"
 #include <QDialog>
+#include <QMessageBox>
 #include <map>
 #include <vector>
 
@@ -71,8 +72,7 @@ public:
 	void consumeAutoPress();
 
 public slots:
-	virtual void accept();
-	virtual void reject();
+	virtual void done(int r);
 
 private:
 	struct MappedKey {
@@ -133,6 +133,8 @@ private:
 	void resetMapping();
 	void store();
 	void restore();
+	bool checkDuplicates();
+	void removeDuplicates();
 };
 
 #endif
