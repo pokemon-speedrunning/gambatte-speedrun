@@ -309,7 +309,9 @@ std::ptrdiff_t GambatteSource::update(
 		runFor(gbvidbuf.pixels, gbvidbuf.pitch,
 		       ptr_cast<quint32>(soundBuf), samples);
 
+	#ifdef ENABLE_INPUT_LOG
 	inputLog_.push(samples, inputGetter_.is);
+	#endif
 
 	resetStepPost(pb, soundBuf, samples);
 

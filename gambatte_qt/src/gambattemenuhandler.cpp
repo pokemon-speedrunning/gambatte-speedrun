@@ -465,9 +465,11 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		foreach (QAction *action, frameRateAdjuster->actions())
 			playm->addAction(romLoadedActions->addAction(action));
 
+		#ifdef ENABLE_INPUT_LOG
 		playm->addSeparator();
 		romLoadedActions->addAction(playm->addAction(
 			tr("&Save Input Log As..."), this, SLOT(saveInputLogAs())));
+		#endif
 
 		cmdactions += playm->actions();
 	}
