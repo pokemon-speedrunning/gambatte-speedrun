@@ -263,7 +263,7 @@ void InputDialog::store() {
 
 bool InputDialog::checkDuplicates() {
 	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
-		for(std::size_t j = 0; j < i; ++j) {
+		for(std::size_t j = 0; j < i / 2 * 2; ++j) {
 			if(inputBoxes_[i] && inputBoxes_[j]
 					&& !inputBoxes_[i]->isEmpty()
 					&& !inputBoxes_[j]->isEmpty()
@@ -403,6 +403,8 @@ void InputDialog::done(int r) {
 		// ok pressed
 		if(!checkDuplicates()) {
 			store();
+			removeDuplicates();
+			restore();
 			QDialog::done(r);
 			return;
 		}
