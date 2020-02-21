@@ -178,7 +178,7 @@ void Direct3DBlitter::getPresentParams(D3DPRESENT_PARAMETERS *const presentParam
 	bool excl = exclusive && flipping_.value();
 	if (gdiSettings.monitorFromWindow
 			&& d3d->GetAdapterMonitor(adapterIndex)
-			   != gdiSettings.monitorFromWindow(parentWidget()->parentWidget()->winId(),
+			   != gdiSettings.monitorFromWindow((HWND)parentWidget()->parentWidget()->winId(),
 			                                    GdiSettings::MON_DEFAULTTONEAREST)) {
 		excl = false;
 	}
@@ -197,7 +197,7 @@ void Direct3DBlitter::getPresentParams(D3DPRESENT_PARAMETERS *const presentParam
 	presentParams->MultiSampleType = D3DMULTISAMPLE_NONE;
 	presentParams->MultiSampleQuality = 0;
 	presentParams->SwapEffect = excl ? D3DSWAPEFFECT_FLIP : D3DSWAPEFFECT_DISCARD;
-	presentParams->hDeviceWindow = excl ? parentWidget()->parentWidget()->winId() : winId();
+	presentParams->hDeviceWindow = (HWND)(excl ? parentWidget()->parentWidget()->winId() : winId());
 	presentParams->Windowed = excl ? FALSE : TRUE;
 	presentParams->EnableAutoDepthStencil = FALSE;
 	presentParams->AutoDepthStencilFormat = D3DFMT_UNKNOWN;
@@ -357,7 +357,7 @@ void Direct3DBlitter::exclusiveChange() {
 		} else if (!windowed) {
 			ModeLock mlock(d3d->GetAdapterMonitor(adapterIndex));
 			resetDevice();
-			SetWindowPos(parentWidget()->parentWidget()->winId(),
+			SetWindowPos((HWND)parentWidget()->parentWidget()->winId(),
 			             HWND_NOTOPMOST, 0, 0, 0, 0,
 			             SWP_NOMOVE | SWP_NOSIZE);
 		}
@@ -442,7 +442,7 @@ void Direct3DBlitter::init() {
 		for (int n = 2; n--;) {
 			if (!FAILED(d3d->CreateDevice(
 					adapterIndex, D3DDEVTYPE_HAL,
-					parentWidget()->parentWidget()->winId(),
+					(HWND)parentWidget()->parentWidget()->winId(),
 					D3DCREATE_FPU_PRESERVE | D3DCREATE_SOFTWARE_VERTEXPROCESSING,
 					&presentParams, &device))) {
 				break;

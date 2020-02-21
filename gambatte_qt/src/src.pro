@@ -23,7 +23,7 @@ TEMPLATE = app
 CONFIG += warn_on \
     release
 QMAKE_CFLAGS   += -fomit-frame-pointer
-QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti -fpermissive
+QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
 TARGET = gambatte_qt
 
 macx:TARGET = "Gambatte Qt"
@@ -31,7 +31,7 @@ DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include
 DEPENDPATH  += ../../libgambatte/include
 QT += widgets gui-private
-LIBS += -L../../libgambatte -l:libgambatte.a -lz
+LIBS += ../../libgambatte/libgambatte.a -lz
 win32 {
 	LIBS += -lole32
 	#RC_FILE = gambatteicon.rc
