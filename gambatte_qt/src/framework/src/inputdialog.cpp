@@ -188,7 +188,7 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 	}
 
 	settings.endGroup();
-	removeDuplicates();
+	removeProblemValues();
 	restore();
 	resetMapping();
 }
@@ -282,16 +282,23 @@ bool InputDialog::checkDuplicates() {
 	return false;
 }
 
-void InputDialog::removeDuplicates() {
+void InputDialog::removeProblemValues() {
 	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
-		for(std::size_t j = 0; j < i; ++j) {
-			if(inputBoxes_[i] && inputBoxes_[j]
-					&& config_[i].event.value != InputBox::value_null && !(config_[i].event.value == InputBox::value_kbd && config_[i].event.id == 0)
-					&& config_[j].event.value != InputBox::value_null && !(config_[j].event.value == InputBox::value_kbd && config_[j].event.id == 0)
-					&& config_[i].event.value == config_[j].event.value
-					&& config_[i].event.id == config_[j].event.id) {
-				config_[i].event.id = 0;
+		if(inputBoxes_[i]) {
+			if(config_[i].event.value == InputBox::value_kbd && config_[i].event.id == 0) {
+				// replace with null to avoid forceclose on certain keyboard layouts
 				config_[i].event.value = InputBox::value_null;
+			}
+			// silently drop any duplicate binds that make it this far
+			for(std::size_t j = 0; j < i; ++j) {
+				if(inputBoxes_[j]
+						&& config_[i].event.value != InputBox::value_null
+						&& config_[j].event.value != InputBox::value_null
+						&& config_[i].event.value == config_[j].event.value
+						&& config_[i].event.id == config_[j].event.id) {
+					config_[i].event.id = 0;
+					config_[i].event.value = InputBox::value_null;
+				}
 			}
 		}
 	}
@@ -403,7 +410,7 @@ void InputDialog::done(int r) {
 		// ok pressed
 		if(!checkDuplicates()) {
 			store();
-			removeDuplicates();
+			removeProblemValues();
 			restore();
 			QDialog::done(r);
 			return;

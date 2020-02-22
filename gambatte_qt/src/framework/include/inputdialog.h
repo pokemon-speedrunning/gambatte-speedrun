@@ -134,7 +134,7 @@ private:
 	void store();
 	void restore();
 	bool checkDuplicates();
-	void removeDuplicates();
+	void removeProblemValues();
 };
 
 #endif
