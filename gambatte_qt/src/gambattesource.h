@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <cstring>
 #include <algorithm>
+#include <random>
 
 class GambatteSource : public QObject, public MediaSource {
 public:
@@ -49,7 +50,11 @@ public:
 
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { gb_.reset(resetStall_, GAMBATTE_QT_VERSION_STR); inputLog_.push(0, 0xFF); }
+
+	void reset(unsigned samplesToStall) {
+		gb_.reset(samplesToStall, GAMBATTE_QT_VERSION_STR);
+		inputLog_.push(0, 0xFF);
+	}
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
@@ -68,7 +73,7 @@ public:
 	void saveState(PixelBuffer const &fb);
 	void loadState() { gb_.loadState(); inputLog_.restart(gb_); }
 	void tryReset();
-	void setResetParams(unsigned before, unsigned fade, unsigned limit, unsigned stall);
+	void setResetParams(unsigned fade, unsigned stall);
 	std::vector<char> inputLogState() const { return inputLog_.initialState; }
 	std::vector<std::pair<std::uint32_t, std::uint8_t>> inputLog() const { return inputLog_.data; }
 
@@ -129,6 +134,8 @@ private:
 		}
 	};
 
+	enum ResetStage { RESET_NOT, RESET_FADE, RESET_STALL };
+
 	gambatte::GB gb_;
 	GetInput inputGetter_;
 	InputLog inputLog_;
@@ -143,17 +150,21 @@ private:
 	bool dpadUpLast_, dpadLeftLast_;
 	bool tryReset_;
 	bool isResetting_;
-	unsigned resetFrameCount_;
-	unsigned resetBefore_;
+	ResetStage resetStage_;
+	signed resetCounter_;
 	unsigned resetFade_;
-	unsigned resetLimit_;
 	unsigned resetStall_;
-	unsigned samplesToStall_;
+
+	std::mt19937 rng_;
+	std::uniform_int_distribution<std::mt19937::result_type> dist35112_;
+	unsigned extraSamples() { return dist35112_(rng_); }
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
 	void setResetting(bool state);
-	void resetStep(PixelBuffer const &pb, void *const pbdata);
+	void resetStepPre(std::size_t &samples);
+	void resetStepPost(std::size_t &samples, PixelBuffer const &pb);
+	void applyFade(PixelBuffer const &pb);
 
 	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
 	void emitPause() { if(!isResetting_) { emit togglePause();} }
