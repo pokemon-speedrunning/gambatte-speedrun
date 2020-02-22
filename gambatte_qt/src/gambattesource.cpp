@@ -310,7 +310,7 @@ std::ptrdiff_t GambatteSource::update(
 
 	inputLog_.push(samples, inputGetter_.is);
 
-	resetStepPost(samples, pb);
+	resetStepPost(pb, soundBuf, samples);
 
 	if (vidFrameSampleNo >= 0)
 		inputDialog_->consumeAutoPress();
@@ -378,7 +378,8 @@ void GambatteSource::resetStepPre(std::size_t &samples) {
 	}
 }
 
-void GambatteSource::resetStepPost(std::size_t &samples, PixelBuffer const &pb) {
+void GambatteSource::resetStepPost(
+		PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples) {
 	if (resetStage_ == RESET_NOT)
 		return;
 
@@ -396,10 +397,11 @@ void GambatteSource::resetStepPost(std::size_t &samples, PixelBuffer const &pb) 
 		}
 	}
 
-	applyFade(pb);
+	applyFade(pb, soundBuf, samples);
 }
 
-void GambatteSource::applyFade(PixelBuffer const &pb) {
+void GambatteSource::applyFade(
+		PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples) {
 	if (void *const pbdata = getpbdata(pb, vsrci_)) {
 		float alpha = 0.0f;
 
@@ -412,18 +414,25 @@ void GambatteSource::applyFade(PixelBuffer const &pb) {
 		void          *dstbuf   = cconvert_ ? cconvert_->inBuf()   : pbdata;
 		std::ptrdiff_t dstpitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
 
-		uint_least32_t *intData = static_cast<uint_least32_t *>(dstbuf);
+		uint_least32_t *pixelData = static_cast<uint_least32_t *>(dstbuf);
 
 		for (unsigned y = 0; y < pb.height; ++y) {
 			for (unsigned x = 0; x < pb.width; ++x) {
-				unsigned r = (intData[x] >> 16 & 0xFF) * alpha;
-				unsigned g = (intData[x] >>  8 & 0xFF) * alpha;
-				unsigned b = (intData[x]       & 0xFF) * alpha;
+				unsigned r = (pixelData[x] >> 16 & 0xFF) * alpha;
+				unsigned g = (pixelData[x] >>  8 & 0xFF) * alpha;
+				unsigned b = (pixelData[x]       & 0xFF) * alpha;
 
-				intData[x] = r << 16 | g << 8 | b;
+				pixelData[x] = r << 16 | g << 8 | b;
 			}
 
-			intData += dstpitch;
+			pixelData += dstpitch;
+		}
+
+		if (alpha < 1.0f) {
+			quint32 *sampleData = ptr_cast<quint32>(soundBuf);
+
+			for (unsigned i = 0; i < samples; ++i)
+				sampleData[i] = 0;
 		}
 	}
 }

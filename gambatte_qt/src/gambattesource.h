@@ -163,8 +163,8 @@ private:
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
 	void setResetting(bool state);
 	void resetStepPre(std::size_t &samples);
-	void resetStepPost(std::size_t &samples, PixelBuffer const &pb);
-	void applyFade(PixelBuffer const &pb);
+	void resetStepPost(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
+	void applyFade(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
 
 	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
 	void emitPause() { if(!isResetting_) { emit togglePause();} }
