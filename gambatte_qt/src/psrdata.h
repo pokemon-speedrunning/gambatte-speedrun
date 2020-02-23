@@ -91,4 +91,19 @@ const GambattePlatformInfo gambatte_platform_info[PLATFORM_COUNT] = {
 
 #define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
 
+struct PSRGoodromInfo {
+	std::string title; // cartridge header
+	unsigned crc;      // CRC-32
+};
+
+const PSRGoodromInfo psr_goodroms[] = {
+	{ "POKEMON RED",      0x9F7FDD53 },
+	{ "POKEMON BLUE",     0xD6DA8A1A },
+	{ "POKEMON YELLOW",   0x7D527D62 },
+	{ "POKEMON_GLDAAUE",  0x6BDE3C3E },
+	{ "POKEMON_SLVAAXE",  0x8AD48636 },
+	{ "PM_CRYSTAL",       0xEE6F5188 }, // 1.0
+	{ "PM_CRYSTAL",       0x3358E30A }  // 1.1
+};
+
 #endif

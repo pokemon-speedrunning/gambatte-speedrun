@@ -705,25 +705,12 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
 	bool goodRom = false;
-	if(romTitle.toStdString() == "POKEMON RED" && pak.crc() == 0x9F7FDD53) {
-		goodRom = true;
+	for (PSRGoodromInfo good : psr_goodroms) {
+		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
+			goodRom = true;
+			break;
+		}
 	}
-	if(romTitle.toStdString() == "POKEMON BLUE" && pak.crc() == 0xD6DA8A1A) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON YELLOW" && pak.crc() == 0x7D527D62) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON_GLDAAUE" && pak.crc() == 0x6BDE3C3E) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON_SLVAAXE" && pak.crc() == 0x8AD48636) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "PM_CRYSTAL" && (pak.crc() == 0xEE6F5188 || pak.crc() == 0x3358E30A)) {
-		goodRom = true;
-	}
-	
 
 	QString revision = QString("interim");
 	#ifdef GAMBATTE_QT_VERSION_STR
