@@ -92,18 +92,20 @@ const GambattePlatformInfo gambatte_platform_info[PLATFORM_COUNT] = {
 #define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
 
 struct PSRGoodromInfo {
-	std::string title; // cartridge header
+	std::string title; // from cartridge header
 	unsigned crc;      // CRC-32
+	int savBreakpoint;
 };
 
 const PSRGoodromInfo psr_goodroms[] = {
-	{ "POKEMON RED",      0x9F7FDD53 },
-	{ "POKEMON BLUE",     0xD6DA8A1A },
-	{ "POKEMON YELLOW",   0x7D527D62 },
-	{ "POKEMON_GLDAAUE",  0x6BDE3C3E },
-	{ "POKEMON_SLVAAXE",  0x8AD48636 },
-	{ "PM_CRYSTAL",       0xEE6F5188 }, // 1.0
-	{ "PM_CRYSTAL",       0x3358E30A }  // 1.1
+	{ "POKEMON RED",      0x9F7FDD53, 0x1C7847 },
+	{ "POKEMON BLUE",     0xD6DA8A1A, 0x1C7847 },
+	{ "POKEMON YELLOW",   0x7D527D62, 0x1C7B90 },
+	{ "POKEMON_GLDAAUE",  0x6BDE3C3E, 0x054D0D },
+	{ "POKEMON_SLVAAXE",  0x8AD48636, 0x054D0D },
+	{ "PM_CRYSTAL",       0xEE6F5188, 0x054C6A }, // 1.0
+	{ "PM_CRYSTAL",       0x3358E30A, 0x054C6A }, // 1.1
+	{ "POKECARD",         0x81069D53, 0x04524C }  // USA
 };
 
 #endif

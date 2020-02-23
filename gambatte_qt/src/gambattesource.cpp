@@ -166,6 +166,7 @@ GambatteSource::GambatteSource()
 , dist35112_(0, 35111)
 {
 	gb_.setInputGetter((gambatte::InputGetter *)&GetInput::get, &inputGetter_);
+	setBreakpoint(-1);
 }
 
 InputDialog * GambatteSource::createInputDialog() {
@@ -305,8 +306,8 @@ std::ptrdiff_t GambatteSource::update(
 	resetStepPre(samples);
 
 	std::ptrdiff_t const vidFrameSampleNo =
-		gb_.runFor(gbvidbuf.pixels, gbvidbuf.pitch,
-		           ptr_cast<quint32>(soundBuf), samples);
+		runFor(gbvidbuf.pixels, gbvidbuf.pitch,
+		       ptr_cast<quint32>(soundBuf), samples);
 
 	inputLog_.push(samples, inputGetter_.is);
 
@@ -315,6 +316,34 @@ std::ptrdiff_t GambatteSource::update(
 	if (vidFrameSampleNo >= 0)
 		inputDialog_->consumeAutoPress();
 
+	return vidFrameSampleNo;
+}
+
+std::ptrdiff_t GambatteSource::runFor(
+		uint_least32_t *pixels, std::ptrdiff_t pitch, quint32 *soundBuf, std::size_t &samples) {
+	std::size_t targetSamples = samples;
+	std::size_t actualSamples = 0;
+	std::ptrdiff_t vidFrameSampleNo = -1;
+
+	if (getBreakpoint() != -1)
+		enableBreakpoint(true);
+
+	while (actualSamples < targetSamples && vidFrameSampleNo < 0) {
+		samples = targetSamples - actualSamples;
+		std::ptrdiff_t const vfsn = gb_.runFor(pixels, pitch, soundBuf + actualSamples, samples);
+
+		if (vfsn >= 0)
+			vidFrameSampleNo = actualSamples + vfsn;
+
+		actualSamples += samples;
+
+		if (getHitAddress() != -1) {
+			saveSavedata();
+			enableBreakpoint(false);
+		}
+	}
+
+	samples = actualSamples;
 	return vidFrameSampleNo;
 }
 

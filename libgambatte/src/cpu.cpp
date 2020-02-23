@@ -529,7 +529,6 @@ void CPU::process(unsigned long const cycles) {
 		} else while (cycleCounter < mem_.nextEventTime()) {
 			unsigned char opcode;
 
-#ifdef DLLABLES
 			for (int i = 0; i < numInterruptAddresses; ++i) {
 				if (pc == (interruptAddresses[i] & 0xFFFF)) {
 					unsigned bank = interruptAddresses[i] >> 16;
@@ -544,7 +543,6 @@ void CPU::process(unsigned long const cycles) {
 
 			if (hitInterruptAddress != -1)
 				break;
-#endif
 
 			if (!prefetched_) {
 				PC_READ(opcode);

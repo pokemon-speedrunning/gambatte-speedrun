@@ -707,6 +707,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	bool goodRom = false;
 	for (PSRGoodromInfo good : psr_goodroms) {
 		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
+			source_.setBreakpoint(good.savBreakpoint);
 			goodRom = true;
 			break;
 		}
