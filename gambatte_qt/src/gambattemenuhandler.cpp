@@ -35,8 +35,6 @@
 #include <fstream>
 #include <iostream>
 
-#define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
-
 namespace {
 
 static QString const strippedName(QString const &fullFileName) {
@@ -639,39 +637,13 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	mw_.waitUntilPaused();
 
 	QSettings settings;
+
 	int platformId = settings.value("platform", DEFAULT_GAMBATTE_PLATFORM).toInt();
+	GambattePlatformInfo platform = gambatte_platform_info[platformId];
+	unsigned flags = platform.loadFlags;
+	GambatteBiosInfo info = platform.biosInfo;
 
-	unsigned flags = 0;
-	GambatteBiosInfo info;
-
-	switch (platformId) {
-	case PLATFORM_GB:
-		info = { 0x100, 0x580A33B9, "DMG", "*.gb", "biosFilenameDMG" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBC:
-		flags |= gambatte::GB::CGB_MODE;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBA:
-		flags |= gambatte::GB::CGB_MODE;
-		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBP:
-		flags |= gambatte::GB::CGB_MODE;
-		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(1234567, 101 * (2 << 14));
-		break;
-	case PLATFORM_SGB:
-		flags |= gambatte::GB::SGB_MODE;
-		info = { 0x100, 0xED48E98E, "SGB", "*.sgb", "biosFilenameSGB" };
-		source_.setResetParams(0, 128 * (2 << 14));
-		break;
-	}
+	source_.setResetParams(platform.resetFade, platform.resetStall);
 
 	if (miscDialog_->multicartCompat())
 		flags |= gambatte::GB::MULTICART_COMPAT;

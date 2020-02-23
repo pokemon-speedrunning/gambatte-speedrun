@@ -19,6 +19,7 @@
 #ifndef GAMBATTEMENUHANDLER_H
 #define GAMBATTEMENUHANDLER_H
 
+#include "psrdata.h"
 #include "scalingmethod.h"
 #include <QList>
 #include <QObject>
@@ -120,14 +121,6 @@ private slots:
 	void triggered();
 };
 
-enum GambattePlatform {
-	PLATFORM_GB  = 0,
-	PLATFORM_GBC = 1,
-	PLATFORM_GBA = 2,
-	PLATFORM_GBP = 3,
-	PLATFORM_SGB = 4
-};
-
 class GambattePlatformMenu : private QObject {
 public:
 	GambattePlatformMenu(MainWindow &mw);
@@ -149,15 +142,6 @@ private:
 
 private slots:
 	void triggered();
-};
-
-struct GambatteBiosInfo {
-	std::size_t size;
-	unsigned crc;
-
-	QString name;
-	QString filter;
-	QString key;
 };
 
 class GambatteMenuHandler : public QObject {
