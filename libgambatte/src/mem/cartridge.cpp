@@ -53,10 +53,14 @@ public:
 		return 1;
 	}
 
+	virtual bool disabledRam() const {
+		return !enableRam_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		if (p < 0x2000) {
 			enableRam_ = (data & 0xF) == 0xA;
-			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 		}
 	}
 
@@ -66,7 +70,7 @@ public:
 
 	virtual void loadState(SaveState::Mem const &ss) {
 		enableRam_ = ss.enableRam;
-		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 	}
 
 private:
@@ -95,6 +99,10 @@ public:
 
 	virtual unsigned char curRomBank() const {
 		return rombank_;
+	}
+
+	virtual bool disabledRam() const {
+		return !enableRam_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
@@ -150,7 +158,7 @@ private:
 	static unsigned adjustedRombank(unsigned bank) { return bank & 0x1F ? bank : bank | 1; }
 
 	void setRambank() const {
-		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0,
+		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled,
 		                    rambank_ & (rambanks(memptrs_) - 1));
 	}
 
@@ -171,11 +179,15 @@ public:
 		return rombank_;
 	}
 
+	virtual bool disabledRam() const {
+		return !enableRam_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
-			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 			break;
 		case 1:
 			rombank_ = (rombank_   & 0x60) | (data    & 0x1F);
@@ -204,7 +216,7 @@ public:
 		rombank_ = ss.rombank;
 		enableRam_ = ss.enableRam;
 		rombank0Mode_ = ss.rambankMode;
-		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 		setRombank();
 	}
 
@@ -245,11 +257,15 @@ public:
 		return rombank_;
 	}
 
+	virtual bool disabledRam() const {
+		return !enableRam_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p & 0x6100) {
 		case 0x0000:
 			enableRam_ = (data & 0xF) == 0xA;
-			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 			break;
 		case 0x2100:
 			rombank_ = data & 0xF;
@@ -266,7 +282,7 @@ public:
 	virtual void loadState(SaveState::Mem const &ss) {
 		rombank_ = ss.rombank;
 		enableRam_ = ss.enableRam;
-		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0, 0);
+		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 		memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
 	}
 
@@ -289,6 +305,10 @@ public:
 
 	virtual unsigned char curRomBank() const {
 		return rombank_;
+	}
+
+	virtual bool disabledRam() const {
+		return !enableRam_;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const cc) {
@@ -335,7 +355,7 @@ private:
 	bool enableRam_;
 
 	void setRambank() const {
-		unsigned flags = enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0;
+		unsigned flags = enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled;
 
 		if (rtc_) {
 			rtc_->set(enableRam_, rambank_);
@@ -365,6 +385,10 @@ public:
 
 	virtual unsigned char curRomBank() const {
 		return rombank_;
+	}
+
+	virtual bool disabledRam() const {
+		return false;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
@@ -436,6 +460,10 @@ public:
 
 	virtual unsigned char curRomBank() const {
 		return rombank_;
+	}
+
+	virtual bool disabledRam() const {
+		return false;
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
@@ -521,6 +549,10 @@ public:
 		return rombank_;
 	}
 
+	virtual bool disabledRam() const {
+		return !enableRam_;
+	}
+
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
@@ -563,7 +595,7 @@ private:
 	bool enableRam_;
 
 	void setRambank() const {
-		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : 0,
+		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled,
 		                    rambank_ & (rambanks(memptrs_) - 1));
 	}
 

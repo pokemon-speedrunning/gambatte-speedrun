@@ -80,21 +80,24 @@ public:
 	void ackIrq(unsigned bit, unsigned long cc);
 
 	unsigned readBios(unsigned p) {
-		if(agbFlag_ && p >= 0xF3 && p < 0x100) {
-			return (agbOverride[p-0xF3] + bios_[p]) & 0xFF;
-		}
+		if(agbFlag_ && p >= 0xF3 && p < 0x100)
+			return (agbOverride[p - 0xF3] + bios_[p]) & 0xFF;
+
 		return bios_[p];
 	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
-		return p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
+		bus_ = p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
+		return bus_;
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
 		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
-			return readBios(p);
-		}
-		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
+			bus_ = readBios(p);
+		} else
+			bus_ = cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
+
+		return bus_;
 	}
 
 	void write(unsigned p, unsigned data, unsigned long cc) {
@@ -189,6 +192,7 @@ private:
 	unsigned char oamDmaPos_;
 	unsigned char oamDmaStartPos_;
 	unsigned char serialCnt_;
+	unsigned char bus_;
 	bool blanklcd_;
 	bool biosMode_;
 	bool agbFlag_;

@@ -35,8 +35,6 @@
 #include <fstream>
 #include <iostream>
 
-#define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP
-
 namespace {
 
 static QString const strippedName(QString const &fullFileName) {
@@ -377,11 +375,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , pauseInc_(4)
 , isResetting_(false)
 {
-	QString revision = QString("interim");
-	#ifdef GAMBATTE_QT_VERSION_STR
-	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
-	#endif
-	mw.setWindowTitle("Gambatte-Speedrun "+revision);
+	setWindowPrefix("");
 	source.inputDialog()->setParent(&mw, source.inputDialog()->windowFlags());
 
 	{
@@ -597,6 +591,18 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 	settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
+void GambatteMenuHandler::setWindowPrefix(QString const &windowPrefix) {
+	QString separator(windowPrefix.isEmpty() ? "" : " - ");
+
+#ifdef GAMBATTE_QT_VERSION_STR
+	QString revision("(" GAMBATTE_QT_VERSION_STR ")");
+#else
+	QString revision("interim");
+#endif
+
+	mw_.setWindowTitle(windowPrefix + separator + "Gambatte-Speedrun " + revision);
+}
+
 void GambatteMenuHandler::updateRecentFileActions() {
 	QSettings settings;
 	QStringList files = settings.value("recentFileList").toStringList();
@@ -639,39 +645,13 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	mw_.waitUntilPaused();
 
 	QSettings settings;
+
 	int platformId = settings.value("platform", DEFAULT_GAMBATTE_PLATFORM).toInt();
+	GambattePlatformInfo platform = gambatte_platform_info[platformId];
+	unsigned flags = platform.loadFlags;
+	GambatteBiosInfo info = platform.biosInfo;
 
-	unsigned flags = 0;
-	GambatteBiosInfo info;
-
-	switch (platformId) {
-	case PLATFORM_GB:
-		info = { 0x100, 0x580A33B9, "DMG", "*.gb", "biosFilenameDMG" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBC:
-		flags |= gambatte::GB::CGB_MODE;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBA:
-		flags |= gambatte::GB::CGB_MODE;
-		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(0, 0);
-		break;
-	case PLATFORM_GBP:
-		flags |= gambatte::GB::CGB_MODE;
-		flags |= gambatte::GB::GBA_FLAG;
-		info = { 0x900, 0x31672598, "GBC", "*.gbc", "biosFilename" };
-		source_.setResetParams(1234567, 101 * (2 << 14));
-		break;
-	case PLATFORM_SGB:
-		flags |= gambatte::GB::SGB_MODE;
-		info = { 0x100, 0xED48E98E, "SGB", "*.sgb", "biosFilenameSGB" };
-		source_.setResetParams(0, 128 * (2 << 14));
-		break;
-	}
+	source_.setResetParams(platform.resetFade, platform.resetStall);
 
 	if (miscDialog_->multicartCompat())
 		flags |= gambatte::GB::MULTICART_COMPAT;
@@ -732,32 +712,18 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	          << "cgb: " << source_.isCgb() << std::endl;
 
 	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
-	bool goodRom = false;
-	if(romTitle.toStdString() == "POKEMON RED" && pak.crc() == 0x9F7FDD53) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON BLUE" && pak.crc() == 0xD6DA8A1A) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON YELLOW" && pak.crc() == 0x7D527D62) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON_GLDAAUE" && pak.crc() == 0x6BDE3C3E) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "POKEMON_SLVAAXE" && pak.crc() == 0x8AD48636) {
-		goodRom = true;
-	}
-	if(romTitle.toStdString() == "PM_CRYSTAL" && (pak.crc() == 0xEE6F5188 || pak.crc() == 0x3358E30A)) {
-		goodRom = true;
-	}
-	
+	QString label;
+	for (GambatteGoodromInfo good : gambatte_goodroms) {
+		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
+			if (!good.label.empty())
+				label = " " + QString::fromStdString(good.label);
 
-	QString revision = QString("interim");
-	#ifdef GAMBATTE_QT_VERSION_STR
-	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
-	#endif
-	mw_.setWindowTitle(strippedName(fileName)+(goodRom ? " <PSR>" : "")+" - Gambatte-Speedrun "+revision);
+			source_.setBreakpoint(good.savBreakpoint);
+			break;
+		}
+	}
+
+	setWindowPrefix(strippedName(fileName) + label);
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
@@ -792,6 +758,9 @@ void GambatteMenuHandler::close() {
 
 	source_.load("", 0);
 	mw_.stop();
+
+	setWindowPrefix("");
+
 	emit dmgRomLoaded(false);
 	emit romLoaded(false);
 }
@@ -848,7 +817,7 @@ void GambatteMenuHandler::about() {
 	QMessageBox::about(
 		&mw_,
 		"About Gambatte-Speedrun",
-		"<h3>Gambatte-Speedrun "
+		"<h3>Gambatte-Speedrun"
 #ifdef GAMBATTE_QT_VERSION_STR
 		" (" GAMBATTE_QT_VERSION_STR ")"
 #endif

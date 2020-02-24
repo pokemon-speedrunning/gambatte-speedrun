@@ -41,6 +41,10 @@ public:
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) {
 		gambatte::LoadRes res = gb_.load(romfile, flags);
 		inputLog_.restart(gb_);
+
+		setBreakpoint(-1);
+		enableBreakpoint(false);
+
 		return res;
 	}
 
@@ -61,6 +65,7 @@ public:
 	}
 
 	void setSavedir(std::string const &sdir) { gb_.setSaveDir(sdir); }
+	void saveSavedata() { gb_.saveSavedata(); }
 	void setVideoSource(std::size_t videoSourceIndex);
 	bool isCgb() const { return gb_.isCgb(); }
 	std::string const romTitle() const { return gb_.romTitle(); }
@@ -76,6 +81,9 @@ public:
 	void setResetParams(unsigned fade, unsigned stall);
 	std::vector<char> inputLogState() const { return inputLog_.initialState; }
 	std::vector<std::pair<std::uint32_t, std::uint8_t>> inputLog() const { return inputLog_.data; }
+
+	void setBreakpoint(int address) { breakpoint_[0] = address; }
+	int getBreakpoint() { return breakpoint_[0]; }
 
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
@@ -148,6 +156,7 @@ private:
 	bool dpadUp_, dpadDown_;
 	bool dpadLeft_, dpadRight_;
 	bool dpadUpLast_, dpadLeftLast_;
+	int breakpoint_[1];
 	bool tryReset_;
 	bool isResetting_;
 	ResetStage resetStage_;
@@ -161,10 +170,14 @@ private:
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
+	std::ptrdiff_t runFor(uint_least32_t *pixels, std::ptrdiff_t pitch, quint32 *soundBuf, std::size_t &samples);
 	void setResetting(bool state);
 	void resetStepPre(std::size_t &samples);
 	void resetStepPost(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
 	void applyFade(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
+
+	void enableBreakpoint(bool enable) { gb_.setInterruptAddresses(breakpoint_, enable ? 1 : 0); }
+	int getHitAddress() { return gb_.getHitInterruptAddress(); }
 
 	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
 	void emitPause() { if(!isResetting_) { emit togglePause();} }
