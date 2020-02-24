@@ -178,6 +178,7 @@ private:
 	int pauseInc_;
 	bool isResetting_;
 
+	void setWindowPrefix(QString const &windowPrefix);
 	void loadFile(QString const &fileName);
 	void setCurrentFile(QString const &fileName);
 	void setDmgPaletteColors();

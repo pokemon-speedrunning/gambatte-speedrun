@@ -375,11 +375,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 , pauseInc_(4)
 , isResetting_(false)
 {
-	QString revision = QString("interim");
-	#ifdef GAMBATTE_QT_VERSION_STR
-	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
-	#endif
-	mw.setWindowTitle("Gambatte-Speedrun "+revision);
+	setWindowPrefix("");
 	source.inputDialog()->setParent(&mw, source.inputDialog()->windowFlags());
 
 	{
@@ -595,6 +591,18 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 	settings.setValue("true-colors", trueColorsAction_->isChecked());
 }
 
+void GambatteMenuHandler::setWindowPrefix(QString const &windowPrefix) {
+	QString separator(windowPrefix.isEmpty() ? "" : " - ");
+
+#ifdef GAMBATTE_QT_VERSION_STR
+	QString revision("(" GAMBATTE_QT_VERSION_STR ")");
+#else
+	QString revision("interim");
+#endif
+
+	mw_.setWindowTitle(windowPrefix + separator + "Gambatte-Speedrun " + revision);
+}
+
 void GambatteMenuHandler::updateRecentFileActions() {
 	QSettings settings;
 	QStringList files = settings.value("recentFileList").toStringList();
@@ -704,20 +712,18 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	          << "cgb: " << source_.isCgb() << std::endl;
 
 	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
-	bool goodRom = false;
-	for (PSRGoodromInfo good : psr_goodroms) {
+	QString label;
+	for (GambatteGoodromInfo good : gambatte_goodroms) {
 		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
+			if (!good.label.empty())
+				label = " " + QString::fromStdString(good.label);
+
 			source_.setBreakpoint(good.savBreakpoint);
-			goodRom = true;
 			break;
 		}
 	}
 
-	QString revision = QString("interim");
-	#ifdef GAMBATTE_QT_VERSION_STR
-	revision = revision.sprintf("(" GAMBATTE_QT_VERSION_STR ")");
-	#endif
-	mw_.setWindowTitle(strippedName(fileName)+(goodRom ? " <PSR>" : "")+" - Gambatte-Speedrun "+revision);
+	setWindowPrefix(strippedName(fileName) + label);
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
@@ -752,6 +758,9 @@ void GambatteMenuHandler::close() {
 
 	source_.load("", 0);
 	mw_.stop();
+
+	setWindowPrefix("");
+
 	emit dmgRomLoaded(false);
 	emit romLoaded(false);
 }
@@ -808,7 +817,7 @@ void GambatteMenuHandler::about() {
 	QMessageBox::about(
 		&mw_,
 		"About Gambatte-Speedrun",
-		"<h3>Gambatte-Speedrun "
+		"<h3>Gambatte-Speedrun"
 #ifdef GAMBATTE_QT_VERSION_STR
 		" (" GAMBATTE_QT_VERSION_STR ")"
 #endif
