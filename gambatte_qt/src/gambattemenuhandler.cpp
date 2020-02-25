@@ -666,11 +666,13 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		QMessageBox::StandardButton button = QMessageBox::warning(
 			&mw_,
 			tr("Bios Load Error"),
-			(tr("Could not load ") + info.name + tr(" bios.\n") +
-			"Gambatte-Speedrun requires a " + info.name + " bios for the selected platform.\n" +
-			"Please click OK to specify the location of such a file."),
-			QMessageBox::Ok | QMessageBox::Cancel);
-		if (button == QMessageBox::Ok)
+			("Gambatte-Speedrun requires a " + info.name + " bios for the selected platform.\n\n" +
+			"The bios (or boot ROM) is a .bin file you'll need to acquire before continuing.\n\n" +
+			"Gambatte-Speedrun does not distribute this file, but you may be able to acquire it " +
+			"through similar methods used for other ROMs.\n\n" +
+			"Please press Open to specify the location of this file."),
+			QMessageBox::Open | QMessageBox::Cancel);
+		if (button == QMessageBox::Open)
 			openBios(info);
 		return;
 	}
