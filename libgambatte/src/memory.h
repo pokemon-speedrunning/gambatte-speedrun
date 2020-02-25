@@ -87,17 +87,14 @@ public:
 	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
-		bus_ = p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
-		return bus_;
+		return p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
-		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
-			bus_ = readBios(p);
-		} else
-			bus_ = cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
+		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200)))
+			return readBios(p);
 
-		return bus_;
+		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
 	}
 
 	void write(unsigned p, unsigned data, unsigned long cc) {
@@ -192,7 +189,6 @@ private:
 	unsigned char oamDmaPos_;
 	unsigned char oamDmaStartPos_;
 	unsigned char serialCnt_;
-	unsigned char bus_;
 	bool blanklcd_;
 	bool biosMode_;
 	bool agbFlag_;
