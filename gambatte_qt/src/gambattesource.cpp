@@ -405,7 +405,7 @@ void GambatteSource::resetStepPre(std::size_t &samples) {
 			resetCounter_ = resetFade_ + extraSamples();
 		}
 	} else {
-		samples = std::min(samples, (unsigned)resetCounter_);
+		samples = std::min(samples, (std::size_t)resetCounter_);
 	}
 }
 
