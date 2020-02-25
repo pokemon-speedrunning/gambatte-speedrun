@@ -40,9 +40,9 @@ public:
 
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) {
 		gambatte::LoadRes res = gb_.load(romfile, flags);
-		#ifdef ENABLE_INPUT_LOG
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.restart(gb_);
-		#endif
+	#endif
 
 		setBreakpoint(-1);
 		enableBreakpoint(false);
@@ -59,13 +59,13 @@ public:
 
 	void reset(unsigned samplesToStall) {
 		std::string revision = "interim";
-		#ifdef GAMBATTE_QT_VERSION_STR
+	#ifdef GAMBATTE_QT_VERSION_STR
 		revision = GAMBATTE_QT_VERSION_STR;
-		#endif
+	#endif
 		gb_.reset(samplesToStall, revision);
-		#ifdef ENABLE_INPUT_LOG
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.push(0, 0xFF);
-		#endif
+	#endif
 	}
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
@@ -84,9 +84,9 @@ public:
 
 	void loadState(std::string const &filepath) {
 		gb_.loadState(filepath);
-		#ifdef ENABLE_INPUT_LOG
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.restart(gb_);
-		#endif
+	#endif
 	}
 
 	QDialog * inputDialog() const { return inputDialog_; }
@@ -94,9 +94,9 @@ public:
 
 	void loadState() {
 		gb_.loadState();
-		#ifdef ENABLE_INPUT_LOG
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.restart(gb_);
-		#endif
+	#endif
 	}
 
 	void tryReset();
