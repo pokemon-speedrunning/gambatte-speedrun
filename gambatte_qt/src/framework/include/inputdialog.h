@@ -133,7 +133,7 @@ private:
 	void resetMapping();
 	void store();
 	void restore();
-	bool checkDuplicates();
+	bool validateInputBindings();
 	void removeProblemValues();
 };
 

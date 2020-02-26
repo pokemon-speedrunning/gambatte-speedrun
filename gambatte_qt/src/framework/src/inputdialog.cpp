@@ -261,7 +261,7 @@ void InputDialog::store() {
 	resetMapping();
 }
 
-bool InputDialog::checkDuplicates() {
+bool InputDialog::validateInputBindings() {
 	// also checks for shift
 	bool shiftBound = false;
 	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
@@ -281,7 +281,7 @@ bool InputDialog::checkDuplicates() {
 					tr("Input Binding Error"),
 					buffer,
 					QMessageBox::Ok);
-				return true;
+				return false;
 			}
 		}
 	}
@@ -291,9 +291,9 @@ bool InputDialog::checkDuplicates() {
 			tr("Input Binding Warning"),
 			("Please note that using SHIFT as an input in combination with any key that it modifies may lead to buttons still being considered held after you release them. For best results, please choose another input button.\n\nTo continue on with SHIFT still bound press OK, if you want to change it press Cancel."),
 			QMessageBox::Ok | QMessageBox::Cancel);
-		return QMessageBox::Ok != button;
+		return QMessageBox::Ok == button;
 	}
-	return false;
+	return true;
 }
 
 void InputDialog::removeProblemValues() {
@@ -422,7 +422,7 @@ void InputDialog::consumeAutoPress() {
 void InputDialog::done(int r) {
 	if(QDialog::Accepted == r) {
 		// ok pressed
-		if(!checkDuplicates()) {
+		if(validateInputBindings()) {
 			store();
 			removeProblemValues();
 			restore();
