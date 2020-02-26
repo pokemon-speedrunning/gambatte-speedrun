@@ -84,15 +84,15 @@ FrameRateAdjuster::FrameRateAdjuster(MiscDialog const &miscDialog, MainWindow &m
 , resetFrameRateAction_(new QAction(tr("&Reset Frame Rate"), &mw))
 , enabled_(true)
 {
-#ifdef ENABLE_TURBO_BUTTONS
+#ifdef ENABLE_FRAMERATE_BUTTONS
 	decFrameRateAction_->setShortcut(QString("Ctrl+D"));
 	incFrameRateAction_->setShortcut(QString("Ctrl+I"));
 	resetFrameRateAction_->setShortcut(QString("Ctrl+U"));
-#endif
 
 	connect(decFrameRateAction_,   SIGNAL(triggered()), this, SLOT(decFrameRate()));
 	connect(incFrameRateAction_,   SIGNAL(triggered()), this, SLOT(incFrameRate()));
 	connect(resetFrameRateAction_, SIGNAL(triggered()), this, SLOT(resetFrameRate()));
+#endif
 	connect(&miscDialog, SIGNAL(accepted()), this, SLOT(miscDialogChange()));
 	changed();
 }
@@ -117,25 +117,21 @@ void FrameRateAdjuster::setDisabled(bool disabled) {
 }
 
 void FrameRateAdjuster::decFrameRate() {
-#ifdef ENABLE_TURBO_BUTTONS
 	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
 		return;
 	if (enabled_) {
 		frameTime_.inc();
 		changed();
 	}
-#endif
 }
 
 void FrameRateAdjuster::incFrameRate() {
-#ifdef ENABLE_TURBO_BUTTONS
 	if (static_cast<GambatteMenuHandler *>(this->parent())->isResetting())
 		return;
 	if (enabled_) {
 		frameTime_.dec();
 		changed();
 	}
-#endif
 }
 
 void FrameRateAdjuster::resetFrameRate() {
@@ -454,6 +450,8 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		pauseAction_->setCheckable(true);
 		romLoadedActions->addAction(playm->addAction(tr("Frame &Step"),
 		                            this, SLOT(frameStep()), QString("Ctrl+.")));
+
+	#ifdef ENABLE_FRAMERATE_BUTTONS
 		playm->addSeparator();
 		syncFrameRateAction_ = playm->addAction(tr("&Sync Frame Rate to Refresh Rate"));
 		syncFrameRateAction_->setCheckable(true);
@@ -464,10 +462,13 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 
 		foreach (QAction *action, frameRateAdjuster->actions())
 			playm->addAction(romLoadedActions->addAction(action));
+	#endif
 
+	#ifdef ENABLE_INPUT_LOG
 		playm->addSeparator();
 		romLoadedActions->addAction(playm->addAction(
 			tr("&Save Input Log As..."), this, SLOT(saveInputLogAs())));
+	#endif
 
 		cmdactions += playm->actions();
 	}
@@ -662,14 +663,16 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		mw_.stop();
 		emit dmgRomLoaded(false);
 		emit romLoaded(false);
-		QMessageBox::StandardButton button = QMessageBox::critical(
+		QMessageBox::StandardButton button = QMessageBox::warning(
 			&mw_,
 			tr("Bios Load Error"),
-			(tr("Could not load ") + info.name + tr(" bios.\n") +
-			"Gambatte-Speedrun requires a " + info.name + " bios for the selected platform.\n" +
-			"Please specify the location of such a file."),
-			QMessageBox::Ok | QMessageBox::Cancel);
-		if (button == QMessageBox::Ok)
+			("Gambatte-Speedrun requires a " + info.name + " bios for the selected platform.\n\n" +
+			"The bios (or boot ROM) is a .bin file you'll need to acquire before continuing.\n\n" +
+			"Gambatte-Speedrun does not distribute this file, but you may be able to acquire it " +
+			"through similar methods used for other ROMs.\n\n" +
+			"Please press Open to specify the location of this file."),
+			QMessageBox::Open | QMessageBox::Cancel);
+		if (button == QMessageBox::Open)
 			openBios(info);
 		return;
 	}
@@ -918,6 +921,7 @@ void GambatteMenuHandler::cheatDialogChange() {
 }
 
 void GambatteMenuHandler::reconsiderSyncFrameRateActionEnable() {
+#ifdef ENABLE_FRAMERATE_BUTTONS
 	if (mw_.blitterConf(videoDialog_->blitterNo()).maxSwapInterval()
 			&& !MainWindow::isDwmCompositionEnabled()) {
 		syncFrameRateAction_->setEnabled(true);
@@ -927,6 +931,7 @@ void GambatteMenuHandler::reconsiderSyncFrameRateActionEnable() {
 
 		syncFrameRateAction_->setEnabled(false);
 	}
+#endif
 }
 
 void GambatteMenuHandler::execGlobalPaletteDialog() {

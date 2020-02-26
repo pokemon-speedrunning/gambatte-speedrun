@@ -40,7 +40,9 @@ public:
 
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) {
 		gambatte::LoadRes res = gb_.load(romfile, flags);
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.restart(gb_);
+	#endif
 
 		setBreakpoint(-1);
 		enableBreakpoint(false);
@@ -56,8 +58,14 @@ public:
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
 
 	void reset(unsigned samplesToStall) {
-		gb_.reset(samplesToStall, GAMBATTE_QT_VERSION_STR);
+		std::string revision = "interim";
+	#ifdef GAMBATTE_QT_VERSION_STR
+		revision = GAMBATTE_QT_VERSION_STR;
+	#endif
+		gb_.reset(samplesToStall, revision);
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.push(0, 0xFF);
+	#endif
 	}
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
@@ -73,10 +81,24 @@ public:
 	void selectState(int n) { gb_.selectState(n); }
 	int currentState() const { return gb_.currentState(); }
 	void saveState(PixelBuffer const &fb, std::string const &filepath);
-	void loadState(std::string const &filepath) { gb_.loadState(filepath); inputLog_.restart(gb_); }
+
+	void loadState(std::string const &filepath) {
+		gb_.loadState(filepath);
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.restart(gb_);
+	#endif
+	}
+
 	QDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
-	void loadState() { gb_.loadState(); inputLog_.restart(gb_); }
+
+	void loadState() {
+		gb_.loadState();
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.restart(gb_);
+	#endif
+	}
+
 	void tryReset();
 	void setResetParams(unsigned fade, unsigned stall);
 	std::vector<char> inputLogState() const { return inputLog_.initialState; }

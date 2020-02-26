@@ -28,6 +28,7 @@ gambatte_qt/.qmake.stash
 gambatte_qt/src/platforms.pri
 
 .vs/
+.vscode/
 
 *.os
 *.so

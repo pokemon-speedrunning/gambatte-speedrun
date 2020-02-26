@@ -55,7 +55,6 @@ Memory::Memory(Interrupter const &interrupter)
 , oamDmaPos_(-2u & 0xFF)
 , oamDmaStartPos_(0)
 , serialCnt_(0)
-, bus_(0xFF)
 , blanklcd_(false)
 , haltHdmaState_(hdma_low)
 {
@@ -693,8 +692,6 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned long const cc) {
 
 			if (cart_.rsrambankptr())
 				return cart_.rsrambankptr()[p];
-			else if (cart_.disabledRam())
-				return bus_;
             
 			if (cart_.isHuC3())
 				return cart_.HuC3Read(p, cc);

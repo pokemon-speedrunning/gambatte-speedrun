@@ -120,7 +120,7 @@ static void setDwmTripleBuffer(HWND const hwnd, bool const enable) {
 }
 
 HWND getWidgetHWND(QWidget* widget) {
-	if(const QWindow *w = widget->windowHandle()) {
+	if(QWindow *w = widget->windowHandle()) {
 			return (HWND)QGuiApplication::platformNativeInterface()->nativeResourceForWindow(QByteArrayLiteral("handle"), w);
 	}
 	return NULL;

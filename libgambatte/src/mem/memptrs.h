@@ -51,8 +51,7 @@ inline std::size_t wrambank_size() { return 0x1000; }
 
 class MemPtrs {
 public:
-	enum RamFlag { read_en = 1, write_en = 2, rtc_en = 4,
-		disabled = read_en | rtc_en };
+	enum RamFlag { disabled = 0, read_en = 1, write_en = 2, rtc_en = 4 };
 
 	MemPtrs();
 	void reset(unsigned rombanks, unsigned rambanks, unsigned wrambanks);
