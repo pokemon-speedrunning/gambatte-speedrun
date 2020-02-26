@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <cstring>
 #include <algorithm>
+#include <random>
 
 class GambatteSource : public QObject, public MediaSource {
 public:
@@ -39,7 +40,13 @@ public:
 
 	gambatte::LoadRes load(std::string const &romfile, unsigned flags) {
 		gambatte::LoadRes res = gb_.load(romfile, flags);
+	#ifdef ENABLE_INPUT_LOG
 		inputLog_.restart(gb_);
+	#endif
+
+		setBreakpoint(-1);
+		enableBreakpoint(false);
+
 		return res;
 	}
 
@@ -49,13 +56,24 @@ public:
 
 	void setGameGenie(std::string const &codes) { gb_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
-	void reset() { gb_.reset(resetStall_, GAMBATTE_QT_VERSION_STR); inputLog_.push(0, 0xFF); }
+
+	void reset(unsigned samplesToStall) {
+		std::string revision = "interim";
+	#ifdef GAMBATTE_QT_VERSION_STR
+		revision = GAMBATTE_QT_VERSION_STR;
+	#endif
+		gb_.reset(samplesToStall, revision);
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.push(0, 0xFF);
+	#endif
+	}
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		gb_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
 
 	void setSavedir(std::string const &sdir) { gb_.setSaveDir(sdir); }
+	void saveSavedata() { gb_.saveSavedata(); }
 	void setVideoSource(std::size_t videoSourceIndex);
 	bool isCgb() const { return gb_.isCgb(); }
 	std::string const romTitle() const { return gb_.romTitle(); }
@@ -63,14 +81,31 @@ public:
 	void selectState(int n) { gb_.selectState(n); }
 	int currentState() const { return gb_.currentState(); }
 	void saveState(PixelBuffer const &fb, std::string const &filepath);
-	void loadState(std::string const &filepath) { gb_.loadState(filepath); inputLog_.restart(gb_); }
+
+	void loadState(std::string const &filepath) {
+		gb_.loadState(filepath);
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.restart(gb_);
+	#endif
+	}
+
 	QDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
-	void loadState() { gb_.loadState(); inputLog_.restart(gb_); }
+
+	void loadState() {
+		gb_.loadState();
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.restart(gb_);
+	#endif
+	}
+
 	void tryReset();
-	void setResetParams(unsigned before, unsigned fade, unsigned limit, unsigned stall);
+	void setResetParams(unsigned fade, unsigned stall);
 	std::vector<char> inputLogState() const { return inputLog_.initialState; }
 	std::vector<std::pair<std::uint32_t, std::uint8_t>> inputLog() const { return inputLog_.data; }
+
+	void setBreakpoint(int address) { breakpoint_[0] = address; }
+	int getBreakpoint() { return breakpoint_[0]; }
 
 	virtual void keyPressEvent(QKeyEvent const *);
 	virtual void keyReleaseEvent(QKeyEvent const *);
@@ -129,6 +164,8 @@ private:
 		}
 	};
 
+	enum ResetStage { RESET_NOT, RESET_FADE, RESET_STALL };
+
 	gambatte::GB gb_;
 	GetInput inputGetter_;
 	InputLog inputLog_;
@@ -141,19 +178,28 @@ private:
 	bool dpadUp_, dpadDown_;
 	bool dpadLeft_, dpadRight_;
 	bool dpadUpLast_, dpadLeftLast_;
+	int breakpoint_[1];
 	bool tryReset_;
 	bool isResetting_;
-	unsigned resetFrameCount_;
-	unsigned resetBefore_;
+	ResetStage resetStage_;
+	signed resetCounter_;
 	unsigned resetFade_;
-	unsigned resetLimit_;
 	unsigned resetStall_;
-	unsigned samplesToStall_;
+
+	std::mt19937 rng_;
+	std::uniform_int_distribution<std::mt19937::result_type> dist35112_;
+	unsigned extraSamples() { return dist35112_(rng_); }
 
 	InputDialog * createInputDialog();
 	GbVidBuf setPixelBuffer(void *pixels, PixelBuffer::PixelFormat format, std::ptrdiff_t pitch);
+	std::ptrdiff_t runFor(uint_least32_t *pixels, std::ptrdiff_t pitch, quint32 *soundBuf, std::size_t &samples);
 	void setResetting(bool state);
-	void resetStep(PixelBuffer const &pb, void *const pbdata);
+	void resetStepPre(std::size_t &samples);
+	void resetStepPost(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
+	void applyFade(PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples);
+
+	void enableBreakpoint(bool enable) { gb_.setInterruptAddresses(breakpoint_, enable ? 1 : 0); }
+	int getHitAddress() { return gb_.getHitInterruptAddress(); }
 
 	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
 	void emitPause() { if(!isResetting_) { emit togglePause();} }

@@ -283,7 +283,7 @@ void DirectDrawBlitter::init() {
 	DWORD const sclFlags = exclusive && flipping_.value()
 	                     ? DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN
 	                     : DDSCL_NORMAL;
-	if (lpDD->SetCooperativeLevel(parentWidget()->parentWidget()->winId(), sclFlags) != DD_OK) {
+	if (lpDD->SetCooperativeLevel((HWND)parentWidget()->parentWidget()->winId(), sclFlags) != DD_OK) {
 		std::cerr << "SetCooperativeLevel failed" << std::endl;
 		return uninit();
 	}
@@ -291,7 +291,7 @@ void DirectDrawBlitter::init() {
 		std::cerr << "CreateClipper failed" << std::endl;
 		return uninit();
 	}
-	if (lpClipper->SetHWnd(0, winId()) != DD_OK) {
+	if (lpClipper->SetHWnd(0, (HWND)winId()) != DD_OK) {
 		std::cerr << "SetHWnd failed" << std::endl;
 		return uninit();
 	}
@@ -476,20 +476,20 @@ HRESULT DirectDrawBlitter::backBlit(
 
 void DirectDrawBlitter::finalBlit(DWORD const waitflag) {
 	if (clear && exclusive && flipping_.value() && !blitted) {
-		lpClipper->SetHWnd(0, parentWidget()->parentWidget()->winId());
+		lpClipper->SetHWnd(0, (HWND)parentWidget()->parentWidget()->winId());
 
 		RECT rcRectDest;
-		GetWindowRect(parentWidget()->parentWidget()->winId(), &rcRectDest);
+		GetWindowRect((HWND)parentWidget()->parentWidget()->winId(), &rcRectDest);
 
 		bool const success = backBlit(lpDDSClear, &rcRectDest, waitflag) == DD_OK;
-		lpClipper->SetHWnd(0, winId());
+		lpClipper->SetHWnd(0, (HWND)winId());
 		clear -= success;
 		if (!success)
 			return;
 	}
 
 	RECT rcRectDest;
-	GetWindowRect(winId(), &rcRectDest);
+	GetWindowRect((HWND)winId(), &rcRectDest);
 	blitted |= backBlit(lpDDSVideo, &rcRectDest, waitflag) == DD_OK;
 }
 

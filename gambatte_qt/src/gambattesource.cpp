@@ -158,13 +158,15 @@ GambatteSource::GambatteSource()
 , dpadLeftLast_(false)
 , tryReset_(false)
 , isResetting_(false)
-, resetFrameCount_(0)
-, resetBefore_(4)
-, resetFade_(32)
-, resetLimit_(37)
+, resetStage_(RESET_NOT)
+, resetCounter_(0)
+, resetFade_(1234567)
 , resetStall_(101 * (2 << 14))
+, rng_(std::random_device()())
+, dist35112_(0, 35111)
 {
 	gb_.setInputGetter((gambatte::InputGetter *)&GetInput::get, &inputGetter_);
+	setBreakpoint(-1);
 }
 
 InputDialog * GambatteSource::createInputDialog() {
@@ -300,24 +302,55 @@ std::ptrdiff_t GambatteSource::update(
 	inputGetter_.is = packedInputState(inputState_, sizeof inputState_ / sizeof inputState_[0]);
 
 	samples -= overUpdate;
+
+	resetStepPre(samples);
+
 	std::ptrdiff_t const vidFrameSampleNo =
-		gb_.runFor(gbvidbuf.pixels, gbvidbuf.pitch,
-		           ptr_cast<quint32>(soundBuf), samples);
+		runFor(gbvidbuf.pixels, gbvidbuf.pitch,
+		       ptr_cast<quint32>(soundBuf), samples);
+
+#ifdef ENABLE_INPUT_LOG
 	inputLog_.push(samples, inputGetter_.is);
+#endif
+
+	resetStepPost(pb, soundBuf, samples);
+
 	if (vidFrameSampleNo >= 0)
 		inputDialog_->consumeAutoPress();
 
-	if (samplesToStall_ > 0)
-		samplesToStall_ = std::max((int)(samplesToStall_ - samples), 0);
+	return vidFrameSampleNo;
+}
 
+std::ptrdiff_t GambatteSource::runFor(
+		uint_least32_t *pixels, std::ptrdiff_t pitch, quint32 *soundBuf, std::size_t &samples) {
+	std::size_t targetSamples = samples;
+	std::size_t actualSamples = 0;
+	std::ptrdiff_t vidFrameSampleNo = -1;
+
+	if (getBreakpoint() != -1)
+		enableBreakpoint(true);
+
+	while (actualSamples < targetSamples && vidFrameSampleNo < 0) {
+		samples = targetSamples - actualSamples;
+		std::ptrdiff_t const vfsn = gb_.runFor(pixels, pitch, soundBuf + actualSamples, samples);
+
+		if (vfsn >= 0)
+			vidFrameSampleNo = actualSamples + vfsn;
+
+		actualSamples += samples;
+
+		if (getHitAddress() != -1) {
+			saveSavedata();
+			enableBreakpoint(false);
+		}
+	}
+
+	samples = actualSamples;
 	return vidFrameSampleNo;
 }
 
 void GambatteSource::generateVideoFrame(PixelBuffer const &pb) {
 	if (void *const pbdata = getpbdata(pb, vsrci_)) {
-		if (tryReset_)
-			resetStep(pb, pbdata);
-
 		setPixelBuffer(pbdata, pb.pixelFormat, pb.pitch);
 		if (vfilter_) {
 			void          *dstbuf   = cconvert_ ? cconvert_->inBuf()   : pbdata;
@@ -356,7 +389,6 @@ void GambatteSource::tryReset() {
 	if(isResetting_)
 		return;
 	tryReset_ = true;
-	resetFrameCount_ = 0;
 }
 
 void GambatteSource::setResetting(bool state) {
@@ -364,43 +396,79 @@ void GambatteSource::setResetting(bool state) {
 	emit resetting(state);
 }
 
-void GambatteSource::resetStep(PixelBuffer const &pb, void *const pbdata) {
-	resetFrameCount_++;
-
-	if (resetFrameCount_ == 1)
-		setResetting(true);
-
-	unsigned pos = std::max((int)(std::min(resetFrameCount_, resetFade_) - resetBefore_), 0);
-	float multiplier = 1 - pos / (float)(resetFade_ - resetBefore_);
-	gambatte::uint_least32_t *intData =
-		static_cast<gambatte::uint_least32_t *>(cconvert_ ? cconvert_->inBuf() : pbdata);
-	std::ptrdiff_t pitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
-
-	for (unsigned y = 0; y < pb.height; y++) {
-		for (unsigned x = 0; x < pb.width; x++) {
-			int b = (int)(multiplier * ( intData[x]        & 0xFF));
-			int g = (int)(multiplier * ((intData[x] >>  8) & 0xFF));
-			int r = (int)(multiplier * ((intData[x] >> 16) & 0xFF));
-			intData[x] = b | (g << 8) | (r << 16);
+void GambatteSource::resetStepPre(std::size_t &samples) {
+	if (resetStage_ == RESET_NOT) {
+		if (tryReset_) {
+			tryReset_ = false;
+			setResetting(true);
+			resetStage_ = RESET_FADE;
+			resetCounter_ = resetFade_ + extraSamples();
 		}
-		intData += pitch;
-	}
-
-	if (resetFrameCount_ == resetLimit_) {
-		reset();
-		samplesToStall_ = resetStall_;
-	}
-
-	if (resetFrameCount_ >= resetLimit_ && samplesToStall_ == 0) {
-		tryReset_ = false;
-		setResetting(false);
+	} else {
+		samples = std::min(samples, (std::size_t)resetCounter_);
 	}
 }
 
-void GambatteSource::setResetParams(unsigned before, unsigned fade,
-		unsigned limit, unsigned stall) {
-	resetBefore_ = before;
+void GambatteSource::resetStepPost(
+		PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples) {
+	if (resetStage_ == RESET_NOT)
+		return;
+
+	resetCounter_ -= samples;
+
+	if (resetCounter_ <= 0) {
+		if (resetStage_ == RESET_FADE) {
+			reset(resetStall_);
+			resetStage_ = RESET_STALL;
+			resetCounter_ = resetStall_;
+		} else if (resetStage_ == RESET_STALL) {
+			setResetting(false);
+			resetStage_ = RESET_NOT;
+			resetCounter_ = 0;
+		}
+	}
+
+	applyFade(pb, soundBuf, samples);
+}
+
+void GambatteSource::applyFade(
+		PixelBuffer const &pb, qint16 *const soundBuf, std::size_t &samples) {
+	if (void *const pbdata = getpbdata(pb, vsrci_)) {
+		float alpha = 0.0f;
+
+		if (resetStage_ == RESET_FADE) {
+			float part = resetFade_ / 9.0f;
+			alpha = (resetCounter_ - part) / (resetFade_ - 2 * part);
+			alpha = std::min(std::max(alpha, 0.0f), 1.0f);
+		}
+
+		void          *dstbuf   = cconvert_ ? cconvert_->inBuf()   : pbdata;
+		std::ptrdiff_t dstpitch = cconvert_ ? cconvert_->inPitch() : pb.pitch;
+
+		uint_least32_t *pixelData = static_cast<uint_least32_t *>(dstbuf);
+
+		for (unsigned y = 0; y < pb.height; ++y) {
+			for (unsigned x = 0; x < pb.width; ++x) {
+				unsigned r = (pixelData[x] >> 16 & 0xFF) * alpha;
+				unsigned g = (pixelData[x] >>  8 & 0xFF) * alpha;
+				unsigned b = (pixelData[x]       & 0xFF) * alpha;
+
+				pixelData[x] = r << 16 | g << 8 | b;
+			}
+
+			pixelData += dstpitch;
+		}
+
+		if (alpha < 1.0f) {
+			quint32 *sampleData = ptr_cast<quint32>(soundBuf);
+
+			for (unsigned i = 0; i < samples; ++i)
+				sampleData[i] = 0;
+		}
+	}
+}
+
+void GambatteSource::setResetParams(unsigned fade, unsigned stall) {
 	resetFade_ = fade;
-	resetLimit_ = limit;
 	resetStall_ = stall;
 }

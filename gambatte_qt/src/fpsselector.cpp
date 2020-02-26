@@ -46,10 +46,10 @@ FpsSelector::FpsSelector(QWidget *widgetParent)
 {
 	comboBox_->addItem("GB/GBC (" + QString::number(262144.0 / 4389.0) + " fps)",
 	                   QSize(262144, 4389));
-#if !defined(ENABLE_TURBO_BUTTONS)
+#ifndef ENABLE_FRAMERATE_BUTTONS
     comboBox_->setHidden(true);
 #endif
-#ifdef ENABLE_TURBO_BUTTONS
+#ifdef ENABLE_FRAMERATE_BUTTONS
 	comboBox_->addItem(tr("Other..."));
 
 	QSize const &loadedValue = QSettings().value("misc/fps", value_).toSize();
@@ -81,7 +81,7 @@ QWidget * FpsSelector::widget() const {
 }
 
 void FpsSelector::indexChanged(int const index) {
-#ifdef ENABLE_TURBO_BUTTONS
+#ifdef ENABLE_FRAMERATE_BUTTONS
 	if (getCustomIndex(comboBox_) == index) {
 		bool ok = false;
 		double const fps =

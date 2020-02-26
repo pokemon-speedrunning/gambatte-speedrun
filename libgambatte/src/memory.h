@@ -80,9 +80,9 @@ public:
 	void ackIrq(unsigned bit, unsigned long cc);
 
 	unsigned readBios(unsigned p) {
-		if(agbFlag_ && p >= 0xF3 && p < 0x100) {
-			return (agbOverride[p-0xF3] + bios_[p]) & 0xFF;
-		}
+		if(agbFlag_ && p >= 0xF3 && p < 0x100)
+			return (agbOverride[p - 0xF3] + bios_[p]) & 0xFF;
+
 		return bios_[p];
 	}
 
@@ -91,9 +91,9 @@ public:
 	}
 
 	unsigned read(unsigned p, unsigned long cc) {
-		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
+		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200)))
 			return readBios(p);
-		}
+
 		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
 	}
 

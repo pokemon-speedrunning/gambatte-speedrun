@@ -72,7 +72,7 @@ if sys.platform == 'darwin':
 	sys_libs.append('System')
 
 shlib = env.SharedLibrary('gambatte', sourceFiles + ['src/cinterface.cpp'],
-                          CXXFLAGS = env['CXXFLAGS'] + ' -DDLLABLES' + rev(),
+                          CXXFLAGS = env['CXXFLAGS'] + rev(),
                           LINKFLAGS = env['LINKFLAGS'] + ' -s',
                           LIBS = sys_libs,
                           SHLIBPREFIX = "lib")

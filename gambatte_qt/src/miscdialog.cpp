@@ -57,7 +57,7 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 
 	addLayout(topLayout, new QHBoxLayout)->addWidget(pauseOnDialogs_.checkBox());
 	addLayout(topLayout, new QHBoxLayout)->addWidget(pauseOnFocusOut_.checkBox());
-#ifdef ENABLE_TURBO_BUTTONS
+#ifdef ENABLE_FRAMERATE_BUTTONS
 	{
 		QHBoxLayout *hLayout = addLayout(topLayout, new QHBoxLayout);
 		hLayout->addWidget(new QLabel(tr("Base frame rate:")));

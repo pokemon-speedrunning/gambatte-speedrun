@@ -107,7 +107,7 @@ void MemPtrs::reset(unsigned const rombanks, unsigned const rambanks, unsigned c
 	rmem_[0xC] = wmem_[0xC] = wramdata_[0] - mm_wram_begin;
 	rmem_[0xE] = wmem_[0xE] = wramdata_[0] - mm_wram_mirror_begin;
 	setRombank(1);
-	setRambank(0, 0);
+	setRambank(disabled, 0);
 	setVrambank(0);
 	setWrambank(1);
 }
