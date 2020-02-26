@@ -262,22 +262,36 @@ void InputDialog::store() {
 }
 
 bool InputDialog::checkDuplicates() {
+	// also checks for shift
+	bool shiftBound = false;
 	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		if(inputBoxes_[i] && inputBoxes_[i]->data().value == InputBox::value_kbd && inputBoxes_[i]->data().id == Qt::Key_Shift) {
+			shiftBound = true;
+		}
 		for(std::size_t j = 0; j < i / 2 * 2; ++j) {
 			if(inputBoxes_[i] && inputBoxes_[j]
 					&& !inputBoxes_[i]->isEmpty()
 					&& !inputBoxes_[j]->isEmpty()
 					&& inputBoxes_[i]->data().value == inputBoxes_[j]->data().value
 					&& inputBoxes_[i]->data().id == inputBoxes_[j]->data().id) {
-				QMessageBox msgBox;
-				msgBox.setText("Error");
 				char buffer[512];
 				sprintf(buffer, "Keybind for %s and %s are equal. You may not bind the same keyboard/joystick input to more than one Gameboy input. Please adjust your inputs and try again.", buttons_[i/2]->label().toStdString().c_str(), buttons_[j/2]->label().toStdString().c_str());
-				msgBox.setInformativeText(buffer);
-				msgBox.exec();
+				QMessageBox::critical(
+					this,
+					tr("Input Binding Error"),
+					buffer,
+					QMessageBox::Ok);
 				return true;
 			}
 		}
+	}
+	if(shiftBound) {
+		QMessageBox::StandardButton button = QMessageBox::warning(
+			this,
+			tr("Input Binding Warning"),
+			("Please note that using SHIFT as an input in combination with any key that it modifies may lead to buttons still being considered held after you release them. For best results, please choose another input button.\n\nTo continue on with SHIFT still bound press OK, if you want to change it press Cancel."),
+			QMessageBox::Ok | QMessageBox::Cancel);
+		return QMessageBox::Ok != button;
 	}
 	return false;
 }
