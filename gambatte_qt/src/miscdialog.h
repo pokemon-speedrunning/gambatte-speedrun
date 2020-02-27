@@ -31,6 +31,7 @@ public:
 	explicit MiscDialog(QString const &savePath, QWidget *parent = 0);
 	virtual ~MiscDialog();
 	int turboSpeed() const { return turboSpeed_; }
+	int threshold() const { return threshold_; }
 	bool pauseOnDialogs() const { return pauseOnDialogs_.value() | pauseOnFocusOut_.value(); }
 	bool pauseOnFocusOut() const { return pauseOnFocusOut_.value(); }
 	bool dwmTripleBuf() const { return dwmTripleBuf_.value(); }
@@ -44,6 +45,7 @@ public slots:
 
 private:
 	QSpinBox *const turboSpeedBox;
+	QSpinBox *const thresholdBox;
 	PersistCheckBox pauseOnDialogs_;
 	PersistCheckBox pauseOnFocusOut_;
 	FpsSelector fpsSelector_;
@@ -51,6 +53,7 @@ private:
 	PersistCheckBox multicartCompat_;
 	PathSelector savepathSelector_;
 	int turboSpeed_;
+	int threshold_;
 
 	void restore();
 };

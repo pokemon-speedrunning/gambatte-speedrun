@@ -330,6 +330,14 @@ void InputDialog::restore() {
 	}
 }
 
+void InputDialog::setJoystickThreshold(int threshold) {
+	for (std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		if (inputBoxes_[i])
+			inputBoxes_[i]->setJoystickThreshold(threshold);
+	}
+
+}
+
 template<class AutoPressVec>
 static void setButtonPressed(AutoPressVec &v, InputDialog::Button *const button, int const fpp) {
 	if (fpp) {

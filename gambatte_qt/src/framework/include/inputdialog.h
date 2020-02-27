@@ -61,6 +61,8 @@ public:
 
 	explicit InputDialog(auto_vector<Button> &buttons, QWidget *parent = 0);
 	virtual ~InputDialog();
+	
+	void setJoystickThreshold(int threshold);
 
 	// These invoke Button::pressed/released for matching buttons
 	void keyPress(QKeyEvent const *);

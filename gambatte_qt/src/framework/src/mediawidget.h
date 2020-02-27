@@ -99,6 +99,7 @@ public:
 	}
 
 	void setFastForwardSpeed(int speed) { worker_->setFastForwardSpeed(speed); }
+	void setJoystickThreshold(int threshold) { worker_->setJoystickThreshold(threshold); }
 
 	void setMode(std::size_t screenNo, std::size_t resIndex, std::size_t rateIndex) {
 		fullModeToggler_->setMode(screenNo, resIndex, rateIndex);

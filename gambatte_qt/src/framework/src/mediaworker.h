@@ -68,6 +68,8 @@ public:
 
 	void setFastForwardSpeed(int speed) { turboSkip_.setSpeed(speed); }
 	int fastForwardSpeed() const { return turboSkip_.speed(); }
+	void setJoystickThreshold(int threshold) { threshold_ = threshold; }
+	int threshold() const { return threshold_; }
 	void setFastForward(bool enable);
 	bool fastForward() const { return turboSkip_.isEnabled(); }
 
@@ -185,6 +187,7 @@ private:
 	Array<qint16> sndOutBuffer_;
 	scoped_ptr<AudioOut> ao_;
 	long usecft_;
+	int threshold_;
 
 	friend class PushMediaWorkerCall;
 	long adaptToRateEstimation(long estft);

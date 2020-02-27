@@ -901,6 +901,8 @@ void GambatteMenuHandler::miscDialogChange() {
 	mw_.callInWorkerThread(setSaveDirFun);
 	mw_.setDwmTripleBuffer(miscDialog_->dwmTripleBuf());
 	mw_.setFastForwardSpeed(miscDialog_->turboSpeed());
+	mw_.setJoystickThreshold(miscDialog_->threshold());
+	source_.inputDialog()->setJoystickThreshold(miscDialog_->threshold());
 	mw_.setPauseOnFocusOut(miscDialog_->pauseOnFocusOut() ? 2 : 0);
 	pauseInc_ = miscDialog_->pauseOnDialogs() ? 4 : 0;
 }

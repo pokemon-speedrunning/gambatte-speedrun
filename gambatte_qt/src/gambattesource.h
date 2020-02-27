@@ -89,7 +89,7 @@ public:
 	#endif
 	}
 
-	QDialog * inputDialog() const { return inputDialog_; }
+	InputDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
 
 	void loadState() {

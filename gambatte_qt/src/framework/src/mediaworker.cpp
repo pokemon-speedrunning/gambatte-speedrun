@@ -29,6 +29,7 @@
 #endif
 #include <cstdlib>
 #include <cstring>
+#include <QSettings>
 
 MediaWorker::MeanQueue::MeanQueue(long mean, long var)
 : q_(size, Elem(mean, var))
@@ -150,6 +151,7 @@ MediaWorker::MediaWorker(MediaSource &source,
 , sourceUpdater_(source)
 , ao_(new AudioOut(ae, aerate, aelatency, aevolume, resamplerNo))
 , usecft_(0)
+, threshold_(8192)
 {
 }
 
@@ -273,7 +275,8 @@ void MediaWorker::updateJoysticks() {
 		js.update();
 
 		SDL_Event ev;
-		while (js.pollEvent(&ev))
+		QSettings settings;
+		while (js.pollEvent(&ev, 0, threshold_))
 			source().joystickEvent(ev);
 	}
 }
