@@ -98,7 +98,7 @@ $ brew install scons zlib
 
 ### Qt-specific steps
 
-\- Install Xcode Command Line Tools if not already installed:
+\- Install Xcode Command Line Tools (if not already installed; newer Homebrew versions should install them by default):
 ```
 $ xcode-select --install
 ```
@@ -106,9 +106,9 @@ $ xcode-select --install
 ```
 $ brew install qt
 ```
-***\*NOTE:*** After building and creating "Gambatte Qt.app", you can run the following command to create a deployable standalone macOS app, which can be used as a release build that other macOS users can run:
+***\*NOTE:*** After building and creating "Gambatte-Speedrun.app", you can run the following command to create a deployable standalone macOS app, which can be used as a release build that other macOS users can run:
 ```
-$ macdeployqt gambatte_qt/bin/Gambatte\ Qt.app -dmg
+$ macdeployqt gambatte_qt/bin/Gambatte-Speedrun.app -dmg
 ```
 
 ### Testrunner-specific steps
