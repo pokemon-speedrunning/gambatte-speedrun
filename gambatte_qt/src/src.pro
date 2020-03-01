@@ -24,9 +24,7 @@ CONFIG += warn_on \
     release
 QMAKE_CFLAGS   += -fomit-frame-pointer
 QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
-TARGET = gambatte_qt
 
-macx:TARGET = "Gambatte Qt"
 DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include
 DEPENDPATH  += ../../libgambatte/include
@@ -39,10 +37,19 @@ win32 {
 unix:!macx {
 	QT += x11extras
 }
+
+TARGET = "gambatte_speedrun"
+macx:TARGET = "Gambatte-Speedrun"
+VERSION_STR = interim  # default to interim in case there's an issue getting revision count
+
 exists(../../.git) {
 	MY_GIT_REVNO = $$system(git rev-list HEAD --count)
-	!isEmpty(MY_GIT_REVNO):DEFINES += GAMBATTE_QT_VERSION_STR='\\"r$$MY_GIT_REVNO\\"'
+	!isEmpty(MY_GIT_REVNO) {
+		VERSION_STR = r$$MY_GIT_REVNO
+	}
 }
+
+DEFINES += GSR_VERSION_STR='\\"$$VERSION_STR\\"'
 
 # debug symbols
 #QMAKE_CXXFLAGS_RELEASE += -g

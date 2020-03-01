@@ -594,13 +594,7 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 
 void GambatteMenuHandler::setWindowPrefix(QString const &windowPrefix) {
 	QString separator(windowPrefix.isEmpty() ? "" : " - ");
-
-#ifdef GAMBATTE_QT_VERSION_STR
-	QString revision("(" GAMBATTE_QT_VERSION_STR ")");
-#else
-	QString revision("interim");
-#endif
-
+	QString revision("(" GSR_VERSION_STR ")");
 	mw_.setWindowTitle(windowPrefix + separator + "Gambatte-Speedrun " + revision);
 }
 
@@ -821,9 +815,7 @@ void GambatteMenuHandler::about() {
 		&mw_,
 		"About Gambatte-Speedrun",
 		"<h3>Gambatte-Speedrun"
-#ifdef GAMBATTE_QT_VERSION_STR
-		" (" GAMBATTE_QT_VERSION_STR ")"
-#endif
+		" (" GSR_VERSION_STR ")"
 		"</h3>"
 		"<p>"
 			"<b>Homepage:</b> "
@@ -831,7 +823,7 @@ void GambatteMenuHandler::about() {
 				"https://github.com/pokemon-speedrunning/gambatte-speedrun"
 			"</a>"
 		"</p>"
-"<p>"
+		"<p>"
 			"<b>Forked from:</b> "
 			"<a href=\"https://github.com/sinamas/gambatte\">"
 				"https://github.com/sinamas/gambatte"

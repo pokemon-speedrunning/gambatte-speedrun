@@ -60,10 +60,10 @@ lib = env.Library('gambatte', sourceFiles)
 
 def rev():
 	try:
-		from subprocess import check_output
+		from subprocess import check_output, CalledProcessError
 		stdout = check_output(['git', 'rev-list', 'HEAD', '--count'])
-		return ' -DREVISION=' + stdout.strip()
-	except:
+		return ' -DREVISION=' + stdout.decode().strip()
+	except (OSError, CalledProcessError):
 		return ' -DREVISION=-1'
 
 import sys
