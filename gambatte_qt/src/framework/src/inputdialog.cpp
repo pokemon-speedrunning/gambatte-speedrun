@@ -156,8 +156,8 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 			config_[i * 2    ].event.value =
 				settings.value(category + label + "Value1",
 				                 defaultKey
-				               ? InputBox::value_null
-				               : InputBox::value_kbd).toInt();
+				               ? InputBox::value_kbd
+				               : InputBox::value_null).toInt();
 			config_[i * 2    ].fpp = defaultFpp
 				? settings.value(category + label + "Fpp1", defaultFpp).toInt()
 				: 0;
@@ -167,22 +167,22 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 			config_[i * 2 + 1].event.value =
 				settings.value(category + label + "Value2",
 				                 defaultAltKey
-				               ? InputBox::value_null
-				               : InputBox::value_kbd).toInt();
+				               ? InputBox::value_kbd
+				               : InputBox::value_null).toInt();
 			config_[i * 2 + 1].fpp = defaultFpp
 				? settings.value(category + label + "Fpp2", defaultFpp).toInt()
 				: 0;
 		} else {
 			config_[i * 2    ].event.id = defaultKey;
 			config_[i * 2    ].event.value = defaultKey
-			                               ? InputBox::value_null
-			                               : InputBox::value_kbd;
+			                               ? InputBox::value_kbd
+			                               : InputBox::value_null;
 			config_[i * 2    ].fpp = defaultFpp;
 
 			config_[i * 2 + 1].event.id = defaultAltKey;
 			config_[i * 2 + 1].event.value = defaultAltKey
-			                               ? InputBox::value_null
-			                               : InputBox::value_kbd;
+			                               ? InputBox::value_kbd
+			                               : InputBox::value_null;
 			config_[i * 2 + 1].fpp = defaultFpp;
 		}
 	}
