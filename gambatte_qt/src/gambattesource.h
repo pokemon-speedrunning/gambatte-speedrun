@@ -58,11 +58,7 @@ public:
 	void setGameShark(std::string const &codes) { gb_.setGameShark(codes); }
 
 	void reset(unsigned samplesToStall) {
-		std::string revision = "interim";
-	#ifdef GAMBATTE_QT_VERSION_STR
-		revision = GAMBATTE_QT_VERSION_STR;
-	#endif
-		gb_.reset(samplesToStall, revision);
+		gb_.reset(samplesToStall, GSR_VERSION_STR);
 	#ifdef ENABLE_INPUT_LOG
 		inputLog_.push(0, 0xFF);
 	#endif

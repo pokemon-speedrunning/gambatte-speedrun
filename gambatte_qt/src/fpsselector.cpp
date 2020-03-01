@@ -46,9 +46,6 @@ FpsSelector::FpsSelector(QWidget *widgetParent)
 {
 	comboBox_->addItem("GB/GBC (" + QString::number(262144.0 / 4389.0) + " fps)",
 	                   QSize(262144, 4389));
-#ifndef ENABLE_FRAMERATE_BUTTONS
-    comboBox_->setHidden(true);
-#endif
 #ifdef ENABLE_FRAMERATE_BUTTONS
 	comboBox_->addItem(tr("Other..."));
 
@@ -58,6 +55,8 @@ FpsSelector::FpsSelector(QWidget *widgetParent)
 	         && loadedValue.width() / loadedValue.height() > 0
 	       ? loadedValue
 	       : value_;
+#else
+	comboBox_->setHidden(true);
 #endif
 	reject();
 	connect(comboBox_, SIGNAL(currentIndexChanged(int)), this, SLOT(indexChanged(int)));
