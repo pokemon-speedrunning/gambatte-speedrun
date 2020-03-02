@@ -30,9 +30,9 @@ using namespace gambatte;
 
 namespace text {
 using namespace bitmapfont;
-static const char stateLoaded[] = { S,t,a,t,e,SPC,N0,SPC,l,o,a,d,e,d,0 };
-static const char stateSaved[]  = { S,t,a,t,e,SPC,N0,SPC,s,a,v,e,d,0 };
-static const char reset[] = {R,e,s,e,t,SPC,r,N0,N0,N0,SPC,N0,N0,N0,N0,N0,N0,N0,N0,0};
+static const char stateLoaded[] = { S,t,a,t,e,SPC,N0,SPC,l,o,a,d,e,d,NUL };
+static const char stateSaved[] = { S,t,a,t,e,SPC,N0,SPC,s,a,v,e,d,NUL };
+static const char reset[] = { R,e,s,e,t,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,SPC,NUL };
 static const std::size_t stateLoadedWidth = getWidth(stateLoaded);
 static const std::size_t stateSavedWidth  = getWidth(stateSaved);
 }
@@ -169,18 +169,37 @@ transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned chec
 	unsigned checksumPart;
 	char txt[sizeof text::reset];
 	std::memcpy(txt, text::reset, sizeof txt);
-	for(int p=0;p<8;p++) {
-		checksumPart = (checksum >> (28-p*4)) & 0x0F;
+
+	// Put build string into char array (max 8 characters for now)
+	int b_len = std::min((int) build.length(), 8);
+	int b_off = 6; // 1 space in between "Reset" and build
+	for (int b = 0; b < b_len; b++) {
+		char chr = build[b];
+		int idx = b + b_off;
+		if (chr >= '0' && chr <= '9') {
+			txt[idx] = (char) (chr - '0' + bitmapfont::N0);
+		} else if (chr >= 'A' && chr <= 'Z') {
+			txt[idx] = (char) (chr - 'A' + bitmapfont::A);
+		} else if (chr >= 'a' && chr <= 'z') {
+			txt[idx] = (char) (chr - 'a' + bitmapfont::a);
+		} else { // replace with space
+			txt[idx] = bitmapfont::SPC;
+		}
+	}
+
+	// Put CRC into char array
+	int p_len = 8;
+	int p_off = b_off + (b_len + 1); // 1 space in between build and CRC
+	for (int p = 0; p < p_len; p++) {
+		int idx = p + p_off;
+		checksumPart = (checksum >> (28 - p*4)) & 0x0F;
 		if(checksumPart < 0x0A) {
-			txt[p+11] = (char) (bitmapfont::N0 + checksumPart);
-		}
-		else {
-			txt[p+11] = (char) (bitmapfont::A + (checksumPart-0x0A));
+			txt[idx] = (char) (bitmapfont::N0 + checksumPart);
+		} else {
+			txt[idx] = (char) (bitmapfont::A + (checksumPart - 0x0A));
 		}
 	}
-	for(int b=1;b<4;b++) {
-		txt[b+6] = (char) (build[b] - 0x30 + bitmapfont::N0);
-	}
+
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(bitmapfont::getWidth(txt), txt));
 }
 
