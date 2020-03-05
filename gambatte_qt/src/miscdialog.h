@@ -31,7 +31,7 @@ public:
 	explicit MiscDialog(QString const &savePath, QWidget *parent = 0);
 	virtual ~MiscDialog();
 	int turboSpeed() const { return turboSpeed_; }
-	int threshold() const { return threshold_; }
+	int threshold() const { return threshold_ * 32768 / 100; }
 	bool pauseOnDialogs() const { return pauseOnDialogs_.value() | pauseOnFocusOut_.value(); }
 	bool pauseOnFocusOut() const { return pauseOnFocusOut_.value(); }
 	bool dwmTripleBuf() const { return dwmTripleBuf_.value(); }

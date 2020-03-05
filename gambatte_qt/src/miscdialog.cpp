@@ -42,13 +42,15 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
                     std::make_pair(tr("Same folder as ROM image"), QString()),
                     this)
 , turboSpeed_(8)
-, threshold_(8192)
+, threshold_(25)
 {
 	setWindowTitle(tr("Miscellaneous Settings"));
 	turboSpeedBox->setRange(2, 16);
 	turboSpeedBox->setSuffix("x");
 	
-	thresholdBox->setRange(8192, 24576);
+	thresholdBox->setRange(25, 75);
+	thresholdBox->setSuffix("%");
+	
 
 	QVBoxLayout *const mainLayout = new QVBoxLayout(this);
 	QVBoxLayout *const topLayout = addLayout(mainLayout, new QVBoxLayout);
@@ -103,8 +105,8 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 
 	turboSpeed_ = std::min(std::max(QSettings().value("misc/turboSpeed", turboSpeed_).toInt(), 2),
 	                       16);
-    threshold_ = std::min(std::max(QSettings().value("misc/joystickThreshold", threshold_).toInt(), 8192),
-	                      24576);
+    threshold_ = std::min(std::max(QSettings().value("misc/joystickThreshold", threshold_).toInt(), 25),
+	                      75);
 	restore();
 }
 
