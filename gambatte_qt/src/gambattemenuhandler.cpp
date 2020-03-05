@@ -165,7 +165,7 @@ WindowSizeMenu::WindowSizeMenu(MainWindow &mw, VideoDialog const &vd)
 	QSize const &size = checkedSize();
 	mw_.setWindowSize(size);
 	if (size.isEmpty())
-		mw_.resize(QSettings().value("mainwindow/size", QSize(160, 144)).toSize());
+		mw_.resize(QSettings().value("mainwindow/size", QSize(320, 288)).toSize());
 }
 
 WindowSizeMenu::~WindowSizeMenu() {

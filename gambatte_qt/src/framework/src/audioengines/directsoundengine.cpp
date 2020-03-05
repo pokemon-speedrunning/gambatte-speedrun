@@ -58,7 +58,7 @@ DirectSoundEngine::DirectSoundEngine(HWND hwnd_in)
 , lastpc(0)
 , hwnd(hwnd_in)
 , primaryBuf(false)
-, useGlobalBuf(false)
+, useGlobalBuf(true)
 , blankBuf(true)
 {
 	DirectSoundEnumerateA(enumCallback, this);
