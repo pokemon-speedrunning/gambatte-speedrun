@@ -25,6 +25,7 @@ test/testrunner
 *.rc~
 
 gambatte_qt/src/gambatte_qt_plugin_import.cpp
+gambatte_qt/src/gambatte_speedrun_plugin_import.cpp
 gambatte_qt/.qmake.stash
 gambatte_qt/src/platforms.pri
 
