@@ -156,8 +156,8 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 			config_[i * 2    ].event.value =
 				settings.value(category + label + "Value1",
 				                 defaultKey
-				               ? InputBox::value_null
-				               : InputBox::value_kbd).toInt();
+				               ? InputBox::value_kbd
+				               : InputBox::value_null).toInt();
 			config_[i * 2    ].fpp = defaultFpp
 				? settings.value(category + label + "Fpp1", defaultFpp).toInt()
 				: 0;
@@ -167,27 +167,28 @@ InputDialog::InputDialog(auto_vector<Button> &buttons, QWidget *parent)
 			config_[i * 2 + 1].event.value =
 				settings.value(category + label + "Value2",
 				                 defaultAltKey
-				               ? InputBox::value_null
-				               : InputBox::value_kbd).toInt();
+				               ? InputBox::value_kbd
+				               : InputBox::value_null).toInt();
 			config_[i * 2 + 1].fpp = defaultFpp
 				? settings.value(category + label + "Fpp2", defaultFpp).toInt()
 				: 0;
 		} else {
 			config_[i * 2    ].event.id = defaultKey;
 			config_[i * 2    ].event.value = defaultKey
-			                               ? InputBox::value_null
-			                               : InputBox::value_kbd;
+			                               ? InputBox::value_kbd
+			                               : InputBox::value_null;
 			config_[i * 2    ].fpp = defaultFpp;
 
 			config_[i * 2 + 1].event.id = defaultAltKey;
 			config_[i * 2 + 1].event.value = defaultAltKey
-			                               ? InputBox::value_null
-			                               : InputBox::value_kbd;
+			                               ? InputBox::value_kbd
+			                               : InputBox::value_null;
 			config_[i * 2 + 1].fpp = defaultFpp;
 		}
 	}
 
 	settings.endGroup();
+	removeProblemValues();
 	restore();
 	resetMapping();
 }
@@ -260,6 +261,63 @@ void InputDialog::store() {
 	resetMapping();
 }
 
+bool InputDialog::validateInputBindings() {
+	// also checks for shift
+	bool shiftBound = false;
+	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		if(inputBoxes_[i] && inputBoxes_[i]->data().value == InputBox::value_kbd && inputBoxes_[i]->data().id == Qt::Key_Shift) {
+			shiftBound = true;
+		}
+		for(std::size_t j = 0; j < i / 2 * 2; ++j) {
+			if(inputBoxes_[i] && inputBoxes_[j]
+					&& !inputBoxes_[i]->isEmpty()
+					&& !inputBoxes_[j]->isEmpty()
+					&& inputBoxes_[i]->data().value == inputBoxes_[j]->data().value
+					&& inputBoxes_[i]->data().id == inputBoxes_[j]->data().id) {
+				char buffer[512];
+				sprintf(buffer, "Keybind for %s and %s are equal. You may not bind the same keyboard/joystick input to more than one Gameboy input. Please adjust your inputs and try again.", buttons_[i/2]->label().toStdString().c_str(), buttons_[j/2]->label().toStdString().c_str());
+				QMessageBox::critical(
+					this,
+					tr("Input Binding Error"),
+					buffer,
+					QMessageBox::Ok);
+				return false;
+			}
+		}
+	}
+	if(shiftBound) {
+		QMessageBox::StandardButton button = QMessageBox::warning(
+			this,
+			tr("Input Binding Warning"),
+			("Please note that using SHIFT as an input in combination with any key that it modifies may lead to buttons still being considered held after you release them. For best results, please choose another input button.\n\nTo continue on with SHIFT still bound press OK, if you want to change it press Cancel."),
+			QMessageBox::Ok | QMessageBox::Cancel);
+		return QMessageBox::Ok == button;
+	}
+	return true;
+}
+
+void InputDialog::removeProblemValues() {
+	for(std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		if(inputBoxes_[i]) {
+			if(config_[i].event.value == InputBox::value_kbd && config_[i].event.id == 0) {
+				// replace with null to avoid forceclose on certain keyboard layouts
+				config_[i].event.value = InputBox::value_null;
+			}
+			// silently drop any duplicate binds that make it this far
+			for(std::size_t j = 0; j < i; ++j) {
+				if(inputBoxes_[j]
+						&& config_[i].event.value != InputBox::value_null
+						&& config_[j].event.value != InputBox::value_null
+						&& config_[i].event.value == config_[j].event.value
+						&& config_[i].event.id == config_[j].event.id) {
+					config_[i].event.id = 0;
+					config_[i].event.value = InputBox::value_null;
+				}
+			}
+		}
+	}
+}
+
 void InputDialog::restore() {
 	for (std::size_t i = 0; i < inputBoxes_.size(); ++i) {
 		if (inputBoxes_[i])
@@ -270,6 +328,14 @@ void InputDialog::restore() {
 		if (fppBoxes_[i])
 			fppBoxes_[i]->setValue(config_[i].fpp);
 	}
+}
+
+void InputDialog::setJoystickThreshold(int threshold) {
+	for (std::size_t i = 0; i < inputBoxes_.size(); ++i) {
+		if (inputBoxes_[i])
+			inputBoxes_[i]->setJoystickThreshold(threshold);
+	}
+
 }
 
 template<class AutoPressVec>
@@ -361,12 +427,21 @@ void InputDialog::consumeAutoPress() {
 		doConsumeAutoPress(lm->rapidvec);
 }
 
-void InputDialog::accept() {
-	store();
-	QDialog::accept();
-}
-
-void InputDialog::reject() {
-	restore();
-	QDialog::reject();
+void InputDialog::done(int r) {
+	if(QDialog::Accepted == r) {
+		// ok pressed
+		if(validateInputBindings()) {
+			store();
+			removeProblemValues();
+			restore();
+			QDialog::done(r);
+			return;
+		}
+	}
+	else {
+		// cancel
+		restore();
+		QDialog::done(r);
+		return;
+	}
 }

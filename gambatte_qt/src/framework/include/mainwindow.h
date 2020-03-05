@@ -150,6 +150,8 @@ public:
 
 	/** speed = N, gives N times faster than normal when fastForward is enabled. */
 	void setFastForwardSpeed(int speed);
+	
+	void setJoystickThreshold(int threshold);
 
 	/** Sets the video mode that is used for full screen (see toggleFullScreen).
 	  * A screen is basically a monitor. A different full screen mode can be selected for each screen.

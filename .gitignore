@@ -13,6 +13,7 @@ gambatte_sdl/gambatte_sdl
 gambatte_qt/src/moc_*.cpp
 gambatte_qt/src/moc_*.h
 gambatte_qt/src/release/
+gambatte_qt/src/debug/
 gambatte_qt/bin/
 test/testrunner
 

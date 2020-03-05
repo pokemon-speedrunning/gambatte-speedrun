@@ -132,6 +132,7 @@ ConstBlitterConf MainWindow::currentBlitterConf() const { return w_->currentBlit
 void MainWindow::frameStep() { w_->frameStep(); }
 void MainWindow::hideCursor() { w_->hideCursor(); }
 void MainWindow::setFastForwardSpeed(int speed) { w_->setFastForwardSpeed(speed); }
+void MainWindow::setJoystickThreshold(int threshold) { w_->setJoystickThreshold(threshold); }
 void MainWindow::setFastForward(bool enable) { w_->setFastForward(enable); }
 void MainWindow::pause(unsigned bitmask) { w_->pause(bitmask); }
 void MainWindow::unpause(unsigned bitmask) { w_->unpause(bitmask); }

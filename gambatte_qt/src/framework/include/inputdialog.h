@@ -23,6 +23,7 @@
 #include "mutual.h"
 #include "SDL_event.h"
 #include <QDialog>
+#include <QMessageBox>
 #include <map>
 #include <vector>
 
@@ -60,6 +61,8 @@ public:
 
 	explicit InputDialog(auto_vector<Button> &buttons, QWidget *parent = 0);
 	virtual ~InputDialog();
+	
+	void setJoystickThreshold(int threshold);
 
 	// These invoke Button::pressed/released for matching buttons
 	void keyPress(QKeyEvent const *);
@@ -71,8 +74,7 @@ public:
 	void consumeAutoPress();
 
 public slots:
-	virtual void accept();
-	virtual void reject();
+	virtual void done(int r);
 
 private:
 	struct MappedKey {
@@ -133,6 +135,8 @@ private:
 	void resetMapping();
 	void store();
 	void restore();
+	bool validateInputBindings();
+	void removeProblemValues();
 };
 
 #endif

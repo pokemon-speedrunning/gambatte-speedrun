@@ -19,11 +19,10 @@
 #include "joysticklock.h"
 #include <map>
 
-static bool acceptEvent(SDL_Event &ev, int const insensitivity) {
+static bool acceptEvent(SDL_Event &ev, int const insensitivity, int const threshold) {
 	if (ev.type != SDL_JOYAXISMOTION)
 		return true;
-
-	enum { threshold = 8192 };
+	
 	typedef std::map<unsigned, int> Map;
 	static Map axisState;
 	Map::iterator const at =
@@ -60,12 +59,12 @@ static bool acceptEvent(SDL_Event &ev, int const insensitivity) {
 	return true;
 }
 
-int SdlJoystick::Locked::pollEvent(SDL_Event *ev, int insensitivity) {
+int SdlJoystick::Locked::pollEvent(SDL_Event *ev, int insensitivity, int threshold) {
 	int evValid;
 
 	do {
 		evValid = SDL_PollEvent(ev);
-	} while (evValid && !acceptEvent(*ev, insensitivity));
+	} while (evValid && !acceptEvent(*ev, insensitivity, threshold));
 
 	return evValid;
 }

@@ -348,6 +348,7 @@ InputBox::InputBox(QWidget *nextFocus)
 : nextFocus_(nextFocus)
 , timerId_(0)
 , ignoreCnt_(0)
+, threshold_(8192)
 {
 	setData(0, value_null);
 	connect(this, SIGNAL(textEdited(QString const &)), this, SLOT(textEditedSlot()));
@@ -414,7 +415,7 @@ void InputBox::timerEvent(QTimerEvent *) {
 
 	if (ignoreCnt_) {
 		ignoreCnt_--;
-	} else while (js_->pollEvent(&ev, 256)) {
+	} else while (js_->pollEvent(&ev, 256, threshold_)) {
 		switch (ev.type) {
 		case SDL_JOYAXISMOTION:
 		case SDL_JOYHATMOTION:

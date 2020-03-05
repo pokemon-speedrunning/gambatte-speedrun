@@ -30,6 +30,7 @@
 MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 : QDialog(parent)
 , turboSpeedBox(new QSpinBox(this))
+, thresholdBox(new QSpinBox(this))
 , pauseOnDialogs_(new QCheckBox(tr("Pause when displaying dialogs"), this), "misc/pauseOnDialogs", true)
 , pauseOnFocusOut_(new QCheckBox(tr("Pause on focus out"), this), "misc/pauseOnFocusOut", false)
 , fpsSelector_(this)
@@ -41,10 +42,15 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
                     std::make_pair(tr("Same folder as ROM image"), QString()),
                     this)
 , turboSpeed_(8)
+, threshold_(25)
 {
 	setWindowTitle(tr("Miscellaneous Settings"));
 	turboSpeedBox->setRange(2, 16);
 	turboSpeedBox->setSuffix("x");
+	
+	thresholdBox->setRange(25, 75);
+	thresholdBox->setSuffix("%");
+	
 
 	QVBoxLayout *const mainLayout = new QVBoxLayout(this);
 	QVBoxLayout *const topLayout = addLayout(mainLayout, new QVBoxLayout);
@@ -53,6 +59,12 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 		QHBoxLayout *hLayout = addLayout(topLayout, new QHBoxLayout);
 		hLayout->addWidget(new QLabel(tr("Fast-forward speed:")));
 		hLayout->addWidget(turboSpeedBox);
+	}
+	
+	{
+		QHBoxLayout *hLayout = addLayout(topLayout, new QHBoxLayout);
+		hLayout->addWidget(new QLabel(tr("Joystick deadzone threshold:")));
+		hLayout->addWidget(thresholdBox);
 	}
 
 	addLayout(topLayout, new QHBoxLayout)->addWidget(pauseOnDialogs_.checkBox());
@@ -93,17 +105,21 @@ MiscDialog::MiscDialog(QString const &savepath, QWidget *parent)
 
 	turboSpeed_ = std::min(std::max(QSettings().value("misc/turboSpeed", turboSpeed_).toInt(), 2),
 	                       16);
+    threshold_ = std::min(std::max(QSettings().value("misc/joystickThreshold", threshold_).toInt(), 25),
+	                      75);
 	restore();
 }
 
 MiscDialog::~MiscDialog() {
 	QSettings settings;
 	settings.setValue("misc/turboSpeed", turboSpeed_);
+	settings.setValue("misc/joystickThreshold", threshold_);
 }
 
 void MiscDialog::restore() {
 	fpsSelector_.reject();
 	turboSpeedBox->setValue(turboSpeed_);
+	thresholdBox->setValue(threshold_);
 	pauseOnDialogs_.reject();
 	pauseOnFocusOut_.reject();
 	dwmTripleBuf_.reject();
@@ -114,6 +130,7 @@ void MiscDialog::restore() {
 void MiscDialog::accept() {
 	fpsSelector_.accept();
 	turboSpeed_ = turboSpeedBox->value();
+	threshold_ = thresholdBox->value();
 	pauseOnDialogs_.accept();
 	pauseOnFocusOut_.accept();
 	dwmTripleBuf_.accept();

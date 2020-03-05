@@ -46,7 +46,7 @@ public:
 
 		// Wraps SDL_PollEvent, converting axis event values to
 		// axis_centered, axis_positive, or axis_negative.
-		int pollEvent(SDL_Event * , int insensitivity = 0);
+		int pollEvent(SDL_Event * , int insensitivity = 0, int threshold = 8192);
 
 		void update() { SDL_JoystickUpdate(); }
 		void clearEvents() { SDL_ClearEvents(); }

@@ -261,8 +261,8 @@ GambatteSource::GbVidBuf GambatteSource::setPixelBuffer(
 static void setGbDir(bool &a, bool &b,
 		bool const aPressed, bool const bPressed, bool const preferA) {
 	if (aPressed & bPressed) {
-		a =  aPressed & preferA;
-		b = (aPressed & preferA) ^ 1;
+		a = false;
+		b = false;
 	} else {
 		a = aPressed;
 		b = bPressed;
