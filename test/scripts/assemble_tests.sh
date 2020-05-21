@@ -1,2 +1,2 @@
 #!/bin/sh
-python2 qdgbas.py hwtests/*.asm hwtests/*/*.asm hwtests/*/*/*.asm hwtests/*/*/*/*.asm
+echo hwtests/*.asm hwtests/*/*.asm hwtests/*/*/*.asm hwtests/*/*/*/*.asm | xargs python qdgbas.py

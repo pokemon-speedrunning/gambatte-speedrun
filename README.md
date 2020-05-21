@@ -26,7 +26,7 @@ Below is a brief list of the major differences between Gambatte-Speedrun and the
 ---
 ## Building from source
 
-Distributable binaries can be built on Windows using [MSYS2](https://msys2.github.io/) and the qt5-static package, or on macOS using [Homebrew](https://brew.sh/) and the qt package with its `macdeployqt` tool. See [INSTALL.md](INSTALL.md) for detailed information on how to set up the build environment. 
+Distributable binaries can be built on Windows using [MSYS2](https://www.msys2.org/) and the qt5-static package, or on macOS using [Homebrew](https://brew.sh/) and the qt package with its `macdeployqt` tool. See [INSTALL.md](INSTALL.md) for detailed information on how to set up the build environment.
 
 The amount of setup you need to do depends on what parts of the project you are planning to use.
 

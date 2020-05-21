@@ -15,7 +15,7 @@ Running the hwtests suite requires installing an additional dependency (`libpng`
 ---
 ## Windows
 
-***\*NOTE:*** The instructions below assume you're installing 64-bit MSYS2 and using the 32-bit MinGW toolchain (they do work with other configurations, but the commands won't be exactly the same).
+***\*NOTE:*** The instructions below assume you're installing 64-bit MSYS2 and using the 32-bit MinGW toolchain (they work with other configurations, but the commands won't be exactly the same).
 * Choice of 32-bit vs 64-bit for MSYS2 doesn't really matter; either is fine
 * There's currently no benefit to building a 64-bit version of Gambatte-Speedrun on Windows, so 32-bit is used for the release binaries
 
@@ -27,35 +27,16 @@ Running the hwtests suite requires installing an additional dependency (`libpng`
 
 \- Install [MSYS2](https://www.msys2.org/) by selecting the one-click installer exe for x86_64
 
-\- Initial setup of MSYS2 *(copied from [here](https://github.com/msys2/msys2/wiki/MSYS2-installation#iii-updating-packages))*:
+\- Run MSYS2 shell and update MSYS2 core components and packages *(copied from [here](https://www.msys2.org/wiki/MSYS2-installation/#iii-updating-packages))*:
 ```
-Run MSYS2 shell (Command Prompt). C:\msys64\msys2_shell.cmd
-
-First update MSYS2 core components and packages (if you have not done it yet):
-
 $ pacman -Syuu
 
 Follow the instructions. Repeat this step until it says there are no packages to update.
-
 See the above link if you have an older installation of MSYS2 and/or pacman.
 ```
-\- Prepare MSYS2 for general build development environment *(including essential packages for Qt-related building; copied from [here](https://wiki.qt.io/MSYS2#Prepare_MSYS2_for_Qt_related_build_development_environment))*:
+\- Install MSYS2 packages for general build development environment:
 ```
-Start MSYS2-shell. Run/execute below commands to load MinGW-w64 SEH (64bit/x86_64) posix and Dwarf-2
-(32bit/i686) posix toolchains & related other tools, dependencies & components from MSYS2 REPO
-(MINGW-packages, MSYS2-packages):
-
-$ pacman -S base-devel git mercurial cvs wget p7zip
-$ pacman -S perl ruby python2 mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain
-
-Note: the i686 (32bit) toolchain loads into /c/msys64/mingw32/bin (C:\msys64\mingw32\bin) directory
-location, and, x86_64(64bit) toolchain loads into /c/msys64/mingw64/bin (C:\msys64\mingw64\bin)
-directory. Perl, Ruby, Python, OpenSSL etc loads into /c/msys64/usr/bin (C:\msys64\usr\bin)
-directory.
-```
-\- Install the `zlib` package:
-```
-$ pacman -S mingw-w64-i686-zlib
+$ pacman -S base-devel git mingw-w64-i686-zlib mingw-w64-i686-toolchain
 ```
 
 ### Qt-specific steps
@@ -69,9 +50,9 @@ $ pacman -U mingw-w64-i686-qt5-static-5.6.2-4-any.pkg.tar.xz
 ```
 $ pacman -S mingw-w64-i686-jasper mingw-w64-i686-libwebp mingw-w64-i686-dbus
 ```
-\- Modify .bash_profile *(in /c/msys64/home/\<USERNAME\>)* by adding this line to the end of the file:
+\- Modify `.bash_profile` to add qt5-static binaries to `PATH`:
 ```
-PATH="/mingw32/qt5-static/bin:${PATH}"
+$ echo 'PATH="/mingw32/qt5-static/bin:${PATH}"' >> ~/.bash_profile
 ```
 
 ### Testrunner-specific steps
@@ -126,7 +107,7 @@ $ brew install libpng
 
 \- Install build dependencies:
 ```
-$ sudo apt install build-essential git scons zlib1g-dev 
+$ sudo apt install build-essential git scons zlib1g-dev
 ```
 
 ### Qt-specific steps
