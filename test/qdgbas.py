@@ -8,7 +8,7 @@ class InputError(RuntimeError): pass
 Op = collections.namedtuple('Op', ['string', 'code', 'size', 'assemble'])
 
 def mkrestr(s):
-	return re.sub(r'\s+', r'\s*', re.sub(r'([,)(+])', r' \\\1 ', s))
+	return re.sub(r'\s+', r'\\s*', re.sub(r'([,)(+])', r' \\\1 ', s))
 
 imm8  = r'[0-9a-fA-F][0-9a-fA-F]'
 imm16 = imm8 + imm8
@@ -172,7 +172,7 @@ oplist = makeoplist()
 opregexp = makeopregexp(oplist)
 
 def maptargets(targets, indata, instart, addr):
-	for i in xrange(instart, len(indata)):
+	for i in range(instart, len(indata)):
 		match = opregexp.match(indata[i])
 		if match == None:
 			break
@@ -187,7 +187,7 @@ def maptargets(targets, indata, instart, addr):
 	return i
 
 def astext(outdata, addr, indata, instart, targets):
-	for i in xrange(instart, len(indata)):
+	for i in range(instart, len(indata)):
 		match = opregexp.match(indata[i])
 		if match == None:
 			break
@@ -211,7 +211,7 @@ def astext(outdata, addr, indata, instart, targets):
 
 def asdata(outdata, addr, indata, instart):
 	try:
-		for i in xrange(instart, len(indata)):
+		for i in range(instart, len(indata)):
 			ints = [int(x, 0x10) for x in indata[i].split()]
 			outdata[addr:addr+len(ints)] = ints
 			addr += len(ints)
@@ -240,7 +240,7 @@ def assembleFile(indata):
 	size = 0x8000
 	startpos = 0
 
-	for i in xrange(0, len(indata)):
+	for i in range(0, len(indata)):
 		spl = indata[i].split()
 		if len(spl) > 0 and spl[0] == '.size':
 			size = int(spl[1], 0x10)
@@ -294,11 +294,11 @@ def outFilenameFromInFilename(inname, h143):
 
 def main():
 	for arg in sys.argv[1:]:
-		print 'processing ' + arg
+		print('processing ' + arg)
 		outdata = assembleFile(readDataFromFile(arg))
 		writeDataToFile(outFilenameFromInFilename(arg, outdata[0x143]), outdata)
 	
-	print "\nassembled " + str(len(sys.argv) - 1) + (' files' if len(sys.argv) != 2 else ' file')
+	print("\nassembled " + str(len(sys.argv) - 1) + (' files' if len(sys.argv) != 2 else ' file'))
 
 if __name__ == "__main__":
 	main()
