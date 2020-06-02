@@ -108,6 +108,7 @@ const GambatteGoodromInfo gambatte_goodroms[] = {
 	{ psr_label, "POKEMON_SLVAAXE",  0x8AD48636, 0x054D0D },
 	{ psr_label, "PM_CRYSTAL",       0xEE6F5188, 0x054C6A }, // 1.0
 	{ psr_label, "PM_CRYSTAL",       0x3358E30A, 0x054C6A }, // 1.1
+	{ psr_label, "PM_CRYSTAL",       0xBB6DD80C, 0x054C6A }, // AU
 	{ psr_label, "POKECARD",         0x81069D53, 0x04524C }  // USA
 };
 
