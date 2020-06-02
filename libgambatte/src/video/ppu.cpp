@@ -556,6 +556,9 @@ void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *const db
 
 void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const dbufline,
 		unsigned char const *const tileMapLine, unsigned const tileline, unsigned tileMapXpos) {
+	int const tileIndexSign = p.lcdc & lcdc_tdsel ? 0 : tile_pattern_table_size / tile_size / 2;
+	unsigned char const *const tileDataLine = p.vram + 2 * tile_size * tileIndexSign
+		+ tileline * tile_line_size;
 	int xpos = p.xpos;
 	unsigned char const *const vram = p.vram;
 	unsigned const tdoffset = tileline * tile_line_size
@@ -611,7 +614,15 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 			xpos += n;
 
 			if (!(p.speedupFlags & GB::NO_VIDEO)) {
-				do {
+				if (!lcdcBgEn(p) && p.cgbDmg) {
+					do { *dst++ = p.bgPalette[0]; } while (dst != dstend);
+					tileMapXpos += n / (1u * tile_len);
+
+					unsigned const tno = tileMapLine[(tileMapXpos - 1) % tile_map_len];
+					int const ts = tile_size;
+					ntileword = expand_lut[(tileDataLine + ts * tno - 2 * ts * (tno & tileIndexSign))[0]]
+						  + expand_lut[(tileDataLine + ts * tno - 2 * ts * (tno & tileIndexSign))[1]] * 2;
+				} else do {
 					unsigned long const *const bgPalette = p.bgPalette
 						+ (nattrib & attr_cgbpalno) * num_palette_entries;
 					dst[0] = bgPalette[ ntileword & tile_bpp_mask                                 ];
@@ -650,7 +661,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 
 		if (!(p.speedupFlags & GB::NO_VIDEO)) {
 			uint_least32_t *const dst = dbufline + (xpos - tile_len);
-			unsigned const tileword = p.ntileword;
+			unsigned const tileword = ((p.lcdc & 1u * lcdc_bgen) | !p.cgbDmg) * p.ntileword;
 			unsigned const attrib   = p.nattrib;
 			unsigned long const *const bgPalette = p.bgPalette
 				+ (attrib & attr_cgbpalno) * num_palette_entries;
@@ -855,7 +866,7 @@ void plotPixel(PPUPriv &p) {
 				p.winDrawState |= win_draw_start;
 		}
 
-		unsigned const twdata = tileword & ((p.lcdc & lcdc_bgen) | p.cgb) * tile_bpp_mask;
+		unsigned const twdata = tileword & ((p.lcdc & lcdc_bgen) | (p.cgb * !p.cgbDmg)) * tile_bpp_mask;
 		unsigned long pixel = p.bgPalette[twdata + (p.attrib & attr_cgbpalno) * num_palette_entries];
 		int i = static_cast<int>(p.nextSprite) - 1;
 
