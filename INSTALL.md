@@ -41,14 +41,9 @@ $ pacman -S base-devel git mingw-w64-i686-zlib mingw-w64-i686-toolchain
 
 ### Qt-specific steps
 
-\- Acquire and install the Qt 5.6 static library environment *(NOTE: newer versions bundle a lot more into the environment and create much larger builds)*:
+\- Acquire and install the qt5-static library environment:
 ```
-$ curl -O http://repo.msys2.org/mingw/i686/mingw-w64-i686-qt5-static-5.6.2-4-any.pkg.tar.xz
-$ pacman -U mingw-w64-i686-qt5-static-5.6.2-4-any.pkg.tar.xz
-```
-\- Install Gambatte-Speedrun dependencies that aren't bundled with Qt 5.6:
-```
-$ pacman -S mingw-w64-i686-jasper mingw-w64-i686-libwebp mingw-w64-i686-dbus
+$ pacman -S mingw-w64-i686-qt5-static
 ```
 \- Modify `.bash_profile` to add qt5-static binaries to `PATH`:
 ```

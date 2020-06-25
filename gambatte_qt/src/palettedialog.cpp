@@ -701,7 +701,7 @@ static void setSchemeList(QStringListModel &model, QString const &savedir, bool 
 	         QDir::Name | QDir::IgnoreCase,
 	         QDir::Files | QDir::Readable);
 	QStringList dirlisting(dir.entryList());
-	std::for_each(dirlisting.begin(), dirlisting.end(), 
+	std::for_each(dirlisting.begin(), dirlisting.end(),
 	              std::bind2nd(std::mem_fun_ref(&QString::chop), 4));
 	model.setStringList(makeStaticStringList(hasGlobal) + dirlisting);
 }

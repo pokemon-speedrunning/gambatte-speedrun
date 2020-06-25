@@ -439,11 +439,11 @@ std::size_t StateSaver::saveState(SaveState const &state,
 		uint_least32_t const *const videoBuf, std::ptrdiff_t const pitch,
 		char *stateBuf, int mode) {
 	std::ostringstream file;
-	
+
 	file.put(0xFF); // make sure original gambatte doesn't load our savestates
 	file.put(SAVE_VERSION);
 	file.put(mode);
-	
+
 	writeSnapShot(file, videoBuf, pitch);
 
 	for (SaverList::const_iterator it = list.begin(); it != list.end(); ++it) {
@@ -465,10 +465,10 @@ bool StateSaver::loadState(SaveState &state,
 	std::istringstream file(std::string(stateBuf, size));
 	if (!file || file.get() != 0xFF)
 		return false;
-	
+
 	if(file.get() != SAVE_VERSION)
 		return false;
-	
+
 	if(checkMode) {
 		if(mode != file.get())
 			return false;
@@ -513,7 +513,7 @@ bool StateSaver::saveState(SaveState const &state,
 		return false;
 
 	std::size_t size = saveState(state, videoBuf, pitch, NULL, mode);
-	char stateBuf[size];
+	char* stateBuf = new char[size];
 
 	saveState(state, videoBuf, pitch, stateBuf, mode);
 	file.write(stateBuf, size);

@@ -150,7 +150,7 @@ public:
 
 	/** speed = N, gives N times faster than normal when fastForward is enabled. */
 	void setFastForwardSpeed(int speed);
-	
+
 	void setJoystickThreshold(int threshold);
 
 	/** Sets the video mode that is used for full screen (see toggleFullScreen).
@@ -248,7 +248,6 @@ signals:
 protected:
 	virtual void mouseMoveEvent(QMouseEvent *);
 	virtual void closeEvent(QCloseEvent *);
-	virtual void moveEvent(QMoveEvent *);
 	virtual void resizeEvent(QResizeEvent *);
 	virtual void hideEvent(QHideEvent *);
 	virtual void showEvent(QShowEvent *);
@@ -256,9 +255,6 @@ protected:
 	virtual void focusInEvent(QFocusEvent *);
 	virtual void keyPressEvent(QKeyEvent *);
 	virtual void keyReleaseEvent(QKeyEvent *);
-#ifdef Q_OS_WIN
-	virtual bool nativeEvent(const QByteArray & eventType, void * message, long *result);
-#endif
 
 private:
 	void correctFullScreenGeometry();

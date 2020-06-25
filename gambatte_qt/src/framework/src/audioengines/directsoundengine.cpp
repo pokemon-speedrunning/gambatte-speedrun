@@ -32,7 +32,7 @@
 Q_DECLARE_METATYPE(GUID *)
 
 BOOL CALLBACK DirectSoundEngine::enumCallback(LPGUID guid,
-		char const *description, char const */*module*/, LPVOID context) {
+ 		char const *description, char const * /*module*/, LPVOID context) {
 	if (guid) {
 		DirectSoundEngine *thisptr = static_cast<DirectSoundEngine *>(context);
 		thisptr->deviceList.append(*guid);
@@ -186,7 +186,7 @@ long DirectSoundEngine::doInit(long const rate, int const latency, int const vol
 		bufSzDiff = primaryBuf && desiredBufSz < bufSize
 		          ? bufSize - desiredBufSz
 		          : 0;
-		
+
 		{
 			int result;
 			long adjustedVolume;

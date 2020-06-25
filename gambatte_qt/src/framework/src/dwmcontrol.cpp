@@ -170,7 +170,7 @@ bool DwmControl::winEvent(void const *const msg) {
 
 	if (static_cast<MSG const *>(msg)->message == WM_DWMCOMPOSITIONCHANGED) {
 		std::for_each(blitters_.begin(), blitters_.end(),
-		              std::mem_fun(&BlitterWidget::compositionEnabledChange));
+ 		              std::mem_fn(&BlitterWidget::compositionEnabledChange));
 		if (dwmapi_.isCompositionEnabled()) {
 			for (std::vector<BlitterWidget*>::const_iterator it =
 					blitters_.begin(); it != blitters_.end(); ++it) {

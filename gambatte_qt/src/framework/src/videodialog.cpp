@@ -324,9 +324,9 @@ void VideoDialog::accept() {
 	scalingMethodSelector_.accept();
 	sourceSelector_.accept();
 	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::accept));
+ 	              std::mem_fn(&PersistComboBox::accept));
 	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::accept));
+ 	              std::mem_fn(&PersistComboBox::accept));
 	QDialog::accept();
 }
 
@@ -338,9 +338,9 @@ void VideoDialog::reject() {
 	scalingMethodSelector_.reject();
 	sourceSelector_.reject();
 	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::reject));
+ 	              std::mem_fn(&PersistComboBox::reject));
 	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::reject));
+ 	              std::mem_fn(&PersistComboBox::reject));
 	QDialog::reject();
 }
 
