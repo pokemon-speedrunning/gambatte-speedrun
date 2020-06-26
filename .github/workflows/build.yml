@@ -1,0 +1,99 @@
+name: "Build testing"
+on: push
+
+jobs:
+  ubuntu-build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cc: [gcc]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install scons qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev libasound2-dev
+      - name: Build
+        shell: bash
+        run: |
+          sh ./scripts/build_shlib.sh
+          sh ./scripts/build_qt.sh
+
+  macos-build:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        cc: [clang]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install dependencies
+        shell: bash
+        run: |
+          brew install scons zlib qt
+      - name: Build
+        shell: bash
+        run: |
+          echo 'export PATH="/usr/local/opt/qt/bin:$PATH"' >> ~/.bash_profile
+          source ~/.bash_profile
+          sh ./scripts/build_shlib.sh
+          sh ./scripts/build_qt.sh
+          macdeployqt ./gambatte_qt/bin/Gambatte-Speedrun.app -dmg
+      - name: Upload .dmg
+        uses: actions/upload-artifact@v2
+        with:
+          name: Gambatte-Speedrun.dmg
+          path: ./gambatte_qt/bin/Gambatte-Speedrun.dmg
+      - name: Upload .dylib
+        uses: actions/upload-artifact@v2
+        with:
+          name: libgambatte.dylib
+          path: ./libgambatte/libgambatte.dylib
+
+  mingw-build:
+    strategy:
+      matrix:
+        mingw: ["MINGW32", "MINGW64"]
+        include:
+          - mingw: "MINGW32"
+            package: "mingw-w64-i686"
+          - mingw: "MINGW64"
+            package: "mingw-w64-x86_64"
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash.exe --login -eo pipefail "{0}"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up shell
+        run: |
+          echo ::add-path::C:\msys64\usr\bin\
+        shell: pwsh
+      - name: Install dependencies
+        run:
+          pacman --noconfirm -S ${{ matrix.package }}-qt5-static
+      - name: Build
+        shell: bash
+        run: |
+          echo 'PATH="/${{ matrix.mingw }}/bin:/${{ matrix.mingw }}/qt5-static/bin:${PATH}"' >> ~/.bash_profile
+          source ~/.bash_profile
+          sh ./scripts/build_shlib.sh
+          sh ./scripts/build_qt.sh
+      - name: Upload .exe
+        uses: actions/upload-artifact@v2
+        if: matrix.mingw == 'MINGW32'
+        with:
+          name: gambatte_speedrun.exe
+          path: ./gambatte_qt/bin/gambatte_speedrun.exe
+      - name: Upload .dll
+        uses: actions/upload-artifact@v2
+        if: matrix.mingw == 'MINGW64'
+        with:
+          name: libgambatte.dll
+          path: ./libgambatte/libgambatte.dll
