@@ -25,8 +25,11 @@
 #include "skipsched.h"
 #include <QtGlobal> // for Q_OS_WIN define
 #ifdef Q_OS_WIN
+#define NOMINMAX
 #include <objbase.h> // For CoInitialize
+#undef NOMINMAX
 #endif
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 
@@ -439,7 +442,7 @@ void MediaWorker::run() {
 				callback_.blit(basetime.now, basetime.inc + syncft);
 
 			std::size_t const outsamples =
-				sourceUpdater_.readSamples(sndOutBuffer_, 
+				sourceUpdater_.readSamples(sndOutBuffer_,
 				                   blit ? blitSamples : sourceUpdater_.samplesBuffered(),
 				                   ftEst != 0);
 			AudioEngine::BufferState bstate = { AudioEngine::BufferState::not_supported,

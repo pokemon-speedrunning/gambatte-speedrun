@@ -53,40 +53,12 @@ enum GambattePlatform {
 };
 
 const GambattePlatformInfo gambatte_platform_info[PLATFORM_COUNT] = {
-	[PLATFORM_GB] = {
-		.loadFlags = 0,
-		.biosInfo = dmg_bios_info,
-		.resetFade = 0,
-		.resetStall = 0
-	},
-
-	[PLATFORM_GBC] = {
-		.loadFlags = gambatte::GB::CGB_MODE,
-		.biosInfo = cgb_bios_info,
-		.resetFade = 0,
-		.resetStall = 0
-	},
-
-	[PLATFORM_GBA] = {
-		.loadFlags = gambatte::GB::CGB_MODE | gambatte::GB::GBA_FLAG,
-		.biosInfo = cgb_bios_info, // patched with GBA_FLAG
-		.resetFade = 0,
-		.resetStall = 0
-	},
-
-	[PLATFORM_GBP] = {
-		.loadFlags = gambatte::GB::CGB_MODE | gambatte::GB::GBA_FLAG,
-		.biosInfo = cgb_bios_info, // patched with GBA_FLAG
-		.resetFade = 1234567,
-		.resetStall = 101 * (2 << 14)
-	},
-
-	[PLATFORM_SGB] = {
-		.loadFlags = gambatte::GB::SGB_MODE,
-		.biosInfo = sgb_bios_info,
-		.resetFade = 0,
-		.resetStall = 128 * (2 << 14)
-	}
+	// loadFlags                                     | biosInfo     | resetFade |      resetStall |
+	{ gambatte::GB::NONE,                              dmg_bios_info,          0,               0 }, // PLATFORM_GB
+	{ gambatte::GB::CGB_MODE,                          cgb_bios_info,          0,               0 }, // PLATFORM_GBC
+	{ gambatte::GB::CGB_MODE | gambatte::GB::GBA_FLAG, cgb_bios_info,          0,               0 }, // PLATFORM_GBA
+	{ gambatte::GB::CGB_MODE | gambatte::GB::GBA_FLAG, cgb_bios_info,    1234567, 101 * (2 << 14) }, // PLATFORM_GBP
+	{ gambatte::GB::SGB_MODE,                          sgb_bios_info,          0, 128 * (2 << 14) }  // PLATFORM_SGB
 };
 
 #define DEFAULT_GAMBATTE_PLATFORM PLATFORM_GBP

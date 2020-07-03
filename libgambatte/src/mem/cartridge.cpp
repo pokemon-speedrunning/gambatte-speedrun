@@ -21,6 +21,7 @@
 #include "../savestate.h"
 #include "pakinfo_internal.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <zlib.h>
@@ -518,7 +519,7 @@ private:
 
 	void setRambank() const {
 		huc3_->setRamflag(ramflag_);
-        
+
 		unsigned flags;
 		if(ramflag_ >= 0x0B && ramflag_ < 0x0F) {
 			// System registers mode
@@ -657,8 +658,8 @@ bool hasBattery(unsigned char headerByte0x147) {
 	case 0x13:
 	case 0x1B:
 	case 0x1E:
-    	case 0xFE: // huc3
-	case 0xFF: 
+	case 0xFE: // huc3
+	case 0xFF:
 		return true;
 	}
 
@@ -846,7 +847,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	case type_huc3:
 		huc3_.set(true);
 		mbc_.reset(new HuC3(memptrs_, &huc3_));
-		break;        
+		break;
 	}
 
 	return LOADRES_OK;
@@ -959,7 +960,7 @@ PakInfo const Cartridge::pakInfo(bool const multipakCompat) const {
 		crc = crc32(crc, memptrs_.romdata(), rombs*0x4000ul);
 		return PakInfo(multipakCompat && presumedMulti64Mbc1(memptrs_.romdata(), rombs),
 		               rombs,
-			       crc,
+		               crc,
 		               memptrs_.romdata());
 	}
 

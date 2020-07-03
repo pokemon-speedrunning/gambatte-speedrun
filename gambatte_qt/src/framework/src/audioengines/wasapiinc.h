@@ -2,7 +2,9 @@
 #ifndef WASAPIINC_H
 #define WASAPIINC_H
 
+#define NOMINMAX
 #include <objbase.h>
+#undef NOMINMAX
 #include <objidl.h>
 
 typedef LONGLONG REFERENCE_TIME;

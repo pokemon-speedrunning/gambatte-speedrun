@@ -31,7 +31,9 @@
 #endif
 
 #ifdef Q_OS_WIN
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #else
 #include <time.h>
 #endif

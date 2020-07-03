@@ -63,7 +63,9 @@ void FtEst::update(usec_t const t) {
 
 #ifdef Q_OS_WIN
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 
 class Timer {
 	LONGLONG freq;

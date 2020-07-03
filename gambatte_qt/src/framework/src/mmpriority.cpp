@@ -20,7 +20,9 @@
 
 #ifdef Q_OS_WIN
 
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <iostream>
 
 namespace {

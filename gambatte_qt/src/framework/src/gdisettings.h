@@ -20,7 +20,10 @@
 #define GDISETTINGS_H_
 
 #include "uncopyable.h"
+
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 
 class GdiSettings : Uncopyable {
 private:

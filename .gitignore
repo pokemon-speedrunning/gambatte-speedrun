@@ -1,7 +1,10 @@
 *.*.swp
 *.o
+*.obj
+*.pdb
 .scon*
 *.a
+*gambatte.lib
 config.log
 *.gb
 *.gbc

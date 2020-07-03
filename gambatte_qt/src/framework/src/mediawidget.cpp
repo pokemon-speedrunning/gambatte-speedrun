@@ -34,7 +34,9 @@
 #include <algorithm>
 
 #ifdef Q_OS_WIN
+#define NOMINMAX
 #include <windows.h> // for timeBeginPeriod, timeEndPeriod
+#undef NOMINMAX
 #endif
 
 namespace {
@@ -406,7 +408,7 @@ void MediaWidget::focusOutEvent() {
 
 	blitterContainer_->showCursor();
 	cursorTimer_->stop();
-    
+
     if (running_) {
         worker_->source().clearKeyPresses();
     }

@@ -20,7 +20,12 @@
 #define TIME_H
 
 #include <ctime>
+
+#ifdef _MSC_VER
+#include "../../msvc/src/time/gettimeofday.h"
+#else
 #include <sys/time.h>
+#endif
 
 namespace gambatte {
 

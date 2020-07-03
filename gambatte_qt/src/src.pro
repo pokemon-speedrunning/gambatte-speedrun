@@ -1,4 +1,4 @@
-COMMONPATH = ../../common
+COMMONPATH = $$shell_path(../../common)
 include(framework/framework.pro)
 
 SOURCES += main.cpp \
@@ -17,19 +17,25 @@ SOURCES += $$COMMONPATH/videolink/rgb32conv.cpp \
     $$COMMONPATH/videolink/vfilters/kreed2xsai.cpp \
     $$COMMONPATH/videolink/vfilters/maxsthq2x.cpp \
     $$COMMONPATH/videolink/vfilters/maxsthq3x.cpp
-HEADERS += $$COMMONPATH/videolink/*.h \
-           $$COMMONPATH/videolink/vfilters/*.h
+HEADERS += $$shell_path($$COMMONPATH/videolink/*.h) \
+           $$shell_path($$COMMONPATH/videolink/vfilters/*.h)
 TEMPLATE = app
 CONFIG += warn_on \
     release
-QMAKE_CFLAGS   += -fomit-frame-pointer
-QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
+
+!win32-msvc* {
+	QMAKE_CFLAGS   += -fomit-frame-pointer
+	QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
+	LIBS += ../../libgambatte/libgambatte.a -lz
+}
+else { # Build 32-bit executable with MSVC
+	LIBS += ../../libgambatte/gambatte.lib ../../msvc/zlib/x86-static/zlib.lib
+}
 
 DESTDIR = ../bin
 INCLUDEPATH += ../../libgambatte/include
 DEPENDPATH  += ../../libgambatte/include
 QT += widgets gui-private
-LIBS += ../../libgambatte/libgambatte.a -lz
 win32 {
 	LIBS += -lole32
 	#RC_FILE = gambatteicon.rc

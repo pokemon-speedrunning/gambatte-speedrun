@@ -20,7 +20,9 @@
 #include "../gdisettings.h"
 #include <QApplication>
 #include <QDesktopWidget>
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <algorithm>
 #include <functional>
 

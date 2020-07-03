@@ -35,6 +35,7 @@ public:
 	~GB();
 
 	enum LoadFlag {
+		NONE             = 0,
 		CGB_MODE         = 1,  /**< Treat the ROM as having CGB support regardless of
 		                            what its header advertises. */
 		GBA_FLAG         = 2,  /**< Use GBA intial CPU register values when in CGB mode. */

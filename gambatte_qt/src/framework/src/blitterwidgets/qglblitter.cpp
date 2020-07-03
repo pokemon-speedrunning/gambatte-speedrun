@@ -29,7 +29,7 @@
 #include <QVBoxLayout>
 #include <QWindow>
 
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) && !defined(_MSC_VER)
 #include <GL/glext.h>
 #endif
 

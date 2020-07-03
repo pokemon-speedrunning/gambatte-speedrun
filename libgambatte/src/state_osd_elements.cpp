@@ -23,6 +23,7 @@
 
 #include <fstream>
 #include <cstring>
+#include <algorithm>
 
 namespace {
 

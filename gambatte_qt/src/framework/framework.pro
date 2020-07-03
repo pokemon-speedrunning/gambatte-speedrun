@@ -33,17 +33,17 @@ SOURCES += $$COMMONPATH/resample/src/chainresampler.cpp \
 	$$COMMONPATH/rateest.cpp \
 	$$COMMONPATH/skipsched.cpp
 HEADERS += \
-	framework/include/*.h \
-	framework/src/*.h \
-	framework/src/audioengines/*.h \
-	framework/src/blitterwidgets/*.h \
+	$$shell_path(framework/include/*.h) \
+	$$shell_path(framework/src/*.h) \
+	$$shell_path(framework/src/audioengines/*.h) \
+	$$shell_path(framework/src/blitterwidgets/*.h) \
 	framework/src/fullmodetogglers/nulltoggler.h \
-	framework/src/SDL_Joystick/include/*.h \
-	framework/src/SDL_Joystick/src/*.h
+	$$shell_path(framework/src/SDL_Joystick/include/*.h) \
+	$$shell_path(framework/src/SDL_Joystick/src/*.h)
 HEADERS += \
-	$$COMMONPATH/resample/src/*.h \
-	$$COMMONPATH/resample/*.h \
-	$$COMMONPATH/*.h
+	$$shell_path($$COMMONPATH/resample/src/*.h) \
+	$$shell_path($$COMMONPATH/resample/*.h) \
+	$$shell_path($$COMMONPATH/*.h)
 CONFIG += qt thread
 QT += opengl
 INCLUDEPATH += framework/include
@@ -76,7 +76,7 @@ macx {
 #	    -framework OpenAL \
             -framework AudioUnit
 }
-else:unix { 
+else:unix {
     DEFINES += PLATFORM_UNIX
     SOURCES += \
         framework/src/addblitterwidgets_unix.cpp \
@@ -99,15 +99,15 @@ else:unix {
         -lXrandr #\
 #        -lXxf86vm \
 #        -lXinerama
-    linux-* { 
+    linux-* {
         SOURCES += framework/src/addaudioengines_linux.cpp \
             framework/src/audioengines/alsaengine.cpp \
             framework/src/SDL_Joystick/src/linux/SDL_sysjoystick.c
         LIBS += -lasound
     }
-    else { 
+    else {
         SOURCES += framework/src/addaudioengines_unix.cpp
-        freebsd-*|netbsd-*|openbsd-* { 
+        freebsd-*|netbsd-*|openbsd-* {
             exists( /usr/include/usb.h ):DEFINES += HAVE_USB_H
             exists( /usr/include/usbhid.h ):DEFINES += HAVE_USBHID_H
             exists( /usr/include/libusb.h ):DEFINES += HAVE_LIBUSB_H
@@ -120,7 +120,7 @@ else:unix {
         else:SOURCES += framework/src/SDL_Joystick/src/dummy/SDL_sysjoystick.c
     }
 }
-else:win32 { 
+else:win32 {
     DEFINES += PLATFORM_WIN32
     SOURCES += framework/src/gdisettings.cpp \
         framework/src/blitterwidgets/direct3dblitter.cpp \
@@ -138,7 +138,7 @@ else:win32 {
         -ldxguid \
         -ldsound
 }
-else { 
+else {
     SOURCES += framework/src/addaudioengines.cpp \
         framework/src/addblitterwidgets.cpp \
         framework/src/getfullmodetoggler.cpp \

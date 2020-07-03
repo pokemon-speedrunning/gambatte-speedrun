@@ -25,7 +25,9 @@
 /* Win32 MultiMedia Joystick driver, contributed by Andrei de A. Formiga */
 
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+#undef NOMINMAX
 #include <mmsystem.h>
 #include <regstr.h>
 
@@ -156,7 +158,7 @@ int SDL_SYS_JoystickInit(void)
 	numdevs = 0;
 	maxdevs = joyGetNumDevs();
 	for ( i = JOYSTICKID1; i < maxdevs && numdevs < MAX_JOYSTICKS; ++i ) {
-		
+
 		joyinfo.dwSize = sizeof(joyinfo);
 		joyinfo.dwFlags = JOY_RETURNALL;
 		result = joyGetPosEx(i, &joyinfo);
@@ -276,7 +278,7 @@ void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
 	MMRESULT result;
 	int i;
-	DWORD flags[MAX_AXES] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, 
+	DWORD flags[MAX_AXES] = { JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ,
 				  JOY_RETURNR, JOY_RETURNU, JOY_RETURNV };
 	DWORD pos[MAX_AXES];
 	struct _transaxis *transaxis;
@@ -367,7 +369,7 @@ void SetMMerror(char *function, int code)
 	static char  errbuf[1024];
 
 	errbuf[0] = 0;
-	switch (code) 
+	switch (code)
 	{
 		case MMSYSERR_NODRIVER:
 			error = "Joystick driver not present";
@@ -377,7 +379,7 @@ void SetMMerror(char *function, int code)
 		case JOYERR_PARMS:
 			error = "Invalid parameter(s)";
 		break;
-		
+
 		case MMSYSERR_BADDEVICEID:
 			error = "Bad device ID";
 		break;

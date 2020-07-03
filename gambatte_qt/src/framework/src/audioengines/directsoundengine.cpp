@@ -16,7 +16,9 @@
 //   51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#define NOMINMAX
 #include "directsoundengine.h"
+#undef NOMINMAX
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>

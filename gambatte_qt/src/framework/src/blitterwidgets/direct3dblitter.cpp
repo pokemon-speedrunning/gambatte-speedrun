@@ -16,7 +16,9 @@
 //   51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#define NOMINMAX
 #include "direct3dblitter.h"
+#undef NOMINMAX
 #include "../dwmcontrol.h"
 #include "../gdisettings.h"
 #include "uncopyable.h"
@@ -29,6 +31,7 @@
 #include <QStyle>
 #include <QVBoxLayout>
 #include <iostream>
+#include <algorithm>
 
 namespace {
 
@@ -212,7 +215,7 @@ void Direct3DBlitter::getPresentParams(D3DPRESENT_PARAMETERS *const presentParam
 		bool vblankPresent = excl
 			? vblankflip_.value()
 			: vblankblit_.value() && !DwmControl::isCompositingEnabled();
-		presentParams->PresentationInterval = vblankPresent 
+		presentParams->PresentationInterval = vblankPresent
 		                                    ? D3DPRESENT_INTERVAL_ONE
 		                                    : D3DPRESENT_INTERVAL_IMMEDIATE;
 	}
