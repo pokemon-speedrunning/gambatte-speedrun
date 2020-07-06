@@ -2,25 +2,6 @@ name: "Build testing"
 on: [push, pull_request]
 
 jobs:
-  ubuntu-build:
-    strategy:
-      matrix:
-        os: [ubuntu-18.04]
-        cc: [gcc]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install dependencies
-        shell: bash
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get install scons qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev libasound2-dev
-      - name: Build
-        shell: bash
-        run: |
-          sh ./scripts/build_shlib.sh
-          sh ./scripts/build_qt.sh
-
   macos-build:
     strategy:
       matrix:
@@ -29,6 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      # Needed since default behavior is to only fetch the most recent commit, which results in r1 always being built
         with:
           fetch-depth: 0
       - name: Install dependencies
@@ -56,38 +38,6 @@ jobs:
           name: libgambatte.dylib
           path: ./libgambatte/libgambatte.dylib
 
-  mingw-build:
-    strategy:
-      matrix:
-        mingw: ["MINGW64"]
-        include:
-          - mingw: "MINGW64"
-            package: "mingw-w64-x86_64"
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up shell (1)
-        shell: pwsh
-        run: |
-          echo ::add-path::C:\msys64\usr\bin\
-      - name: Set up shell (2)
-        run: |
-          echo "(idk why this is needed)"
-        shell: bash.exe --login -eo pipefail "{0}"
-      - name: Build
-        shell: bash
-        run: |
-          echo 'PATH="/MINGW64/bin:${PATH}"' >> ~/.bash_profile
-          source ~/.bash_profile
-          sh ./scripts/build_shlib.sh
-      - name: Upload .dll (64-bit)
-        uses: actions/upload-artifact@v2
-        with:
-          name: libgambatte.dll
-          path: ./libgambatte/libgambatte.dll
-
   msvc-build:
     runs-on: windows-2019
     defaults:
@@ -95,8 +45,10 @@ jobs:
         shell: cmd
     steps:
       - uses: actions/checkout@v2
+      # Needed since default behavior is to only fetch the most recent commit, which results in r1 always being built
         with:
           fetch-depth: 0
+      # Easier way to set up the Developer Command Prompt for VS 2019?
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
@@ -114,3 +66,60 @@ jobs:
         with:
           name: gambatte_speedrun.exe
           path: ./gambatte_qt/bin/gambatte_speedrun.exe
+
+  # Installing Qt from the MinGW repos takes a while, so only build shared library
+  #  - MinGW 64-bit .dll slightly outperformed the MSVC one in some initial testing, so upload that as artifact
+  #  - If prebuilt MinGW binaries are added to gsr-qt-builds, we can re-add building the executable(s)
+  mingw-build:
+    strategy:
+      matrix:
+        mingw: ["MINGW64"]
+        include:
+          - mingw: "MINGW64"
+            package: "mingw-w64-x86_64"
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      # Needed since default behavior is to only fetch the most recent commit, which results in r1 always being built
+        with:
+          fetch-depth: 0
+      # Easier way to set up the MinGW shell?
+      - name: Set up mingw64 shell (1)
+        shell: pwsh
+        run: |
+          echo ::add-path::C:\msys64\usr\bin\
+      - name: Set up mingw64 shell (2)
+        run: |
+          echo "(idk why this is needed)"
+        shell: bash.exe --login -eo pipefail "{0}"
+      - name: Build
+        shell: bash
+        run: |
+          echo 'PATH="/mingw64/bin:${PATH}"' >> ~/.bash_profile
+          source ~/.bash_profile
+          sh ./scripts/build_shlib.sh
+      - name: Upload .dll (64-bit)
+        uses: actions/upload-artifact@v2
+        with:
+          name: libgambatte.dll
+          path: ./libgambatte/libgambatte.dll
+
+  # Test that things build fine on Ubuntu (don't upload artifacts; Linux users should build on their own)
+  ubuntu-build:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        cc: [gcc]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install scons qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev libasound2-dev
+      - name: Build
+        shell: bash
+        run: |
+          sh ./scripts/build_shlib.sh
+          sh ./scripts/build_qt.sh
