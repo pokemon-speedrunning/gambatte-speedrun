@@ -21,6 +21,7 @@
 
 #include <QMutex>
 #include <QWaitCondition>
+#include <climits>
 
 class SyncVar {
 public:
