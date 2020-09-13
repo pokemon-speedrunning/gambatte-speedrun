@@ -333,9 +333,13 @@ public:
 			if(mbc30_ && !rtc_) {
 				rambank_ = rambank_ & 0x07;
 			}
-			if(rtc_) {
+			if(!mbc30_ && rtc_) {
 				rambank_ = rambank_ & 0x0F;
-				mbcLockup_ = rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08 || rambank_ > 0x0C;
+				mbcLockup_ = ((rambank_ > 0x03 || rambank_ > (rambanks(memptrs_) - 1)) && rambank_ < 0x08) || rambank_ > 0x0C;
+			}
+			if(mbc30_ && rtc_) {
+				rambank_ = rambank_ & 0x0F;
+				mbcLockup_ = (rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C;
 			}
 			setRambank();
 			break;
