@@ -331,7 +331,7 @@ public:
 				rambank_ = rambank_ & 0x03;
 			}
 			if(mbc30_ && !rtc_) {
-				rambank_ = rambank_ & 0x04;
+				rambank_ = rambank_ & 0x07;
 			}
 			if(rtc_) {
 				rambank_ = rambank_ & 0x0F;
