@@ -300,6 +300,7 @@ public:
 	, rombank_(1)
 	, rambank_(0)
 	, enableRam_(false)
+	, mbcLockup_(false)
 	, mbc30_(mbc30)
 	{
 	}
@@ -326,8 +327,12 @@ public:
 			break;
 		case 2:
 			rambank_ = data;
-			if(!mbc30_)
-				rambank_ = rambank_ & 0x03;
+			if(!rtc_)
+				rambank_ = rambank_ & 0x07;
+			if(rtc_) {
+				rambank_ = rambank_ & 0x0F;
+				mbcLockup_ = (rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C;
+			}
 			setRambank();
 			break;
 		case 3:
@@ -342,12 +347,14 @@ public:
 		ss.rombank = rombank_;
 		ss.rambank = rambank_;
 		ss.enableRam = enableRam_;
+		ss.mbcLockup = mbcLockup_;
 	}
 
 	virtual void loadState(SaveState::Mem const &ss) {
 		rombank_ = ss.rombank;
 		rambank_ = ss.rambank;
 		enableRam_ = ss.enableRam;
+		mbcLockup_ = ss.mbcLockup;
 		setRambank();
 		setRombank();
 	}
@@ -359,9 +366,10 @@ private:
 	unsigned char rambank_;
 	bool enableRam_;
 	bool mbc30_;
+	bool mbcLockup_;
 
 	void setRambank() const {
-		unsigned flags = enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled;
+		unsigned flags = (enableRam_ && !mbcLockup_) ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled;
 
 		if (rtc_) {
 			rtc_->set(enableRam_, rambank_);
