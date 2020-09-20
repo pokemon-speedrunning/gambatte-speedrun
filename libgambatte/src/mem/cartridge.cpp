@@ -321,6 +321,8 @@ public:
 			break;
 		case 1:
 			rombank_ = data;
+			if(!mbc30_)
+				rombank_ = rombank_ & 0x7F;
 			setRombank();
 			break;
 		case 2:
@@ -824,7 +826,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	rtc_.set(false, 0);
 	huc3_.set(false);
 
-	bool mbc30 = rambanks > 0x04;
+	bool mbc30 = rombanks > 0x80 || rambanks > 0x04;
 
 	rom->rewind();
 	rom->read(reinterpret_cast<char*>(memptrs_.romdata()), filesize / rombank_size() * rombank_size());
