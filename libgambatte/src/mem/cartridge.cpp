@@ -269,7 +269,7 @@ public:
 			break;
 		case 0x0100:
 			rombank_ = data & 0xF;
-			memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+			memptrs_.setRombank(std::max((unsigned) rombank_, 1u) & (rombanks(memptrs_) - 1));
 			break;
 		}
 	}
@@ -283,7 +283,7 @@ public:
 		rombank_ = ss.rombank;
 		enableRam_ = ss.enableRam;
 		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
-		memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+		memptrs_.setRombank(std::max((unsigned) rombank_, 1u) & (rombanks(memptrs_) - 1));
 	}
 
 private:
