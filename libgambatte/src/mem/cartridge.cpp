@@ -262,12 +262,12 @@ public:
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
-		switch (p & 0x4100) {
+		switch (p & 0x6100) {
 		case 0x0000:
 			enableRam_ = (data & 0xF) == 0xA;
 			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 			break;
-		case 0x0100:
+		case 0x2100:
 			rombank_ = data & 0xF;
 			memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
 			break;
