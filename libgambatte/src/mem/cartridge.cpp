@@ -845,7 +845,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 			mbc_.reset(new Mbc1(memptrs_));
 
 		break;
-	case type_mbc2: mbc_.reset(new Mbc2(memptrs_)); mbc2_ = true; break;
+	case type_mbc2: mbc_.reset(new Mbc2(memptrs_)); mbc2_ = false; break;
 	case type_mbc3:
 		mbc_.reset(new Mbc3(memptrs_, hasRtc(memptrs_.romdata()[0x147]) ? &rtc_ : 0, mbc30));
 		break;

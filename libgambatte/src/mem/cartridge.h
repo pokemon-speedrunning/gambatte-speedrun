@@ -94,7 +94,7 @@ private:
 		AddrData(unsigned long addr, unsigned data) : addr(addr), data(data) {}
 	};
 	
-	bool mbc2_;
+	bool mbc2_ = false;
 
 	MemPtrs memptrs_;
 	Time time_;
