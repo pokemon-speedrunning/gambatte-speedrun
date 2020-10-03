@@ -82,7 +82,6 @@ public:
 	char const * romTitle() const { return reinterpret_cast<char const *>(memptrs_.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
-	bool isMbc2() const { return mbc2_; }
 	bool isHuC3() const { return huc3_.isHuC3(); }
 	unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
 	void HuC3Write(unsigned p, unsigned data, unsigned long const cc) { huc3_.write(p, data, cc); }
@@ -93,8 +92,6 @@ private:
 		unsigned char data;
 		AddrData(unsigned long addr, unsigned data) : addr(addr), data(data) {}
 	};
-	
-	bool mbc2_;
 
 	MemPtrs memptrs_;
 	Time time_;
