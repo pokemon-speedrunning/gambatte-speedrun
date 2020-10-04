@@ -1165,7 +1165,10 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		return;
 	case 0x72:
 	case 0x73:
-		break;
+		if (isCgb())
+			break;
+		
+		return;
 	case 0x74:
 		if (isCgb() && !isCgbDmg())
 			break;
