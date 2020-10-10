@@ -525,8 +525,10 @@ void Memory::updateInput() {
 			if (!(ioamhram_[0x100] & 0x20))
 				state &= button_state;
 
-			if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF)
+			if (state != 0xF && (ioamhram_[0x100] & 0xF) == 0xF) {
+				stopped_ = false;
 				intreq_.flagIrq(0x10);
+			}
 		}
 	} else if (isSgb())
 		state -= sgb_.getJoypadIndex();
