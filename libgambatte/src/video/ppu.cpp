@@ -358,6 +358,132 @@ namespace M3Start {
 
 namespace M3Loop {
 
+void handleSpritePriorityDmg(PPUPriv &p, int i, uint_least32_t *dst, int xpos, unsigned tileword) {
+	int n;
+	int pos = spx(p.spriteList[i]) - xpos;
+	if (pos < 0) {
+		n = pos + tile_len;
+		pos = 0;
+	} else
+		n = tile_len - pos;
+
+	unsigned const attrib = p.spriteList[i].attrib;
+	long spword = p.spwordList[i];
+	unsigned long const *const spPalette = p.spPalette
+		+ (attrib & attr_dmgpalno) / (attr_dmgpalno / num_palette_entries);
+	uint_least32_t *d = dst + pos;
+
+	if (!(attrib & attr_bgpriority)) {
+		int const bpp = tile_bpp, m = tile_bpp_mask;
+		switch (n) {
+		case 8: if (spword >> 7 * bpp    ) { d[7] = spPalette[spword >> 7 * bpp    ]; } // fall through
+		case 7: if (spword >> 6 * bpp & m) { d[6] = spPalette[spword >> 6 * bpp & m]; } // fall through
+		case 6: if (spword >> 5 * bpp & m) { d[5] = spPalette[spword >> 5 * bpp & m]; } // fall through
+		case 5: if (spword >> 4 * bpp & m) { d[4] = spPalette[spword >> 4 * bpp & m]; } // fall through
+		case 4: if (spword >> 3 * bpp & m) { d[3] = spPalette[spword >> 3 * bpp & m]; } // fall through
+		case 3: if (spword >> 2 * bpp & m) { d[2] = spPalette[spword >> 2 * bpp & m]; } // fall through
+		case 2: if (spword >> 1 * bpp & m) { d[1] = spPalette[spword >> 1 * bpp & m]; } // fall through
+		case 1: if (spword            & m) { d[0] = spPalette[spword            & m]; }
+		}
+
+		spword >>= n * bpp;
+	} else {
+		unsigned tw = tileword >> pos * tile_bpp;
+		d += n;
+		n = -n;
+
+		do {
+			if (spword & tile_bpp_mask) {
+				d[n] = tw & tile_bpp_mask
+				     ? p.bgPalette[    tw & tile_bpp_mask]
+				     :   spPalette[spword & tile_bpp_mask];
+			}
+
+			spword >>= tile_bpp;
+			tw     >>= tile_bpp;
+		} while (++n);
+	}
+
+	p.spwordList[i] = spword;
+}
+
+void handleSpritePriorityCgb(PPUPriv &p, int i, uint_least32_t *dst, int xpos, unsigned tileword,
+		unsigned const attrib, unsigned char *idtab, unsigned long const *const bgPalette) {
+	int n;
+	int pos = spx(p.spriteList[i]) - xpos;
+	if (pos < 0) {
+		n = pos + tile_len;
+		pos = 0;
+	} else
+		n = tile_len - pos;
+
+	unsigned const bgprioritymask = p.lcdc << 7;
+	unsigned char const id = p.spriteList[i].oampos;
+	unsigned const sattrib = p.spriteList[i].attrib;
+	long spword = p.spwordList[i];
+	unsigned long const *const spPalette = cgbSpPalette(p, sattrib);
+
+	if (!((attrib | sattrib) & bgprioritymask)) {
+		unsigned char  *const idt = idtab + pos;
+		uint_least32_t *const   d =   dst + pos;
+
+		switch (n) {
+		case 8: if ((spword >> 7 * tile_bpp) && id < idt[7]) {
+		        	idt[7] = id;
+		        	  d[7] = spPalette[spword >> 7 * tile_bpp];
+		        } // fall through
+		case 7: if ((spword >> 6 * tile_bpp & tile_bpp_mask) && id < idt[6]) {
+		        	idt[6] = id;
+		        	  d[6] = spPalette[spword >> 6 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 6: if ((spword >> 5 * tile_bpp & tile_bpp_mask) && id < idt[5]) {
+		        	idt[5] = id;
+		        	  d[5] = spPalette[spword >> 5 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 5: if ((spword >> 4 * tile_bpp & tile_bpp_mask) && id < idt[4]) {
+		        	idt[4] = id;
+		        	  d[4] = spPalette[spword >> 4 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 4: if ((spword >> 3 * tile_bpp & tile_bpp_mask) && id < idt[3]) {
+		        	idt[3] = id;
+		        	  d[3] = spPalette[spword >> 3 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 3: if ((spword >> 2 * tile_bpp & tile_bpp_mask) && id < idt[2]) {
+		        	idt[2] = id;
+		        	  d[2] = spPalette[spword >> 2 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 2: if ((spword >> 1 * tile_bpp & tile_bpp_mask) && id < idt[1]) {
+		        	idt[1] = id;
+		        	  d[1] = spPalette[spword >> 1 * tile_bpp & tile_bpp_mask];
+		        } // fall through
+		case 1: if ((spword & tile_bpp_mask) && id < idt[0]) {
+		        	idt[0] = id;
+		        	  d[0] = spPalette[spword & tile_bpp_mask];
+		        }
+		}
+
+		spword >>= n * tile_bpp;
+
+	} else {
+		unsigned tw = tileword >> pos * tile_bpp;
+
+		do {
+			if ((spword & tile_bpp_mask) && id < idtab[pos]) {
+				idtab[pos] = id;
+				  dst[pos] = tw & tile_bpp_mask
+				           ? bgPalette[    tw & tile_bpp_mask]
+				           : spPalette[spword & tile_bpp_mask];
+			}
+
+			spword >>= tile_bpp;
+			tw     >>= tile_bpp;
+			++pos;
+		} while (--n);
+	}
+
+	p.spwordList[i] = spword;
+}
+
 void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *const dbufline,
 		unsigned char const *const tileMapLine, unsigned const tileline, unsigned tileMapXpos) {
 	int const tileIndexSign = p.lcdc & lcdc_tdsel ? 0 : tile_pattern_table_size / tile_size / 2;
@@ -487,60 +613,7 @@ void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *const db
 				} while (i >= 0 && spx(p.spriteList[i]) > xpos - tile_len);
 			} else {
 				do {
-					int n;
-					int pos = spx(p.spriteList[i]) - xpos;
-					if (pos < 0) {
-						n = pos + tile_len;
-						pos = 0;
-					} else
-						n = tile_len - pos;
-
-					unsigned const attrib = p.spriteList[i].attrib;
-					long spword = p.spwordList[i];
-					unsigned long const *const spPalette = p.spPalette
-						+ (attrib & attr_dmgpalno) / (attr_dmgpalno / num_palette_entries);
-					uint_least32_t *d = dst + pos;
-
-					if (!(attrib & attr_bgpriority)) {
-						int const bpp = tile_bpp, m = tile_bpp_mask;
-						switch (n) {
-						case 8: if (spword >> 7 * bpp    ) { d[7] = spPalette[spword >> 7 * bpp    ]; } // fall through
-						case 7: if (spword >> 6 * bpp & m) { d[6] = spPalette[spword >> 6 * bpp & m]; } // fall through
-						case 6: if (spword >> 5 * bpp & m) { d[5] = spPalette[spword >> 5 * bpp & m]; } // fall through
-						case 5: if (spword >> 4 * bpp & m) { d[4] = spPalette[spword >> 4 * bpp & m]; } // fall through
-						case 4: if (spword >> 3 * bpp & m) { d[3] = spPalette[spword >> 3 * bpp & m]; } // fall through
-						case 3: if (spword >> 2 * bpp & m) { d[2] = spPalette[spword >> 2 * bpp & m]; } // fall through
-						case 2: if (spword >> 1 * bpp & m) { d[1] = spPalette[spword >> 1 * bpp & m]; } // fall through
-						case 1: if (spword            & m) { d[0] = spPalette[spword            & m]; }
-						}
-
-						spword >>= n * bpp;
-
-						/*do {
-							if (spword & tile_bpp_mask)
-								dst[pos] = spPalette[spword & tile_bpp_mask];
-
-							spword >>= tile_bpp;
-							++pos;
-						} while (--n);*/
-					} else {
-						unsigned tw = tileword >> pos * tile_bpp;
-						d += n;
-						n = -n;
-
-						do {
-							if (spword & tile_bpp_mask) {
-								d[n] = tw & tile_bpp_mask
-								     ? p.bgPalette[    tw & tile_bpp_mask]
-								     :   spPalette[spword & tile_bpp_mask];
-							}
-
-							spword >>= tile_bpp;
-							tw     >>= tile_bpp;
-						} while (++n);
-					}
-
-					p.spwordList[i] = spword;
+					handleSpritePriorityDmg(p, i, dst, xpos, tileword);
 					--i;
 				} while (i >= 0 && spx(p.spriteList[i]) > xpos - tile_len);
 			}
@@ -691,90 +764,11 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 				} while (i >= 0 && spx(p.spriteList[i]) > xpos - tile_len);
 			} else {
 				unsigned char idtab[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-				unsigned const bgprioritymask = p.lcdc << 7;
 
 				do {
-					int n;
-					int pos = spx(p.spriteList[i]) - xpos;
-					if (pos < 0) {
-						n = pos + tile_len;
-						pos = 0;
-					} else
-						n = tile_len - pos;
-
-					unsigned char const id = p.spriteList[i].oampos;
-					unsigned const sattrib = p.spriteList[i].attrib;
-					long spword = p.spwordList[i];
-					unsigned long const *const spPalette = cgbSpPalette(p, sattrib);
-
-					if (!((attrib | sattrib) & bgprioritymask)) {
-						unsigned char  *const idt = idtab + pos;
-						uint_least32_t *const   d =   dst + pos;
-
-						switch (n) {
-						case 8: if ((spword >> 7 * tile_bpp) && id < idt[7]) {
-						        	idt[7] = id;
-						        	  d[7] = spPalette[spword >> 7 * tile_bpp];
-						        } // fall through
-						case 7: if ((spword >> 6 * tile_bpp & tile_bpp_mask) && id < idt[6]) {
-						        	idt[6] = id;
-						        	  d[6] = spPalette[spword >> 6 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 6: if ((spword >> 5 * tile_bpp & tile_bpp_mask) && id < idt[5]) {
-						        	idt[5] = id;
-						        	  d[5] = spPalette[spword >> 5 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 5: if ((spword >> 4 * tile_bpp & tile_bpp_mask) && id < idt[4]) {
-						        	idt[4] = id;
-						        	  d[4] = spPalette[spword >> 4 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 4: if ((spword >> 3 * tile_bpp & tile_bpp_mask) && id < idt[3]) {
-						        	idt[3] = id;
-						        	  d[3] = spPalette[spword >> 3 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 3: if ((spword >> 2 * tile_bpp & tile_bpp_mask) && id < idt[2]) {
-						        	idt[2] = id;
-						        	  d[2] = spPalette[spword >> 2 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 2: if ((spword >> 1 * tile_bpp & tile_bpp_mask) && id < idt[1]) {
-						        	idt[1] = id;
-						        	  d[1] = spPalette[spword >> 1 * tile_bpp & tile_bpp_mask];
-						        } // fall through
-						case 1: if ((spword & tile_bpp_mask) && id < idt[0]) {
-						        	idt[0] = id;
-						        	  d[0] = spPalette[spword & tile_bpp_mask];
-						        }
-						}
-
-						spword >>= n * tile_bpp;
-
-						/*do {
-							if ((spword & tile_bpp_mask) && id < idtab[pos]) {
-								idtab[pos] = id;
-									dst[pos] = spPalette[spword & tile_bpp_mask];
-							}
-
-							spword >>= tile_bpp;
-							++pos;
-						} while (--n);*/
-					} else {
-						unsigned tw = tileword >> pos * tile_bpp;
-
-						do {
-							if ((spword & tile_bpp_mask) && id < idtab[pos]) {
-								idtab[pos] = id;
-								  dst[pos] = tw & tile_bpp_mask
-								           ? bgPalette[    tw & tile_bpp_mask]
-								           : spPalette[spword & tile_bpp_mask];
-							}
-
-							spword >>= tile_bpp;
-							tw     >>= tile_bpp;
-							++pos;
-						} while (--n);
-					}
-
-					p.spwordList[i] = spword;
+					p.cgbDmg
+					? handleSpritePriorityDmg(p, i, dst, xpos, tileword)
+					: handleSpritePriorityCgb(p, i, dst, xpos, tileword, attrib, idtab, bgPalette);
 					--i;
 				} while (i >= 0 && spx(p.spriteList[i]) > xpos - tile_len);
 			}
