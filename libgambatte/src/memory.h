@@ -94,7 +94,7 @@ public:
 		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200)))
 			return readBios(p);
 		
-		if(cart_.isMbc2() && (p >= mm_sram_begin && p < mm_wram_begin)) {
+		if((p >= mm_sram_begin && p < mm_wram_begin) && cart_.isMbc2()) {
 			p = p & 0xA1FF;
 			return (cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc)) | 0xF0;
 		}		
@@ -103,7 +103,7 @@ public:
 	}
 
 	void write(unsigned p, unsigned data, unsigned long cc) {
-		if(cart_.isMbc2() && (p >= mm_sram_begin && p < mm_wram_begin)) {
+		if((p >= mm_sram_begin && p < mm_wram_begin) && cart_.isMbc2()) {
 			p = p & 0xA1FF;
 			data = data | 0xF0;
 		}
