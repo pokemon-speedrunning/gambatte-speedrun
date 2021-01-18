@@ -1140,7 +1140,7 @@ void GambatteMenuHandler::setResetting(bool state) {
 }
 
 void GambatteMenuHandler::pauseChange() {
-	if (isResetting_) {
+	if (attemptModeAction_->isChecked() || isResetting_) {
 		pauseAction_->setChecked(false);
 		return;
 	}
@@ -1151,12 +1151,12 @@ void GambatteMenuHandler::pauseChange() {
 }
 
 void GambatteMenuHandler::frameStep() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	if (pauseAction_->isChecked()) {
 		mw_.frameStep();
 
-		if (isResetting_) {
+		if (attemptModeAction_->isChecked() || isResetting_) {
 			pauseAction_->setChecked(false);
 			mw_.unpause();
 		}
