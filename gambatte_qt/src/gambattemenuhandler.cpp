@@ -1073,7 +1073,7 @@ void GambatteMenuHandler::saveState() {
 }
 
 void GambatteMenuHandler::loadState() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	LoadStateFun fun = { source_ };
 	mw_.callInWorkerThread(fun);
@@ -1095,7 +1095,7 @@ void GambatteMenuHandler::saveStateAs() {
 }
 
 void GambatteMenuHandler::loadStateFrom() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
