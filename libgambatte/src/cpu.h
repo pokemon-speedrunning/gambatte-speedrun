@@ -69,8 +69,8 @@ public:
 		mem_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
 
-	void setTrueColors(bool trueColors) { mem_.setTrueColors(trueColors); }
 	void setTimeMode(bool useCycles) { mem_.setTimeMode(useCycles, cycleCounter_); }
+	void setTrueColors(bool trueColors) { mem_.setTrueColors(trueColors); }
 	void setRtcDivisorOffset(long const rtcDivisorOffset) { mem_.setRtcDivisorOffset(rtcDivisorOffset); }
 
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }

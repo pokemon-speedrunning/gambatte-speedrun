@@ -111,8 +111,9 @@ public:
 	virtual void generateVideoFrame(PixelBuffer const &fb);
 
 public slots:
-	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
 	void setTimeMode(bool useCycles) { gb_.setTimeMode(useCycles); }
+	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
+	void setAttemptMode(bool attemptMode) { gb_.setAttemptMode(attemptMode); }
 
 signals:
 	void setTurbo(bool on);

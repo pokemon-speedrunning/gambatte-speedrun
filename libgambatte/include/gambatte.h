@@ -108,11 +108,14 @@ public:
 	  */
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32);
 
-	/** Use GBP color conversion instead of GBC-screen approximation. */
-	void setTrueColors(bool trueColors);
-
 	/** Use cycle-based RTC instead of real-time. */
 	void setTimeMode(bool useCycles);
+
+	/** Use GBP color conversion instead of GBC-screen approximation. */
+	void setTrueColors(bool trueColors);
+	
+	/** Disable unwanted emulator functions for speedrunning attempts. */
+	void setAttemptMode(bool attemptMode) { attemptMode_ = attemptMode; }
 
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput, void *p);
@@ -283,6 +286,8 @@ private:
 
 	GB(GB const &);
 	GB & operator=(GB const &);
+	
+	bool attemptMode_;
 };
 
 }

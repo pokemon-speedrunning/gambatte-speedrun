@@ -101,7 +101,7 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 			p_->cpu.stall(samplesToStall * 2);
 
 		if (!build.empty())
-			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
+			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc(), attemptMode_));
 	}
 }
 
@@ -186,12 +186,12 @@ void GB::setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 	p_->cpu.setDmgPaletteColor(palNum, colorNum, rgb32);
 }
 
-void GB::setTrueColors(bool trueColors) {
-	p_->cpu.setTrueColors(trueColors);
-}
-
 void GB::setTimeMode(bool useCycles) {
 	p_->cpu.setTimeMode(useCycles);
+}
+
+void GB::setTrueColors(bool trueColors) {
+	p_->cpu.setTrueColors(trueColors);
 }
 
 bool GB::loadState(std::string const &filepath) {

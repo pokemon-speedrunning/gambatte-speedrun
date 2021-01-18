@@ -502,6 +502,12 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
 	connect(trueColorsAction_, SIGNAL(toggled(bool)), &source, SLOT(setTrueColors(bool)));
+	
+	settingsm->addSeparator();
+	attemptModeAction_ = settingsm->addAction(tr("Attempt &Mode"));
+	attemptModeAction_->setCheckable(true);
+	attemptModeAction_->setChecked(QSettings().value("attempt-mode", true).toBool());
+	connect(attemptModeAction_, SIGNAL(toggled(bool)), &source, SLOT(setAttemptMode(bool)));
 
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
@@ -549,6 +555,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	connect(&mw, SIGNAL(dwmCompositionChange()), this, SLOT(reconsiderSyncFrameRateActionEnable()));
 	connect(this, SIGNAL(romLoaded(bool)), romLoadedActions, SLOT(setEnabled(bool)));
 	connect(this, SIGNAL(romLoaded(bool)), gambattePlatformMenu_.group(), SLOT(setDisabled(bool)));
+	connect(this, SIGNAL(romLoaded(bool)), attemptModeAction_, SLOT(setDisabled(bool)));
 	connect(this, SIGNAL(romLoaded(bool)), stateSlotGroup_->actions().at(0), SLOT(setChecked(bool)));
 
 	mw.setAspectRatio(QSize(160, 144));
@@ -590,6 +597,7 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
 	settings.setValue("rtc-mode", cycleBasedAction_->isChecked());
 	settings.setValue("true-colors", trueColorsAction_->isChecked());
+	settings.setValue("attempt-mode", attemptModeAction_->isChecked());
 }
 
 void GambatteMenuHandler::setWindowPrefix(QString const &windowPrefix) {
@@ -697,8 +705,9 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		//setDmgPaletteColors();
 	}
 
-	source_.setTrueColors(trueColorsAction_->isChecked());
 	source_.setTimeMode(cycleBasedAction_->isChecked());
+	source_.setTrueColors(trueColorsAction_->isChecked());
+	source_.setAttemptMode(attemptModeAction_->isChecked());
 
 	gambatte::PakInfo const &pak = source_.pakInfo();
 	std::cout << romTitle.toStdString() << '\n'
