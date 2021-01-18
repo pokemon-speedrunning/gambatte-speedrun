@@ -491,10 +491,12 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		cycleBasedAction_->setCheckable(true);
 		cycleBasedAction_->setChecked(QSettings().value("rtc-mode", true).toBool());
 		rtcModeActions->addAction(cycleBasedAction_);
+#ifdef ENABLE_REAL_TIME_RTC
 		realTimeAction_ = rtcModeMenu->addAction(tr("&Real-time"));
 		realTimeAction_->setCheckable(true);
 		realTimeAction_->setChecked(!cycleBasedAction_->isChecked());
 		rtcModeActions->addAction(realTimeAction_);
+#endif
 		connect(rtcModeActions, SIGNAL(triggered(QAction *)), this, SLOT(setRtcMode()));
 	}
 
