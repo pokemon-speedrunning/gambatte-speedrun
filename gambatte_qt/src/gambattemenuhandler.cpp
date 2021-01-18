@@ -720,8 +720,8 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
 	QString label;
 	for (GambatteGoodromInfo good : gambatte_goodroms) {
-		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
-			if (!good.label.empty())
+		if (romTitle.toStdString() == good.title && pak.crc() == good.crc && platformId == DEFAULT_GAMBATTE_PLATFORM) {
+			if (!good.label.empty() && attemptModeAction_->isChecked())
 				label = " " + QString::fromStdString(good.label);
 
 			source_.setBreakpoint(good.savBreakpoint);
