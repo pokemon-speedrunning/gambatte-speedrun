@@ -130,6 +130,7 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		setInitState(state, flags & CGB_MODE, flags & SGB_MODE);
 		setInitStateCart(state);
 		p_->cpu.loadState(state);
+		if (!attemptMode_)
 		p_->cpu.loadSavedata();
 
 		p_->stateNo = 1;
