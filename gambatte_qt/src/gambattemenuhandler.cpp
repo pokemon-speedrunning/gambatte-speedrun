@@ -739,6 +739,9 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	mw_.resetAudio();
 	mw_.run();
+	
+	if (attemptModeAction_->isChecked())
+		reset(); // Force reset fadeout for loading ROMs; prevents avoiding the fadeout from closing and re-opening the ROM
 }
 
 void GambatteMenuHandler::open() {
