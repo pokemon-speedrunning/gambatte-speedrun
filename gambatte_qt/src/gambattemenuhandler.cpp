@@ -730,7 +730,7 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		}
 	}
 
-	setWindowPrefix(strippedName(fileName) + label + (attemptModeAction_->isChecked() ? " AM" : "");
+	setWindowPrefix(strippedName(fileName) + label + (attemptModeAction_->isChecked() ? " AM" : ""));
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
