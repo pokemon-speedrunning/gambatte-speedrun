@@ -724,14 +724,13 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	for (GambatteGoodromInfo good : gambatte_goodroms) {
 		if (romTitle.toStdString() == good.title && pak.crc() == good.crc && platformId == DEFAULT_GAMBATTE_PLATFORM) {
 			if (!good.label.empty())
-				label = " " + QString::fromStdString(good.label) + (attemptModeAction_->isChecked() ? " AM" : "");
-
+				label = " " + QString::fromStdString(good.label);
 			source_.setBreakpoint(good.savBreakpoint);
 			break;
 		}
 	}
 
-	setWindowPrefix(strippedName(fileName) + label);
+	setWindowPrefix(strippedName(fileName) + label + (attemptModeAction_->isChecked() ? " AM" : "");
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
