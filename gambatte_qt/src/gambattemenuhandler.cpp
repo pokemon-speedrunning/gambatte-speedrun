@@ -723,8 +723,8 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	QString label;
 	for (GambatteGoodromInfo good : gambatte_goodroms) {
 		if (romTitle.toStdString() == good.title && pak.crc() == good.crc && platformId == DEFAULT_GAMBATTE_PLATFORM) {
-			if (!good.label.empty() && attemptModeAction_->isChecked())
-				label = " " + QString::fromStdString(good.label);
+			if (!good.label.empty())
+				label = " " + QString::fromStdString(good.label) + (attemptModeAction_->isChecked() ? " AM" : "");
 
 			source_.setBreakpoint(good.savBreakpoint);
 			break;
