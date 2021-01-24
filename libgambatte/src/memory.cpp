@@ -1210,7 +1210,7 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 	} else if (p - mm_hram_begin >= 0x7Fu) {
 		long const ffp = static_cast<long>(p) - mm_io_begin;
 		if (ffp < 0) {
-			if (agbFlag_ && (p >= (mm_oam_begin + oam_size) && p < mm_io_begin))
+			if (isCgb() && (p >= (mm_oam_begin + oam_size) && p < mm_io_begin))
 				return;
 			if (lcd_.oamWritable(cc) && oamDmaPos_ >= oam_size
 					&& (p < mm_oam_begin + oam_size || isCgb())) {

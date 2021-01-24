@@ -35,7 +35,7 @@ struct SaveState {
 		void set(T *p, std::size_t size) { ptr = p; size_ = size; }
 
 		friend class SaverList;
-		friend void setInitState(SaveState &, bool, bool, bool);
+		friend void setInitState(SaveState &, bool, bool);
 		friend void setInitStateCart(SaveState &);
 
 	private:
