@@ -177,6 +177,10 @@ void Tima::divReset(unsigned long cc, TimaInterruptRequester timaIrq) {
 	divLastUpdate_ = cc;
 }
 
+void Tima::divOffset(unsigned long offset) {
+	divLastUpdate_ = offset;
+}
+
 void Tima::speedChange(TimaInterruptRequester timaIrq) {
 	if ((tac_ & 0x07) >= 0x05) {
 		lastUpdate_ -= 4;

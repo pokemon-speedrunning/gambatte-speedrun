@@ -57,7 +57,7 @@ public:
 
 	unsigned long stop(unsigned long cycleCounter, bool &skip);
 	void stall(unsigned long cycleCounter, unsigned long cycles);
-	void divOffset(unsigned long cycleCounter_, unsigned long cycles) { tima_.divReset((cycleCounter_ - cycles), TimaInterruptRequester(intreq_)); }
+	void divOffset(unsigned long offset) { tima_.divOffset(offset); }
 	bool isCgb() const { return lcd_.isCgb(); }
 	bool isCgbDmg() const { return lcd_.isCgbDmg(); }
 	bool isSgb() const { return gbIsSgb_; }
