@@ -39,7 +39,7 @@ struct GambattePlatformInfo {
 	unsigned loadFlags;
 	GambatteBiosInfo biosInfo;
 	unsigned resetFade;  // uniform n=[0,35111] will be added
-	unsigned resetStall; // must be multiple of (2 << 14)
+	unsigned resetStall;
 };
 
 enum GambattePlatform {
@@ -71,7 +71,7 @@ const GambattePlatformInfo gambatte_platform_info[PLATFORM_COUNT] = {
 		.loadFlags = gambatte::GB::CGB_MODE | gambatte::GB::GBA_FLAG,
 		.biosInfo = cgb_bios_info, // patched with GBA_FLAG
 		.resetFade = 0,
-		.resetStall = 0
+		.resetStall = 485808
 	},
 
 	[PLATFORM_GBP] = {

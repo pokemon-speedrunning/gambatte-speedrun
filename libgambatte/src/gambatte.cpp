@@ -97,8 +97,10 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & SGB_MODE);
 		p_->cpu.loadState(state);
 
-		if (samplesToStall > 0)
-			p_->cpu.stall(samplesToStall * 2);
+		if (samplesToStall > 0) {
+			p_->cpu.stall(samplesToStall << 1);
+			p_->cpu.divOffset(samplesToStall << 1);
+		}
 
 		if (!build.empty())
 			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
