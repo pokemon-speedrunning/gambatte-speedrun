@@ -45,7 +45,6 @@ public:
 	void setTma(unsigned tma, unsigned long cc, TimaInterruptRequester timaIrq);
 	void setTac(unsigned tac, unsigned long cc, TimaInterruptRequester timaIrq, bool agbFlag);
 	void divReset(unsigned long cc, TimaInterruptRequester);
-	void divOffset(unsigned long offset);
 	void speedChange(TimaInterruptRequester);
 	unsigned long divLastUpdate() const { return divLastUpdate_; }
 	unsigned tima(unsigned long cc);

@@ -98,8 +98,9 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 		p_->cpu.loadState(state);
 
 		if (samplesToStall > 0) {
-			p_->cpu.stall(samplesToStall << 1);
-			p_->cpu.divOffset(samplesToStall << 1);
+			p_->cpu.stall((samplesToStall << 1) - 8);
+			p_->cpu.divReset();
+			p_->cpu.stall(8);
 		}
 
 		if (!build.empty())
