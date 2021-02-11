@@ -1221,7 +1221,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const sgb) {
 	state.mem.IME = false;
 	state.mem.halted = false;
 	state.mem.enableRam = false;
-	state.mem.mbcLockup = false;
 	state.mem.rambankMode = false;
 	state.mem.hdmaTransfer = false;
 	state.mem.stopped = false;

@@ -294,14 +294,14 @@ private:
 
 class Mbc3 : public DefaultMbc {
 public:
-	Mbc3(MemPtrs &memptrs, Rtc *const rtc, bool mbc30)
+	Mbc3(MemPtrs &memptrs, Rtc *const rtc, unsigned char rombank_mask = 0x7Fu, unsigned char rambank_mask = 0x03u)
 	: memptrs_(memptrs)
 	, rtc_(rtc)
 	, rombank_(1)
 	, rambank_(0)
 	, enableRam_(false)
-	, mbcLockup_(false)
-	, mbc30_(mbc30)
+	, rombank_mask_(rombank_mask)
+	, rambank_mask_(rambank_mask)
 	{
 	}
 
@@ -320,20 +320,23 @@ public:
 			setRambank();
 			break;
 		case 1:
-			rombank_ = data;
-			if(!mbc30_)
-				rombank_ = rombank_ & 0x7F;
+			rombank_ = data & rombank_mask_;
 			setRombank();
 			break;
 		case 2:
-			rambank_ = data;
-			if(!rtc_)
-				rambank_ = rambank_ & 0x07;
-			if(rtc_) {
-				rambank_ = rambank_ & 0x0F;
-				mbcLockup_ = (rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C;
+			{
+				unsigned flags = MemPtrs::read_en | MemPtrs::write_en;
+				if(rtc_) {
+					rambank_ = data & 0x0F;
+					if ((rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C) {
+						flags = MemPtrs::disabled;
+					}
+				}
+				else {
+					rambank_ = data & rambank_mask_;
+				}
+				setRambank(flags);
 			}
-			setRambank();
 			break;
 		case 3:
 			if (rtc_)
@@ -347,14 +350,12 @@ public:
 		ss.rombank = rombank_;
 		ss.rambank = rambank_;
 		ss.enableRam = enableRam_;
-		ss.mbcLockup = mbcLockup_;
 	}
 
 	virtual void loadState(SaveState::Mem const &ss) {
 		rombank_ = ss.rombank;
 		rambank_ = ss.rambank;
 		enableRam_ = ss.enableRam;
-		mbcLockup_ = ss.mbcLockup;
 		setRambank();
 		setRombank();
 	}
@@ -365,11 +366,12 @@ private:
 	unsigned char rombank_;
 	unsigned char rambank_;
 	bool enableRam_;
-	bool mbc30_;
-	bool mbcLockup_;
+	unsigned char rombank_mask_;
+	unsigned char rambank_mask_;
 
-	void setRambank() const {
-		unsigned flags = (enableRam_ && !mbcLockup_) ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled;
+	void setRambank(unsigned flags = MemPtrs::read_en | MemPtrs::write_en) const {
+		if (!enableRam_)
+			flags = MemPtrs::disabled;
 
 		if (rtc_) {
 			rtc_->set(enableRam_, rambank_);
@@ -383,6 +385,14 @@ private:
 
 	void setRombank() const {
 		memptrs_.setRombank(std::max((unsigned) rombank_, 1u) & (rombanks(memptrs_) - 1));
+	}
+};
+
+class Mbc30 : public Mbc3 {
+public:
+	Mbc30(MemPtrs &memptrs, Rtc *const rtc)
+	: Mbc3(memptrs, rtc, 0xFFu, 0x07u)
+	{
 	}
 };
 
@@ -526,7 +536,7 @@ private:
 
 	void setRambank() const {
 		huc3_->setRamflag(ramflag_);
-        
+
 		unsigned flags;
 		if(ramflag_ >= 0x0B && ramflag_ < 0x0F) {
 			// System registers mode
@@ -665,7 +675,7 @@ bool hasBattery(unsigned char headerByte0x147) {
 	case 0x13:
 	case 0x1B:
 	case 0x1E:
-    	case 0xFE: // huc3
+	case 0xFE: // huc3
 	case 0xFF: 
 		return true;
 	}
@@ -822,8 +832,6 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	rtc_.set(false, 0);
 	huc3_.set(false);
 
-	bool mbc30 = rombanks > 0x80 || rambanks > 0x04;
-
 	rom->rewind();
 	rom->read(reinterpret_cast<char*>(memptrs_.romdata()), filesize / rombank_size() * rombank_size());
 	std::memset(memptrs_.romdata() + filesize / rombank_size() * rombank_size(),
@@ -847,7 +855,14 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		break;
 	case type_mbc2: mbc_.reset(new Mbc2(memptrs_)); break;
 	case type_mbc3:
-		mbc_.reset(new Mbc3(memptrs_, hasRtc(memptrs_.romdata()[0x147]) ? &rtc_ : 0, mbc30));
+		{
+			bool mbc30 = rombanks > 0x80 || rambanks > 0x04;
+			Rtc *rtc = hasRtc(memptrs_.romdata()[0x147]) ? &rtc_ : 0;
+			if(mbc30)
+				mbc_.reset(new Mbc30(memptrs_, rtc));
+			else
+				mbc_.reset(new Mbc3 (memptrs_, rtc));
+		}
 		break;
 	case type_mbc5: mbc_.reset(new Mbc5(memptrs_)); break;
 	case type_huc1: mbc_.reset(new HuC1(memptrs_)); break;
@@ -967,7 +982,7 @@ PakInfo const Cartridge::pakInfo(bool const multipakCompat) const {
 		crc = crc32(crc, memptrs_.romdata(), rombs*0x4000ul);
 		return PakInfo(multipakCompat && presumedMulti64Mbc1(memptrs_.romdata(), rombs),
 		               rombs,
-			       crc,
+		               crc,
 		               memptrs_.romdata());
 	}
 

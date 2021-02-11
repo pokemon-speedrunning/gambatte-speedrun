@@ -259,7 +259,6 @@ SaverList::SaverList()
 	{ static char const label[] = { h,l,t,h,d,m,a, NUL }; ADD(mem.haltHdmaState); }
 	{ static char const label[] = { i,m,e,         NUL }; ADD(mem.IME); }
 	{ static char const label[] = { s,r,a,m,o,n,   NUL }; ADD(mem.enableRam); }
-	{ static char const label[] = { m,b,c,l,o,c,k, NUL }; ADD(mem.mbcLockup); }
 	{ static char const label[] = { r,a,m,b,m,o,d, NUL }; ADD(mem.rambankMode); }
 	{ static char const label[] = { h,d,m,a,       NUL }; ADD(mem.hdmaTransfer); }
 	{ static char const label[] = { b,i,o,s,       NUL }; ADD(mem.biosMode); }
