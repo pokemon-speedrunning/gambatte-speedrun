@@ -78,7 +78,7 @@ public:
 	void setBios(unsigned char *buffer, std::size_t size) { mem_.setBios(buffer, size); }
 
 	unsigned char externalRead(unsigned short addr) {
-		return mem_.read(addr, cycleCounter_);
+		return mem_.read(addr, cycleCounter_, false);
 	}
 
 	void externalWrite(unsigned short addr, unsigned char val) {

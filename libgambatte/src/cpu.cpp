@@ -125,7 +125,7 @@ void CPU::loadState(SaveState const &state) {
 	opcode_ = state.cpu.opcode;
 	prefetched_ = state.cpu.prefetched;
 	if (state.cpu.skip) {
-		opcode_ = mem_.read(pc_, cycleCounter_);
+		opcode_ = mem_.read(pc_, cycleCounter_, true);
 		prefetched_ = true;
 	}
 }
@@ -139,8 +139,9 @@ void CPU::loadState(SaveState const &state) {
 #define de() ( d * 0x100u | e )
 #define hl() ( h * 0x100u | l )
 
-#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); cycleCounter += 4; } while (0)
-#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
+#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, false); cycleCounter += 4; } while (0)
+#define SPECIAL_READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, true); cycleCounter += 4; } while (0)
+#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter, true); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
 #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
 
 #define WRITE(addr, data) do { mem_.write(addr, data, cycleCounter); cycleCounter += 4; } while (0)
@@ -308,7 +309,7 @@ void CPU::loadState(SaveState const &state) {
 #define pop_rr(r1, r2) do { \
 	READ(r2, sp); \
 	sp = (sp + 1) & 0xFFFF; \
-	READ(r1, sp); \
+	SPECIAL_READ(r1, sp); \
 	sp = (sp + 1) & 0xFFFF; \
 } while (0)
 
@@ -940,7 +941,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0x3A:
 				{
 					unsigned addr = hl();
-					a = mem_.read(addr, cycleCounter);
+					a = mem_.read(addr, cycleCounter, false);
 					cycleCounter += 4;
 
 					addr = (addr - 1) & 0xFFFF;
@@ -1035,7 +1036,7 @@ void CPU::process(unsigned long const cycles) {
 
 				// halt (4n cycles):
 			case 0x76:
-				opcode_ = mem_.read(pc, cycleCounter);
+				opcode_ = mem_.read(pc, cycleCounter, true);
 				if (mem_.pendingIrqs(cycleCounter)) {
 					prefetched_ = true;
 				} else {

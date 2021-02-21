@@ -55,6 +55,8 @@ Memory::Memory(Interrupter const &interrupter)
 , oamDmaPos_(-2u & 0xFF)
 , oamDmaStartPos_(0)
 , serialCnt_(0)
+, bus_(0xFF)
+, cartbus_(0xFF)
 , blanklcd_(false)
 , haltHdmaState_(hdma_low)
 {
@@ -330,7 +332,7 @@ unsigned long Memory::dma(unsigned long cc) {
 		unsigned const src = dmaSrc++ & 0xFFFF;
 		unsigned const data = (src & -vrambank_size()) == mm_vram_begin || src >= mm_oam_begin
 			? 0xFF
-			: read(src, cc);
+			: read(src, cc, true);
 
 		cc += 2 + 2 * doubleSpeed;
 
@@ -689,7 +691,7 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned long const cc) {
 
 				return cart_.vrambankptr()[p];
 			}
-
+			
 			if (cart_.rsrambankptr())
 				return cart_.rsrambankptr()[p];
             

@@ -31,7 +31,7 @@ Interrupter::Interrupter(unsigned short &sp, unsigned short &pc, unsigned char &
 
 void Interrupter::prefetch(unsigned long cc, Memory &mem) {
 	if (!prefetched_) {
-		opcode_ = mem.read(pc_, cc);
+		opcode_ = mem.read(pc_, cc, true);
 		pc_ = (pc_ + 1) & 0xFFFF;
 		prefetched_ = true;
 	}

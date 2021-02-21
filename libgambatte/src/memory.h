@@ -80,21 +80,33 @@ public:
 	void ackIrq(unsigned bit, unsigned long cc);
 
 	unsigned readBios(unsigned p) {
-		if(agbFlag_ && p >= 0xF3 && p < 0x100)
+		if (agbFlag_ && p >= 0xF3 && p < 0x100)
 			return (agbOverride[p - 0xF3] + bios_[p]) & 0xFF;
 
 		return bios_[p];
 	}
 
 	unsigned ff_read(unsigned p, unsigned long cc) {
-		return p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
+		bus_ = p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
+		cartbus_ = 0xFF;
+		return bus_;
 	}
 
-	unsigned read(unsigned p, unsigned long cc) {
-		if(biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200)))
-			return readBios(p);
-
-		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
+	unsigned read(unsigned p, unsigned long cc, bool special) {
+		if (biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
+			bus_ = readBios(p);
+			cartbus_ = 0xFF;
+		} else if (p >= mm_sram_begin && p < mm_wram_begin && cart_.disabledRam()) {
+			bus_ = special ? 0xFF : cartbus_;
+			cartbus_ = 0xFF;
+		} else {
+			bus_ = cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
+				if ((p < mm_vram_begin) || (!isCgb() && (p >= mm_wram_begin && p < mm_oam_begin)))
+					cartbus_ = bus_;
+				else
+					cartbus_ = 0xFF;
+		}
+		return bus_;
 	}
 
 	void write(unsigned p, unsigned data, unsigned long cc) {
@@ -190,6 +202,8 @@ private:
 	unsigned char oamDmaPos_;
 	unsigned char oamDmaStartPos_;
 	unsigned char serialCnt_;
+	unsigned char bus_;
+	unsigned char cartbus_;
 	bool blanklcd_;
 	bool biosMode_;
 	bool agbFlag_;
