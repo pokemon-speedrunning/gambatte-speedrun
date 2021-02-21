@@ -97,10 +97,11 @@ public:
 			bus_ = readBios(p);
 			cartbus_ = 0xFF;
 		} else if (p >= mm_sram_begin && p < mm_wram_begin && cart_.disabledRam()) {
-			if (pcRead)
+			if (pcRead && !isDoubleSpeed())
 				cartbus_ = 0xFF;
 			bus_ = cart_.rmem(p >> 12) ? cartbus_ : nontrivial_read(p, cc);
-			cartbus_ = 0xFF;
+			if (pcRead || !isDoubleSpeed())
+				cartbus_ = 0xFF;
 		} else {
 			bus_ = cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
 				if ((p < mm_vram_begin) || (!isCgb() && (p >= mm_wram_begin && p < mm_oam_begin)))
