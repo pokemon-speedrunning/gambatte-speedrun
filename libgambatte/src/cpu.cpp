@@ -140,7 +140,6 @@ void CPU::loadState(SaveState const &state) {
 #define hl() ( h * 0x100u | l )
 
 #define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, false); cycleCounter += 4; } while (0)
-#define SPECIAL_READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, true); cycleCounter += 4; } while (0)
 #define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter, true); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
 #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
 
@@ -309,7 +308,7 @@ void CPU::loadState(SaveState const &state) {
 #define pop_rr(r1, r2) do { \
 	READ(r2, sp); \
 	sp = (sp + 1) & 0xFFFF; \
-	SPECIAL_READ(r1, sp); \
+	READ(r1, sp); \
 	sp = (sp + 1) & 0xFFFF; \
 } while (0)
 

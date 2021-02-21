@@ -310,7 +310,7 @@ public:
 	}
 
 	virtual bool disabledRam() const {
-		return !enableRam_;
+		return (!enableRam_ || mbcLockup_);
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const cc) {

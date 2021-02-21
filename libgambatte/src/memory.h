@@ -92,12 +92,14 @@ public:
 		return bus_;
 	}
 
-	unsigned read(unsigned p, unsigned long cc, bool special) {
+	unsigned read(unsigned p, unsigned long cc, bool pcRead) {
 		if (biosMode_ && (p < biosSize_ && !(p >= 0x100 && p < 0x200))) {
 			bus_ = readBios(p);
 			cartbus_ = 0xFF;
 		} else if (p >= mm_sram_begin && p < mm_wram_begin && cart_.disabledRam()) {
-			bus_ = special ? 0xFF : cartbus_;
+			if (pcRead)
+				cartbus_ = 0xFF;
+			bus_ = cart_.rmem(p >> 12) ? cartbus_ : nontrivial_read(p, cc);
 			cartbus_ = 0xFF;
 		} else {
 			bus_ = cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);

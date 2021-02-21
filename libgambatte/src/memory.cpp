@@ -332,7 +332,7 @@ unsigned long Memory::dma(unsigned long cc) {
 		unsigned const src = dmaSrc++ & 0xFFFF;
 		unsigned const data = (src & -vrambank_size()) == mm_vram_begin || src >= mm_oam_begin
 			? 0xFF
-			: read(src, cc, true);
+			: read(src, cc, false);
 
 		cc += 2 + 2 * doubleSpeed;
 
@@ -694,6 +694,9 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned long const cc) {
 			
 			if (cart_.rsrambankptr())
 				return cart_.rsrambankptr()[p];
+				
+			if (cart_.disabledRam())
+				return cartbus_;
             
 			if (cart_.isHuC3())
 				return cart_.HuC3Read(p, cc);
