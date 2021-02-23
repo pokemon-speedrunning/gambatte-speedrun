@@ -244,6 +244,46 @@ private:
 	}
 };
 
+class MbcWisdomTree : public Mbc {
+public:
+	explicit MbcWisdomTree(MemPtrs &memptrs)
+	: memptrs_(memptrs)
+	, rombank_(0)
+	{
+	}
+
+	virtual unsigned char curRomBank() const {
+		return rombank_;
+	}
+
+	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
+		rombank_ = (p & 0xFF) << 1;
+		setRombank();
+	}
+
+	virtual void saveState(SaveState::Mem &ss) const {
+		ss.rombank = rombank_;
+	}
+
+	virtual void loadState(SaveState::Mem const &ss) {
+		rombank_ = ss.rombank;
+		setRombank();
+	}
+
+private:
+	MemPtrs &memptrs_;
+	unsigned char rombank_;
+
+	void setRombank() const {
+		memptrs_.setRombank0(rombank_ & (rombanks(memptrs_) - 2));
+		memptrs_.setRombank((rombank_ | 1) & (rombanks(memptrs_) - 1));
+	}
+
+	virtual bool isAddressWithinAreaRombankCanBeMappedTo(unsigned addr, unsigned bank) const {
+		return ((addr < 0x4000) == !(bank & 1)) == ((addr >= 0x4000) == (bank & 1));
+	}
+};
+
 class Mbc2 : public DefaultMbc {
 public:
 	explicit Mbc2(MemPtrs &memptrs)
@@ -328,9 +368,6 @@ public:
 				unsigned flags = MemPtrs::read_en | MemPtrs::write_en;
 				if(rtc_) {
 					rambank_ = data & 0x0F;
-					if ((rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C) {
-						flags = MemPtrs::disabled;
-					}
 				}
 				else {
 					rambank_ = data & rambank_mask_;
@@ -374,6 +411,9 @@ private:
 			flags = MemPtrs::disabled;
 
 		if (rtc_) {
+			if ((rambank_ > (rambanks(memptrs_) - 1) && rambank_ < 0x08) || rambank_ > 0x0C)
+				flags = MemPtrs::disabled;
+
 			rtc_->set(enableRam_, rambank_);
 
 			if (rtc_->activeData())
@@ -757,18 +797,29 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	                     type_mbc3,
 	                     type_mbc5,
 	                     type_huc1,
-	                     type_huc3 };
+	                     type_huc3,
+	                     type_mbcwisdomtree };
 	Cartridgetype type = type_plain;
 	unsigned rambanks = 1;
 	unsigned rombanks = 2;
 	bool cgb = false;
 
 	{
+		static const char strWisdomTree1[12] = "WISDOM TREE";
+		static const char strWisdomTree2[12] = "WISDOM\0TREE";
 		unsigned char header[0x150];
 		rom->read(reinterpret_cast<char *>(header), sizeof header);
 
 		switch (header[0x0147]) {
-		case 0x00: type = type_plain; break;
+		case 0x00:
+			// Wisdom Tree
+			if (std::search(romfiledata, romfiledata + romfilelength, strWisdomTree1, strWisdomTree1 + 11) != (romfiledata + romfilelength) ||
+				std::search(romfiledata, romfiledata + romfilelength, strWisdomTree2, strWisdomTree2 + 11) != (romfiledata + romfilelength)) {
+				type = type_mbcwisdomtree;
+			} else {
+				type = type_plain;
+			}
+			break;
 		case 0x01:
 		case 0x02:
 		case 0x03: type = type_mbc1; break;
@@ -784,17 +835,16 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		case 0x11:
 		case 0x12:
 		case 0x13: type = type_mbc3; break;
-		case 0x15:
-		case 0x16:
-		case 0x17: return LOADRES_UNSUPPORTED_MBC_MBC4;
 		case 0x19:
 		case 0x1A:
-		case 0x1B:
+		case 0x1B: if (header[0x014A] == 0xE1) return LOADRES_UNSUPPORTED_MBC_EMS_MULTICART;
 		case 0x1C:
 		case 0x1D:
 		case 0x1E: type = type_mbc5; break;
 		case 0x20: return LOADRES_UNSUPPORTED_MBC_MBC6;
 		case 0x22: return LOADRES_UNSUPPORTED_MBC_MBC7;
+		case 0xBE: return LOADRES_UNSUPPORTED_MBC_BUNG_MULTICART;
+		case 0xC0: if (header[0x014A] == 0xD1) { type = type_mbcwisdomtree; break; }
 		case 0xFC: return LOADRES_UNSUPPORTED_MBC_POCKET_CAMERA;
 		case 0xFD: return LOADRES_UNSUPPORTED_MBC_TAMA5;
 		case 0xFE: type = type_huc3; break;
@@ -869,7 +919,8 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	case type_huc3:
 		huc3_.set(true);
 		mbc_.reset(new HuC3(memptrs_, &huc3_));
-		break;        
+		break;
+	case type_mbcwisdomtree: mbc_.reset(new MbcWisdomTree(memptrs_)); break;        
 	}
 
 	return LOADRES_OK;
