@@ -372,12 +372,7 @@ public:
 		case 2:
 			{
 				unsigned flags = MemPtrs::read_en | MemPtrs::write_en;
-				if(rtc_) {
-					rambank_ = data & 0x0F;
-				}
-				else {
-					rambank_ = data & rambank_mask_;
-				}
+				rambank_ = data & (rtc_ ? 0x0F : rambank_mask_);
 				setRambank(flags);
 			}
 			break;
