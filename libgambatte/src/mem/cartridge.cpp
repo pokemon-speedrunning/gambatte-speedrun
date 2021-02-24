@@ -26,6 +26,8 @@
 #include <zlib.h>
 #include <stdio.h>
 
+#define fallthrough __attribute__((fallthrough))
+
 using namespace gambatte;
 
 namespace {
@@ -255,8 +257,12 @@ public:
 	virtual unsigned char curRomBank() const {
 		return rombank_;
 	}
+	
+	virtual bool disabledRam() const {
+		return true;
+	}
 
-	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
+	virtual void romWrite(unsigned const p, unsigned const /*data*/, unsigned long const /*cc*/) {
 		rombank_ = (p & 0xFF) << 1;
 		setRombank();
 	}
@@ -805,21 +811,11 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 	bool cgb = false;
 
 	{
-		static const char strWisdomTree1[12] = "WISDOM TREE";
-		static const char strWisdomTree2[12] = "WISDOM\0TREE";
 		unsigned char header[0x150];
 		rom->read(reinterpret_cast<char *>(header), sizeof header);
 
 		switch (header[0x0147]) {
-		case 0x00:
-			// Wisdom Tree
-			if (std::search(romfiledata, romfiledata + romfilelength, strWisdomTree1, strWisdomTree1 + 11) != (romfiledata + romfilelength) ||
-				std::search(romfiledata, romfiledata + romfilelength, strWisdomTree2, strWisdomTree2 + 11) != (romfiledata + romfilelength)) {
-				type = type_mbcwisdomtree;
-			} else {
-				type = type_plain;
-			}
-			break;
+		case 0x00: type = type_plain; break;
 		case 0x01:
 		case 0x02:
 		case 0x03: type = type_mbc1; break;
@@ -835,20 +831,28 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		case 0x11:
 		case 0x12:
 		case 0x13: type = type_mbc3; break;
+		case 0x1B:
+			if (header[0x014A] == 0xE1)
+				return LOADRES_UNSUPPORTED_MBC_EMS_MULTICART;
+		fallthrough;
 		case 0x19:
 		case 0x1A:
-		case 0x1B: if (header[0x014A] == 0xE1) return LOADRES_UNSUPPORTED_MBC_EMS_MULTICART;
 		case 0x1C:
 		case 0x1D:
 		case 0x1E: type = type_mbc5; break;
 		case 0x20: return LOADRES_UNSUPPORTED_MBC_MBC6;
 		case 0x22: return LOADRES_UNSUPPORTED_MBC_MBC7;
 		case 0xBE: return LOADRES_UNSUPPORTED_MBC_BUNG_MULTICART;
-		case 0xC0: if (header[0x014A] == 0xD1) { type = type_mbcwisdomtree; break; }
 		case 0xFC: return LOADRES_UNSUPPORTED_MBC_POCKET_CAMERA;
 		case 0xFD: return LOADRES_UNSUPPORTED_MBC_TAMA5;
 		case 0xFE: type = type_huc3; break;
 		case 0xFF: type = type_huc1; break;
+		case 0xC0:
+			if (header[0x014A] == 0xD1) {
+				type = type_mbcwisdomtree;
+				break;
+			}
+		fallthrough;
 		default:   return LOADRES_BAD_FILE_OR_UNKNOWN_MBC;
 		}
 
@@ -871,9 +875,12 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 		rambanks = numRambanksFromH14x(header[0x147], header[0x149]);
 		cgb = cgbMode;
 	}
-
+	
 	std::size_t const filesize = rom->size();
 	rombanks = std::max(pow2ceil(filesize / rombank_size()), 2u);
+	
+	if (multicartCompat && type == type_plain && rombanks > 2)
+		type = type_mbcwisdomtree;
 
 	defaultSaveBasePath_.clear();
 	ggUndoList_.clear();
