@@ -276,7 +276,8 @@ static void runTestRom(
 		gambatte::uint_least32_t framebuf[],
 		gambatte::uint_least32_t audiobuf[],
 		std::string const &file,
-		bool const cgb) {
+		bool const cgb,
+		bool const agb) {
 	gambatte::GB gb;
 
 	if (cgb) {
@@ -291,7 +292,7 @@ static void runTestRom(
 		}
 	}
 
-	if (gb.load(file, cgb * gambatte::GB::LoadFlag::CGB_MODE)) {
+	if (gb.load(file, cgb ? (gambatte::GB::LoadFlag::CGB_MODE | (agb * gambatte::GB::LoadFlag::GBA_FLAG)) : 0)) {
 		std::fprintf(stderr, "Failed to load ROM image file %s\n", file.c_str());
 		std::abort();
 	}
@@ -303,7 +304,7 @@ static void runTestRom(
 
 	gb.setTrueColors(false);
 
-	std::putchar(cgb ? 'c' : 'd');
+	std::putchar(cgb ? (agb ? 'a' : 'c') : 'd');
 	std::fflush(stdout);
 
 	long samplesLeft = samples_per_frame * ((cgb ? 186 : 334) + 15);
@@ -315,17 +316,17 @@ static void runTestRom(
 	}
 }
 
-static bool runStrTest(std::string const &romfile, bool cgb, std::string const &outstr) {
+static bool runStrTest(std::string const &romfile, bool cgb, bool agb, std::string const &outstr) {
 	gambatte::uint_least32_t audiobuf[audiobuf_size];
 	gambatte::uint_least32_t framebuf[framebuf_size];
-	runTestRom(framebuf, audiobuf, romfile, cgb);
+	runTestRom(framebuf, audiobuf, romfile, cgb, agb);
 	return evaluateStrTestResults(audiobuf, framebuf, romfile, outstr);
 }
 
-static bool runPngTest(std::string const &romfile, bool cgb, std::FILE &pngfile) {
+static bool runPngTest(std::string const &romfile, bool cgb, bool agb, std::FILE &pngfile) {
 	gambatte::uint_least32_t audiobuf[audiobuf_size];
 	gambatte::uint_least32_t framebuf[framebuf_size];
-	runTestRom(framebuf, audiobuf, romfile, cgb);
+	runTestRom(framebuf, audiobuf, romfile, cgb, agb);
 
 	gambatte::uint_least32_t pngbuf[framebuf_size];
 	readPng(pngbuf, pngfile);
@@ -349,50 +350,108 @@ static file_ptr openFile(std::string const &filename) {
 } // anon ns
 
 int main(int const argc, char *argv[]) {
-	int numTestsRun = 0;
-	int numTestsSucceeded = 0;
+	int totalNumTestsRun = 0;
+	int totalNumTestsSucceeded = 0;
+	int dmgNumTestsRun = 0;
+	int dmgNumTestsSucceeded = 0;
+	int cgbNumTestsRun = 0;
+	int cgbNumTestsSucceeded = 0;
+	int agbNumTestsRun = 0;
+	int agbNumTestsSucceeded = 0;
 
 	for (int i = 1; i < argc; ++i) {
 		std::string const s = extensionStripped(argv[i]);
 		char const *dmgout = 0;
 		char const *cgbout = 0;
+		char const *agbout = 0; // TODO: Actual AGB results
 
 		if (s.find("dmg08_cgb04c_out") != std::string::npos) {
-			dmgout = cgbout = "dmg08_cgb04c_out";
+			dmgout = cgbout = agbout = "dmg08_cgb04c_out";
 		} else {
 			if (s.find("dmg08_out") != std::string::npos) {
 				dmgout = "dmg08_out";
 
 				if (s.find("cgb04c_out") != std::string::npos)
-					cgbout = "cgb04c_out";
+					cgbout = agbout = "cgb04c_out";
 			} else if (s.find("_out") != std::string::npos)
-				cgbout = "_out";
+				cgbout = agbout = "_out";
+		}
+		if (agbout) {
+			if (runStrTest(argv[i],  true,  true, agbout)) {
+				++totalNumTestsSucceeded;
+				++agbNumTestsSucceeded;
+			}
+			++agbNumTestsRun;
+			++totalNumTestsRun;
 		}
 		if (cgbout) {
-			numTestsSucceeded += runStrTest(argv[i],  true, cgbout);
-			++numTestsRun;
+			if (runStrTest(argv[i],  true, false, cgbout)) {
+				++totalNumTestsSucceeded;
+				++cgbNumTestsSucceeded;
+			}
+			++totalNumTestsRun;
+			++cgbNumTestsRun;
 		}
 		if (dmgout) {
-			numTestsSucceeded += runStrTest(argv[i], false, dmgout);
-			++numTestsRun;
+			if (runStrTest(argv[i], false, false, dmgout)) {
+				++totalNumTestsSucceeded;
+				++dmgNumTestsSucceeded;
+			}
+			++totalNumTestsRun;
+			++dmgNumTestsRun;
 		}
 
 		if (file_ptr png = openFile(s + "_dmg08_cgb04c.png")) {
-			numTestsSucceeded += runPngTest(argv[i],  true, *png);
-			numTestsSucceeded += runPngTest(argv[i], false, *png);
-			numTestsRun += 2;
+			if (runPngTest(argv[i],  true,  true, *png)) {
+				++totalNumTestsSucceeded;
+				++agbNumTestsSucceeded;
+			}
+			if (runPngTest(argv[i],  true, false, *png)) {
+				++totalNumTestsSucceeded;
+				++cgbNumTestsSucceeded;
+			}
+			if (runPngTest(argv[i], false, false, *png)) {
+				++totalNumTestsSucceeded;
+				++dmgNumTestsSucceeded;
+			}
+			totalNumTestsRun += 3;
+			++agbNumTestsRun;
+			++cgbNumTestsRun;
+			++dmgNumTestsRun;
 		} else {
 			if (file_ptr p = openFile(s + "_cgb04c.png")) {
-				numTestsSucceeded += runPngTest(argv[i],  true, *p);
-				++numTestsRun;
+				if (runPngTest(argv[i],  true,  true, *p)) {
+					++totalNumTestsSucceeded;
+					++agbNumTestsSucceeded;
+				}
+				if (runPngTest(argv[i],  true, false, *p)) {
+					++totalNumTestsSucceeded;
+					++cgbNumTestsSucceeded;
+				}
+				totalNumTestsRun += 2;
+				++agbNumTestsRun;
+				++cgbNumTestsRun;
 			}
 			if (file_ptr p = openFile(s + "_dmg08.png")) {
-				numTestsSucceeded += runPngTest(argv[i], false, *p);
-				++numTestsRun;
+				if (runPngTest(argv[i], false, false, *p)) {
+					++totalNumTestsSucceeded;
+					++dmgNumTestsSucceeded;
+				}
+				++totalNumTestsRun;
+				++dmgNumTestsRun;
 			}
 		}
 	}
 
-	std::printf("\n\nRan %d tests.\n", numTestsRun);
-	std::printf("%d failures.\n", numTestsRun - numTestsSucceeded);
+	std::printf("\n\nRan %d total tests.\n", totalNumTestsRun);
+	std::printf("%d total failures.\n", totalNumTestsRun - totalNumTestsSucceeded);
+
+	std::printf("\nRan %d AGB tests.\n", agbNumTestsRun);
+	std::printf("%d AGB failures.\n", agbNumTestsRun - agbNumTestsSucceeded);
+
+	std::printf("\nRan %d CGB tests.\n", cgbNumTestsRun);
+	std::printf("%d CGB failures.\n", cgbNumTestsRun - cgbNumTestsSucceeded);
+
+	std::printf("\nRan %d DMG tests.\n", dmgNumTestsRun);
+	std::printf("%d DMG failures.\n\n", dmgNumTestsRun - dmgNumTestsSucceeded);
 }
