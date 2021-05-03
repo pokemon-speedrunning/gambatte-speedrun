@@ -857,18 +857,18 @@ void plotPixel(PPUPriv &p) {
 	int const xpos = p.xpos;
 	unsigned const tileword = p.tileword;
 
+	if (p.wx == xpos
+			&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
+			&& xpos < lcd_hres + 7) {
+		if (p.winDrawState == 0 && lcdcWinEn(p)) {
+			p.winDrawState = win_draw_start | win_draw_started;
+			++p.winYPos;
+		} else if (!p.cgb && (p.winDrawState == 0 || xpos == lcd_hres + 6))
+			p.winDrawState |= win_draw_start;
+	}
+
 	if (!(p.speedupFlags & GB::NO_VIDEO)) {
 		uint_least32_t *const fbline = p.framebuf.fbline();
-
-		if (p.wx == xpos
-				&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
-				&& xpos < lcd_hres + 7) {
-			if (p.winDrawState == 0 && lcdcWinEn(p)) {
-				p.winDrawState = win_draw_start | win_draw_started;
-				++p.winYPos;
-			} else if (!p.cgb && (p.winDrawState == 0 || xpos == lcd_hres + 6))
-				p.winDrawState |= win_draw_start;
-		}
 
 		unsigned const twdata = tileword & ((p.lcdc & lcdc_bgen) | (p.cgb * !p.cgbDmg)) * tile_bpp_mask;
 		unsigned long pixel = p.bgPalette[twdata + (p.attrib & attr_cgbpalno) * num_palette_entries];
