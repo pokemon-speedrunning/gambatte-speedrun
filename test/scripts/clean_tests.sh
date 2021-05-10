@@ -1,2 +1,2 @@
 #!/bin/sh
-rm hwtests/*.gb* hwtests/*/*.gb* hwtests/*/*/*.gb* hwtests/*/*/*/*.gb*
+echo hwtests/*.gb* hwtests/*/*.gb* hwtests/*/*/*.gb* hwtests/*/*/*/*.gb* | xargs rm

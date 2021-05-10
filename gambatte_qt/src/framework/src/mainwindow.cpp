@@ -206,22 +206,11 @@ void MainWindow::focusInEvent(QFocusEvent *) {
 		doShowFullScreen();
 }
 
-void MainWindow::moveEvent(QMoveEvent *) { w_->moveEvent(this); }
 void MainWindow::resizeEvent(QResizeEvent *) { w_->resizeEvent(this); }
 void MainWindow::mouseMoveEvent(QMouseEvent *) { w_->mouseMoveEvent(); }
 void MainWindow::setPauseOnFocusOut(unsigned bitmask) { w_->setPauseOnFocusOut(bitmask, hasFocus()); }
 void MainWindow::keyPressEvent(QKeyEvent *e) { w_->keyPressEvent(e); }
 void MainWindow::keyReleaseEvent(QKeyEvent *e) { w_->keyReleaseEvent(e); }
-
-#ifdef Q_OS_WIN
-bool MainWindow::nativeEvent(const QByteArray&, void *message, long *) {
-	MSG* msg = reinterpret_cast<MSG*>(message);
-	if (w_->winEvent(msg))
-		emit dwmCompositionChange();
-
-	return false;
-}
-#endif
 
 void MainWindow::doShowFullScreen() {
 	int const screen = QApplication::desktop()->screenNumber(this);
