@@ -109,6 +109,10 @@ void GB::setInputGetter(InputGetter *getInput, void *p) {
 	p_->cpu.setInputGetter(getInput, p);
 }
 
+void GB::setRtcDivisorOffset(long const rtcDivisorOffset) {
+	p_->cpu.setRtcDivisorOffset(rtcDivisorOffset);
+}
+
 void GB::setSaveDir(std::string const &sdir) {
 	p_->cpu.setSaveDir(sdir);
 }
