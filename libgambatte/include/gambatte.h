@@ -117,6 +117,9 @@ public:
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput, void *p);
 
+	/** adjust the assumed clock speed of the CPU compared to the RTC */
+	void setRtcDivisorOffset(long const rtcDivisorOffset);
+
 	/**
 	  * Sets the directory used for storing save data. The default is the same directory as
 	  * the ROM Image file.

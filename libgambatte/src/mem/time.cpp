@@ -21,8 +21,6 @@
 
 namespace gambatte {
 
-static const unsigned rtc_divisor = 0x400000;
-
 static timeval operator-(timeval l, timeval r) {
 	timeval t;
 	t.tv_sec = l.tv_sec - r.tv_sec;
@@ -36,6 +34,7 @@ static timeval operator-(timeval l, timeval r) {
 
 Time::Time()
 : useCycles_(true)
+, rtcDivisor_(0x400000)
 {
 }
 
@@ -121,14 +120,14 @@ void Time::setTimeMode(bool useCycles, unsigned long const cc) {
 }
 
 unsigned Time::timeNow(unsigned long const cc) const {
-	return (seconds_ * rtc_divisor + ((cc - lastCycles_) >> ds_)) >> 1;
+	return (seconds_ * rtcDivisor_ + ((cc - lastCycles_) >> ds_)) >> 1;
 }
 
 void Time::update(unsigned long const cc) {
 	if (useCycles_) {
-		std::time_t diff = (cc - lastCycles_) / (rtc_divisor << ds_);
+		std::time_t diff = (cc - lastCycles_) / (rtcDivisor_ << ds_);
 		seconds_ += diff;
-		lastCycles_ += diff * (rtc_divisor << ds_);
+		lastCycles_ += diff * (rtcDivisor_ << ds_);
 	} else {
 		std::time_t diff = (now() - lastTime_).tv_sec;
 		seconds_ += diff;
@@ -139,13 +138,13 @@ void Time::update(unsigned long const cc) {
 void Time::cyclesFromTime(unsigned long const cc) {
 	update(cc);
 	timeval diff = now() - lastTime_;
-	lastCycles_ = cc - diff.tv_usec * ((rtc_divisor << ds_) / 1000000.0f);
+	lastCycles_ = cc - diff.tv_usec * ((rtcDivisor_ << ds_) / 1000000.0f);
 }
 
 void Time::timeFromCycles(unsigned long const cc) {
 	update(cc);
 	unsigned long diff = cc - lastCycles_;
-	timeval usec = { 0, (long)(diff / ((rtc_divisor << ds_) / 1000000.0f)) };
+	timeval usec = { 0, (long)(diff / ((rtcDivisor_ << ds_) / 1000000.0f)) };
 	lastTime_ = now() - usec;
 }
 

@@ -46,7 +46,6 @@ public:
 	void hideEvent() { dwmControl_.hideEvent(); }
 	void showEvent(QWidget const *parent) { dwmControl_.showEvent(); fullModeToggler_->setScreen(parent); }
 	void mouseMoveEvent() { blitterContainer_->showCursor(); cursorTimer_->start(); }
-	void moveEvent(QWidget const *parent) { fullModeToggler_->setScreen(parent); }
 	void resizeEvent(QWidget const *parent);
 	void focusOutEvent();
 	void focusInEvent();

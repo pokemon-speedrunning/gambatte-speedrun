@@ -146,6 +146,10 @@ inline unsigned long const * cgbSpPalette(PPUPriv const &p, unsigned const attri
 		return p.spPalette + (attrib & attr_dmgpalno ? num_palette_entries : 0);
 }
 
+inline int tdbank(PPUPriv const &p, unsigned const attrib) {
+	return (p.cgb * !p.cgbDmg) * (attrib & attr_tdbank);
+}
+
 namespace M2_Ly0 {
 	void f0(PPUPriv &p) {
 		p.weMaster = lcdcWinEn(p) && 0 == p.wy;
@@ -233,7 +237,7 @@ int loadTileDataByte0(PPUPriv const &p) {
 		: p.scy + p.lyCounter.ly();
 
 	return p.vram[tile_pattern_table_size
-		+ vram_bank_size / attr_tdbank * (p.nattrib & attr_tdbank)
+		+ vram_bank_size / attr_tdbank * tdbank(p, p.nattrib)
 		- ((2 * tile_size * p.reg1 | tile_pattern_table_size / lcdc_tdsel * p.lcdc)
 			& tile_pattern_table_size)
 		+ p.reg1 * tile_size
@@ -246,7 +250,7 @@ int loadTileDataByte1(PPUPriv const &p) {
 		: p.scy + p.lyCounter.ly();
 
 	return p.vram[tile_pattern_table_size
-		+ vram_bank_size / attr_tdbank * (p.nattrib & attr_tdbank)
+		+ vram_bank_size / attr_tdbank * tdbank(p, p.nattrib)
 		- ((2 * tile_size * p.reg1 | tile_pattern_table_size / lcdc_tdsel * p.lcdc)
 			& tile_pattern_table_size)
 		+ p.reg1 * tile_size
@@ -586,9 +590,9 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 					? p.spriteList[nextSprite].line ^ (2 * tile_len - 1)
 					: p.spriteList[nextSprite].line) * tile_line_size;
 				unsigned const ts = tile_size;
-				reg0 = vram[vram_bank_size / attr_tdbank * (attrib & attr_tdbank)
+				reg0 = vram[vram_bank_size / attr_tdbank * tdbank(p, attrib)
 				          + (lcdcObj2x(p) ? (reg1 & ~ts) | spline : reg1 | (spline & ~ts))    ];
-				reg1 = vram[vram_bank_size / attr_tdbank * (attrib & attr_tdbank)
+				reg1 = vram[vram_bank_size / attr_tdbank * tdbank(p, attrib)
 				          + (lcdcObj2x(p) ? (reg1 & ~ts) | spline : reg1 | (spline & ~ts)) + 1];
 
 				p.spwordList[nextSprite] =
@@ -642,7 +646,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 					unsigned const tdo = tdoffset & ~(tno << 5);
 					unsigned char const *const td = vram + tno * tile_size
 						+ (nattrib & attr_yflip ? tdo ^ tile_line_size * (tile_len - 1) : tdo)
-						+ vram_bank_size / attr_tdbank * (nattrib & attr_tdbank);
+						+ vram_bank_size / attr_tdbank * tdbank(p, nattrib);
 					unsigned short const *const explut = expand_lut + (0x100 / attr_xflip * nattrib & 0x100);
 					ntileword = explut[td[0]] + explut[td[1]] * 2;
 				} while (dst != dstend);
@@ -784,7 +788,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 			unsigned const tdo = tdoffset & ~(tno << 5);
 			unsigned char const *const td = vram + tno * tile_size
 				+ (nattrib & attr_yflip ? tdo ^ tile_line_size * (tile_len - 1) : tdo)
-				+ vram_bank_size / attr_tdbank * (nattrib & attr_tdbank);
+				+ vram_bank_size / attr_tdbank * tdbank(p, nattrib);
 			unsigned short const *const explut = expand_lut + (0x100 / attr_xflip * nattrib & 0x100);
 			p.ntileword = explut[td[0]] + explut[td[1]] * 2;
 			p.nattrib = nattrib;
@@ -853,18 +857,18 @@ void plotPixel(PPUPriv &p) {
 	int const xpos = p.xpos;
 	unsigned const tileword = p.tileword;
 
+	if (p.wx == xpos
+			&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
+			&& xpos < lcd_hres + 7) {
+		if (p.winDrawState == 0 && lcdcWinEn(p)) {
+			p.winDrawState = win_draw_start | win_draw_started;
+			++p.winYPos;
+		} else if (!p.cgb && (p.winDrawState == 0 || xpos == lcd_hres + 6))
+			p.winDrawState |= win_draw_start;
+	}
+
 	if (!(p.speedupFlags & GB::NO_VIDEO)) {
 		uint_least32_t *const fbline = p.framebuf.fbline();
-
-		if (p.wx == xpos
-				&& (p.weMaster || (p.wy2 == p.lyCounter.ly() && lcdcWinEn(p)))
-				&& xpos < lcd_hres + 7) {
-			if (p.winDrawState == 0 && lcdcWinEn(p)) {
-				p.winDrawState = win_draw_start | win_draw_started;
-				++p.winYPos;
-			} else if (!p.cgb && (p.winDrawState == 0 || xpos == lcd_hres + 6))
-				p.winDrawState |= win_draw_start;
-		}
 
 		unsigned const twdata = tileword & ((p.lcdc & lcdc_bgen) | (p.cgb * !p.cgbDmg)) * tile_bpp_mask;
 		unsigned long pixel = p.bgPalette[twdata + (p.attrib & attr_cgbpalno) * num_palette_entries];
@@ -1070,7 +1074,7 @@ namespace LoadSprites {
 			 : p.spriteList[p.currentSprite].line) * tile_line_size;
 		unsigned const ts = tile_size;
 		p.reg0 = p.vram[vram_bank_size / attr_tdbank
-				* (p.spriteList[p.currentSprite].attrib & p.cgb * attr_tdbank)
+				* tdbank(p, p.spriteList[p.currentSprite].attrib)
 			+ (lcdcObj2x(p) ? (p.reg1 * ts & ~ts) | spline : p.reg1 * ts | (spline & ~ts))];
 		inc(f3_, p);
 	}
@@ -1092,7 +1096,7 @@ namespace LoadSprites {
 			 : p.spriteList[p.currentSprite].line) * tile_line_size;
 		unsigned const ts = tile_size;
 		p.reg1 = p.vram[vram_bank_size / attr_tdbank
-				* (p.spriteList[p.currentSprite].attrib & p.cgb * attr_tdbank)
+				* tdbank(p, p.spriteList[p.currentSprite].attrib)
 			+ (lcdcObj2x(p) ? (p.reg1 * ts & ~ts) | spline : p.reg1 * ts | (spline & ~ts)) + 1];
 		inc(f5_, p);
 	}

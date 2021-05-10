@@ -47,6 +47,10 @@ GBEXPORT int gambatte_runfor(GB *g, unsigned *videoBuf, int pitch, unsigned *aud
 	return g->runFor(videoBuf, pitch, audioBuf, *(std::size_t *)samples);
 }
 
+GBEXPORT void gambatte_setrtcdivisoroffset(GB *g, int rtcDivisorOffset) {
+	g->setRtcDivisorOffset(rtcDivisorOffset);
+}
+
 GBEXPORT void gambatte_reset(GB *g, unsigned samplesToStall) {
 	g->reset(samplesToStall);
 }

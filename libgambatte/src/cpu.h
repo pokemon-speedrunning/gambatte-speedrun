@@ -71,6 +71,7 @@ public:
 
 	void setTrueColors(bool trueColors) { mem_.setTrueColors(trueColors); }
 	void setTimeMode(bool useCycles) { mem_.setTimeMode(useCycles, cycleCounter_); }
+	void setRtcDivisorOffset(long const rtcDivisorOffset) { mem_.setRtcDivisorOffset(rtcDivisorOffset); }
 
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }
