@@ -1,0 +1,38 @@
+name: Check GSR testROM accuracy
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install dependencies
+        run: "sudo apt install scons"
+
+      - name: Checkout repository code
+        uses: actions/checkout@v2
+        with:
+          path: gambatte-speedrun
+
+      - name: Checkout rgbds
+        uses: actions/checkout@v2
+        with:
+          repository: gbdev/rgbds
+          path: rgbds
+      
+      - name: Checkout gb-bootroms
+        uses: actions/checkout@v2
+        with:
+          repository: ISSOtm/gb-bootroms
+          path: gb-bootroms
+          submodules: 'recursive'
+      
+      - name: build rgbds
+        run: "cd rgbds && make && sudo make install"
+
+      - name: build bootROMs
+        run: "cd gb-bootroms && make && cp ./bin/dmg.bin ../gambatte-speedrun/test/bios.gb && cp ./bin/cgb.bin ../gambatte-speedrun/test/bios.gbc"
+      
+      - name: Assemble TestROMs
+        run: "cd gambatte-speedrun/test && sh scripts/assemble_tests.sh"
+
+      - name: Build libgambatte and run tests
+        run: "cd gambatte-speedrun && sh scripts/test.sh"
