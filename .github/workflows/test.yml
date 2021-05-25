@@ -1,7 +1,7 @@
 name: Check GSR testROM accuracy
-on: [push]
+on: [push, pull_request]
 jobs:
-  Explore-GitHub-Actions:
+  Check-TestROMs:
     runs-on: ubuntu-20.04
     steps:
       - name: Install dependencies

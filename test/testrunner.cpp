@@ -363,7 +363,7 @@ int main(int const argc, char *argv[]) {
 		std::string const s = extensionStripped(argv[i]);
 		char const *dmgout = 0;
 		char const *cgbout = 0;
-		char const *agbout = 0; // TODO: Actual AGB results
+		char const *agbout = 0; // FIXME: Actual AGB results
 
 		if (s.find("dmg08_cgb04c_out") != std::string::npos) {
 			dmgout = cgbout = agbout = "dmg08_cgb04c_out";
@@ -401,7 +401,7 @@ int main(int const argc, char *argv[]) {
 			++dmgNumTestsRun;
 		}
 
-		if (file_ptr png = openFile(s + "_dmg08_cgb04c.png")) {
+		if (file_ptr png = openFile(s + "_dmg08_cgb04c.png")) { // FIXME: confirm if agb is identical here
 			if (runPngTest(argv[i],  true,  true, *png)) {
 				++totalNumTestsSucceeded;
 				++agbNumTestsSucceeded;
@@ -419,17 +419,20 @@ int main(int const argc, char *argv[]) {
 			++cgbNumTestsRun;
 			++dmgNumTestsRun;
 		} else {
-			if (file_ptr p = openFile(s + "_cgb04c.png")) {
+			if (file_ptr p = openFile(s + "_cgb04c.png")) { // FIXME: we need agb images
 				if (runPngTest(argv[i],  true,  true, *p)) {
 					++totalNumTestsSucceeded;
 					++agbNumTestsSucceeded;
 				}
+				++totalNumTestsRun;
+				++agbNumTestsRun;
+			}
+			if (file_ptr p = openFile(s + "_cgb04c.png")) {
 				if (runPngTest(argv[i],  true, false, *p)) {
 					++totalNumTestsSucceeded;
 					++cgbNumTestsSucceeded;
 				}
-				totalNumTestsRun += 2;
-				++agbNumTestsRun;
+				++totalNumTestsRun;
 				++cgbNumTestsRun;
 			}
 			if (file_ptr p = openFile(s + "_dmg08.png")) {
@@ -454,4 +457,6 @@ int main(int const argc, char *argv[]) {
 
 	std::printf("\nRan %d DMG tests.\n", dmgNumTestsRun);
 	std::printf("%d DMG failures.\n\n", dmgNumTestsRun - dmgNumTestsSucceeded);
+	
+	return (cgbNumTestsRun - cgbNumTestsSucceeded) || (dmgNumTestsRun - dmgNumTestsSucceeded);
 }
