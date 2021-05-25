@@ -1,5 +1,5 @@
 name: Check GSR testROM accuracy
-on: [push]
+on: [push, pull_request]
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-20.04
