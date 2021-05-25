@@ -491,10 +491,12 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		cycleBasedAction_->setCheckable(true);
 		cycleBasedAction_->setChecked(QSettings().value("rtc-mode", true).toBool());
 		rtcModeActions->addAction(cycleBasedAction_);
+#ifdef ENABLE_REAL_TIME_RTC
 		realTimeAction_ = rtcModeMenu->addAction(tr("&Real-time"));
 		realTimeAction_->setCheckable(true);
 		realTimeAction_->setChecked(!cycleBasedAction_->isChecked());
 		rtcModeActions->addAction(realTimeAction_);
+#endif
 		connect(rtcModeActions, SIGNAL(triggered(QAction *)), this, SLOT(setRtcMode()));
 	}
 
@@ -502,6 +504,12 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	trueColorsAction_->setCheckable(true);
 	trueColorsAction_->setChecked(QSettings().value("true-colors", false).toBool());
 	connect(trueColorsAction_, SIGNAL(toggled(bool)), &source, SLOT(setTrueColors(bool)));
+	
+	settingsm->addSeparator();
+	attemptModeAction_ = settingsm->addAction(tr("Attempt &Mode"));
+	attemptModeAction_->setCheckable(true);
+	attemptModeAction_->setChecked(QSettings().value("attempt-mode", true).toBool());
+	connect(attemptModeAction_, SIGNAL(toggled(bool)), &source, SLOT(setAttemptMode(bool)));
 
 	settingsm->addSeparator();
 	fsAct_ = settingsm->addAction(tr("&Full Screen"), this, SLOT(toggleFullScreen()), tr("Ctrl+F"));
@@ -549,6 +557,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 	connect(&mw, SIGNAL(dwmCompositionChange()), this, SLOT(reconsiderSyncFrameRateActionEnable()));
 	connect(this, SIGNAL(romLoaded(bool)), romLoadedActions, SLOT(setEnabled(bool)));
 	connect(this, SIGNAL(romLoaded(bool)), gambattePlatformMenu_.group(), SLOT(setDisabled(bool)));
+	connect(this, SIGNAL(romLoaded(bool)), attemptModeAction_, SLOT(setDisabled(bool)));
 	connect(this, SIGNAL(romLoaded(bool)), stateSlotGroup_->actions().at(0), SLOT(setChecked(bool)));
 
 	mw.setAspectRatio(QSize(160, 144));
@@ -590,6 +599,7 @@ GambatteMenuHandler::~GambatteMenuHandler() {
 	QSettings settings;
 	settings.setValue("rtc-mode", cycleBasedAction_->isChecked());
 	settings.setValue("true-colors", trueColorsAction_->isChecked());
+	settings.setValue("attempt-mode", attemptModeAction_->isChecked());
 }
 
 void GambatteMenuHandler::setWindowPrefix(QString const &windowPrefix) {
@@ -697,8 +707,9 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 		//setDmgPaletteColors();
 	}
 
-	source_.setTrueColors(trueColorsAction_->isChecked());
 	source_.setTimeMode(cycleBasedAction_->isChecked());
+	source_.setTrueColors(trueColorsAction_->isChecked());
+	source_.setAttemptMode(attemptModeAction_->isChecked());
 
 	gambatte::PakInfo const &pak = source_.pakInfo();
 	std::cout << romTitle.toStdString() << '\n'
@@ -711,16 +722,15 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 	// Basic good rom testing for PSR only. Fail doesn't mean it's a bad ROM for anything except English Gen1-2 games!!!
 	QString label;
 	for (GambatteGoodromInfo good : gambatte_goodroms) {
-		if (romTitle.toStdString() == good.title && pak.crc() == good.crc) {
+		if (romTitle.toStdString() == good.title && pak.crc() == good.crc && platformId == DEFAULT_GAMBATTE_PLATFORM) {
 			if (!good.label.empty())
 				label = " " + QString::fromStdString(good.label);
-
 			source_.setBreakpoint(good.savBreakpoint);
 			break;
 		}
 	}
 
-	setWindowPrefix(strippedName(fileName) + label);
+	setWindowPrefix(strippedName(fileName) + label + (attemptModeAction_->isChecked() ? " AM" : ""));
 	setCurrentFile(fileName);
 
 	emit romLoaded(true);
@@ -728,6 +738,9 @@ void GambatteMenuHandler::loadFile(QString const &fileName) {
 
 	mw_.resetAudio();
 	mw_.run();
+	
+	if (attemptModeAction_->isChecked())
+		reset(); // Force reset fadeout for loading ROMs; prevents avoiding the fadeout from closing and re-opening the ROM
 }
 
 void GambatteMenuHandler::open() {
@@ -1064,7 +1077,7 @@ void GambatteMenuHandler::saveState() {
 }
 
 void GambatteMenuHandler::loadState() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	LoadStateFun fun = { source_ };
 	mw_.callInWorkerThread(fun);
@@ -1086,7 +1099,7 @@ void GambatteMenuHandler::saveStateAs() {
 }
 
 void GambatteMenuHandler::loadStateFrom() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	TmpPauser tmpPauser(mw_, 4);
 	mw_.waitUntilPaused();
@@ -1131,7 +1144,7 @@ void GambatteMenuHandler::setResetting(bool state) {
 }
 
 void GambatteMenuHandler::pauseChange() {
-	if (isResetting_) {
+	if (attemptModeAction_->isChecked() || isResetting_) {
 		pauseAction_->setChecked(false);
 		return;
 	}
@@ -1142,12 +1155,12 @@ void GambatteMenuHandler::pauseChange() {
 }
 
 void GambatteMenuHandler::frameStep() {
-	if (isResetting_)
+	if (attemptModeAction_->isChecked() || isResetting_)
 		return;
 	if (pauseAction_->isChecked()) {
 		mw_.frameStep();
 
-		if (isResetting_) {
+		if (attemptModeAction_->isChecked() || isResetting_) {
 			pauseAction_->setChecked(false);
 			mw_.unpause();
 		}

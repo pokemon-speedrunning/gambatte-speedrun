@@ -28,7 +28,7 @@ namespace gambatte {
 transfer_ptr<OsdElement> newStateLoadedOsdElement(unsigned stateNo);
 transfer_ptr<OsdElement> newStateSavedOsdElement(unsigned stateNo);
 transfer_ptr<OsdElement> newSaveStateOsdElement(const std::string &fileName, unsigned stateNo);
-transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned checksum);
+transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned checksum, bool attemptMode);
 }
 
 #endif

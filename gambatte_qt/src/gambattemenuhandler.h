@@ -168,6 +168,7 @@ private:
 	QAction *cycleBasedAction_;
 	QAction *realTimeAction_;
 	QAction *trueColorsAction_;
+	QAction *attemptModeAction_;
 	QAction *fsAct_;
 	QMenu *recentMenu_;
 	PaletteDialog *globalPaletteDialog_;

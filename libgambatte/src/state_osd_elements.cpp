@@ -165,7 +165,7 @@ transfer_ptr<OsdElement> newStateSavedOsdElement(unsigned stateNo) {
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(text::stateSavedWidth, txt));
 }
 
-transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned checksum) {
+transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned checksum, bool attemptMode) {
 	unsigned checksumPart;
 	char txt[sizeof text::reset];
 	std::memcpy(txt, text::reset, sizeof txt);
@@ -199,6 +199,15 @@ transfer_ptr<OsdElement> newResetElement(std::string const &build, unsigned chec
 			txt[idx] = (char) (bitmapfont::A + (checksumPart - 0x0A));
 		}
 	}
+	
+	// Put AM into char array if attempt mode is active
+	// AM -> Attempt Mode
+	if (attemptMode) {
+	int idx = p_len + p_off + 1; // 1 space in between CRC and AM
+	txt[idx] = bitmapfont::A;
+	txt[idx + 1] = bitmapfont::M;
+	}
+		
 
 	return transfer_ptr<OsdElement>(new ShadedTextOsdElment(bitmapfont::getWidth(txt), txt));
 }

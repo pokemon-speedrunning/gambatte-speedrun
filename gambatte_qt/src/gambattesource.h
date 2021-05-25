@@ -111,8 +111,12 @@ public:
 	virtual void generateVideoFrame(PixelBuffer const &fb);
 
 public slots:
-	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
 	void setTimeMode(bool useCycles) { gb_.setTimeMode(useCycles); }
+	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
+	void setAttemptMode(bool attemptMode) {
+	gb_.setAttemptMode(attemptMode);
+	attemptMode_ = attemptMode;
+	}
 
 signals:
 	void setTurbo(bool on);
@@ -181,6 +185,7 @@ private:
 	signed resetCounter_;
 	unsigned resetFade_;
 	unsigned resetStall_;
+	bool attemptMode_;
 
 	std::mt19937 rng_;
 	std::uniform_int_distribution<std::mt19937::result_type> dist35112_;
@@ -197,16 +202,16 @@ private:
 	void enableBreakpoint(bool enable) { gb_.setInterruptAddresses(breakpoint_, enable ? 1 : 0); }
 	int getHitAddress() { return gb_.getHitInterruptAddress(); }
 
-	void emitSetTurbo(bool on) { if(!isResetting_) { emit setTurbo(on);} }
-	void emitPause() { if(!isResetting_) { emit togglePause();} }
-	void emitFrameStep() { if(!isResetting_) { emit frameStep();} }
-	void emitDecFrameRate() { if(!isResetting_) { emit decFrameRate();} }
-	void emitIncFrameRate() { if(!isResetting_) { emit incFrameRate();} }
-	void emitResetFrameRate() { if(!isResetting_) { emit resetFrameRate();} }
+	void emitSetTurbo(bool on) { if(!isResetting_ && !attemptMode_) { emit setTurbo(on);} }
+	void emitPause() { if(!isResetting_ && !attemptMode_) { emit togglePause();} }
+	void emitFrameStep() { if(!isResetting_ && !attemptMode_) { emit frameStep();} }
+	void emitDecFrameRate() { if(!isResetting_ && !attemptMode_) { emit decFrameRate();} }
+	void emitIncFrameRate() { if(!isResetting_ && !attemptMode_) { emit incFrameRate();} }
+	void emitResetFrameRate() { if(!isResetting_ && !attemptMode_) { emit resetFrameRate();} }
 	void emitPrevStateSlot() { if(!isResetting_) { emit prevStateSlot();} }
 	void emitNextStateSlot() { if(!isResetting_) { emit nextStateSlot();} }
 	void emitSaveState() { if(!isResetting_) { emit saveStateSignal();} }
-	void emitLoadState() { if(!isResetting_) { emit loadStateSignal();} }
+	void emitLoadState() { if(!isResetting_ && !attemptMode_) { emit loadStateSignal();} }
 	void emitReset() { emit resetSignal(); }
 	void emitQuit() { emit quit(); }
 };
