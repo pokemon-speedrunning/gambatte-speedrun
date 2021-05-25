@@ -82,7 +82,6 @@ struct SaveState {
 		unsigned char /*bool*/ IME;
 		unsigned char /*bool*/ halted;
 		unsigned char /*bool*/ enableRam;
-		unsigned char /*bool*/ mbcLockup;
 		unsigned char /*bool*/ rambankMode;
 		unsigned char /*bool*/ hdmaTransfer;
 		unsigned char /*bool*/ biosMode;

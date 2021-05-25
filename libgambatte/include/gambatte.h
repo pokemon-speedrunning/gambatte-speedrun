@@ -39,7 +39,7 @@ public:
 		                            what its header advertises. */
 		GBA_FLAG         = 2,  /**< Use GBA intial CPU register values when in CGB mode. */
 		MULTICART_COMPAT = 4,  /**< Use heuristics to detect and support some multicart
-		                            MBCs disguised as MBC1. */
+		                            MBCs disguised as other MBCs. */
 		SGB_MODE         = 8,  /**< Treat the ROM as having SGB support regardless of
 		                            what its header advertises. */
 		READONLY_SAV     = 16  /**< Prevent implicit saveSavedata calls for the ROM. */
