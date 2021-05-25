@@ -454,4 +454,6 @@ int main(int const argc, char *argv[]) {
 
 	std::printf("\nRan %d DMG tests.\n", dmgNumTestsRun);
 	std::printf("%d DMG failures.\n\n", dmgNumTestsRun - dmgNumTestsSucceeded);
+	
+	return (cgbNumTestsRun - cgbNumTestsSucceeded) || (dmgNumTestsRun - dmgNumTestsSucceeded);
 }
