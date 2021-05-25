@@ -424,8 +424,8 @@ int main(int const argc, char *argv[]) {
 					++totalNumTestsSucceeded;
 					++agbNumTestsSucceeded;
 				}
-                ++totalNumTestsRun;
-                ++agbNumTestsRun;
+				++totalNumTestsRun;
+				++agbNumTestsRun;
 			}
 			if (file_ptr p = openFile(s + "_cgb04c.png")) {
 				if (runPngTest(argv[i],  true, false, *p)) {
