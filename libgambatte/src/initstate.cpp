@@ -1378,7 +1378,7 @@ void gambatte::setInitStateCart(SaveState &state) {
 }
 
 void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb) {
-	state.cpu.cycleCounter = cgb ? (agb ? 0x102A0 + 0x4 : 0x102A0) : 0x102A0 + 0x8D2C;
+	state.cpu.cycleCounter = cgb ? 0x102A0 + (agb * 0x4) : 0x102A0 + 0x8D2C;
 	state.cpu.pc = 0x100;
 	state.cpu.sp = 0xFFFE;
 	state.cpu.a = cgb * 0x10 | 0x01;
@@ -1402,7 +1402,7 @@ void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb
 
 	state.mem.divLastUpdate = -0x1C00;
 
-	state.ppu.videoCycles = cgb ? (agb ? 144*456ul + 164 + 4 : 144*456ul + 164) : 153*456ul + 396;
+	state.ppu.videoCycles = cgb ? 144*456ul + 164 + (agb * 4) : 153*456ul + 396;
 	state.ppu.enableDisplayM0Time = state.cpu.cycleCounter;
 
 	state.spu.cycleCounter = (cgb ? 0x1E00 : 0x2400) | (state.cpu.cycleCounter >> 1 & 0x1FF);
