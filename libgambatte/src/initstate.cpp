@@ -1398,6 +1398,8 @@ void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb
 	state.mem.ioamhram.ptr[0x126] = 0xF1;
 	state.mem.ioamhram.ptr[0x140] = 0x91;
 
+	state.mem.ioamhram.ptr[0x1FC] -= agb;
+
 	state.mem.divLastUpdate = -0x1C00;
 
 	state.ppu.videoCycles = cgb ? (agb ? 144*456ul + 164 + 4 : 144*456ul + 164) : 153*456ul + 396;
@@ -1406,7 +1408,7 @@ void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb
 	state.spu.cycleCounter = (cgb ? 0x1E00 : 0x2400) | (state.cpu.cycleCounter >> 1 & 0x1FF);
 
 	if (cgb) {
-		state.spu.ch1.duty.nextPosUpdate = (state.spu.cycleCounter & ~1ul) + 37 * 2;
+		state.spu.ch1.duty.nextPosUpdate = (state.spu.cycleCounter & ~1ul) + (37 - agb) * 2;
 		state.spu.ch1.duty.pos = 6;
 		state.spu.ch1.duty.high = true;
 	} else {
@@ -1421,5 +1423,6 @@ void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb
 
 	state.spu.ch2.lcounter.lengthCounter = 0x40;
 
+	state.spu.ch4.lfsr.counter = state.spu.cycleCounter + 4;
 	state.spu.ch4.lcounter.lengthCounter = 0x40;
 }
