@@ -19,6 +19,9 @@ std::size_t const samples_per_frame = 35112;
 std::size_t const audiobuf_size = samples_per_frame + 2064;
 std::size_t const framebuf_size = gb_width * gb_height;
 
+bool useDmgBios = true;
+bool useCgbBios = true;
+
 static void readPng(gambatte::uint_least32_t out[], std::FILE &file) {
 	struct PngContext {
 		png_structp png;
@@ -280,19 +283,23 @@ static void runTestRom(
 		bool const agb) {
 	gambatte::GB gb;
 
-	if (cgb) {
+	if (cgb && useCgbBios) {
 		if (gb.loadBios("bios.gbc", 0x900, 0x31672598)) {
-			std::fprintf(stderr, "Failed to load bios image file bios.gbc\n");
-			std::abort();
+			std::fprintf(stderr, "Failed to load bios image file bios.gbc, using post BIOS state instead.\n");
+			useCgbBios = false;
 		}
-	} else {
+	} else if (!cgb && useDmgBios) {
 		if (gb.loadBios("bios.gb", 0x100, 0x580A33B9)) {
-			std::fprintf(stderr, "Failed to load bios image file bios.gb\n");
-			std::abort();
+			std::fprintf(stderr, "Failed to load bios image file bios.gb, using post BIOS state instead.\n");
+			useDmgBios = false;
 		}
 	}
+	
+	int flags = (cgb * gambatte::GB::LoadFlag::CGB_MODE)
+	| ((cgb && agb) * gambatte::GB::LoadFlag::GBA_FLAG)
+	| (!((cgb && useCgbBios) || (!cgb && useDmgBios)) * gambatte::GB::LoadFlag::NO_BIOS);
 
-	if (gb.load(file, cgb ? (gambatte::GB::LoadFlag::CGB_MODE | (agb * gambatte::GB::LoadFlag::GBA_FLAG)) : 0)) {
+	if (gb.load(file, flags)) {
 		std::fprintf(stderr, "Failed to load ROM image file %s\n", file.c_str());
 		std::abort();
 	}

@@ -95,6 +95,9 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 		p_->cpu.setStatePtrs(state);
 		p_->cpu.saveState(state);
 		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & SGB_MODE);
+		if (p_->loadflags & NO_BIOS)
+			setPostBiosState(state, p_->loadflags & CGB_MODE, p_->loadflags & GBA_FLAG);
+
 		p_->cpu.loadState(state);
 
 		if (samplesToStall > 0)
@@ -128,6 +131,9 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
 		setInitState(state, flags & CGB_MODE, flags & SGB_MODE);
+		if (flags & NO_BIOS)
+			setPostBiosState(state, flags & CGB_MODE, flags & GBA_FLAG);
+
 		setInitStateCart(state);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();

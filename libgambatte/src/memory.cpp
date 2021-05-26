@@ -1228,12 +1228,12 @@ LoadRes Memory::loadROM(std::string const &romfile, unsigned const flags) {
 	if (LoadRes const fail = cart_.loadROM(romfile, cgbMode, multicartCompat))
 		return fail;
 
-	psg_.init(cart_.isCgb());
-	lcd_.reset(ioamhram_, cart_.vramdata(), cart_.isCgb());
-	interrupter_.setGameShark(std::string());
-
 	agbFlag_ = flags & GB::LoadFlag::GBA_FLAG;
 	gbIsSgb_ = flags & GB::LoadFlag::SGB_MODE;
+
+	psg_.init(cart_.isCgb());
+	lcd_.reset(ioamhram_, cart_.vramdata(), cart_.isCgb(), agbFlag_);
+	interrupter_.setGameShark(std::string());
 
 	return LOADRES_OK;
 }

@@ -11,25 +11,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: gambatte-speedrun
-
-      - name: Checkout rgbds
-        uses: actions/checkout@v2
-        with:
-          repository: gbdev/rgbds
-          path: rgbds
-      
-      - name: Checkout gb-bootroms
-        uses: actions/checkout@v2
-        with:
-          repository: ISSOtm/gb-bootroms
-          path: gb-bootroms
-          submodules: 'recursive'
-      
-      - name: build rgbds
-        run: "cd rgbds && make && sudo make install"
-
-      - name: build bootROMs
-        run: "cd gb-bootroms && make && cp ./bin/dmg.bin ../gambatte-speedrun/test/bios.gb && cp ./bin/cgb.bin ../gambatte-speedrun/test/bios.gbc"
       
       - name: Assemble TestROMs
         run: "cd gambatte-speedrun/test && sh scripts/assemble_tests.sh"

@@ -1109,7 +1109,7 @@ static void setInitialDmgIoamhram(unsigned char ioamhram[]) {
 	};
 
 	static unsigned char const ffxxDump[0x100] = {
-		0xCF, 0x00, 0x7E, 0xFF, 0xD3, 0x00, 0x00, 0xF8,
+		0xCF, 0x00, 0x7E, 0xFF, 0x00, 0x00, 0x00, 0xF8,
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE1,
 		0x80, 0x3F, 0x00, 0xFF, 0xBF, 0xFF, 0x3F, 0x00,
 		0xFF, 0xBF, 0x7F, 0xFF, 0x9F, 0xFF, 0xBF, 0xFF,
@@ -1375,4 +1375,51 @@ void gambatte::setInitStateCart(SaveState &state) {
 	state.time.lastTimeSec = Time::now().tv_sec;
 	state.time.lastTimeUsec = Time::now().tv_usec;
 	state.time.lastCycles = state.cpu.cycleCounter;
+}
+
+void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb) {
+	state.cpu.cycleCounter = cgb ? (agb ? 0x102A0 + 0x8 : 0x102A0) : 0x102A0 + 0x8D2C;
+	state.cpu.pc = 0x100;
+	state.cpu.sp = 0xFFFE;
+	state.cpu.a = cgb * 0x10 | 0x01;
+	state.cpu.b = cgb & agb;
+	state.cpu.c = 0x13;
+	state.cpu.d = 0x00;
+	state.cpu.e = 0xD8;
+	state.cpu.f = 0xB0;
+	state.cpu.h = 0x01;
+	state.cpu.l = 0x4D;
+	state.mem.biosMode = false;
+
+	state.mem.ioamhram.ptr[0x111] = 0xBF;
+	state.mem.ioamhram.ptr[0x112] = 0xF3;
+	state.mem.ioamhram.ptr[0x124] = 0x77;
+	state.mem.ioamhram.ptr[0x125] = 0xF3;
+	state.mem.ioamhram.ptr[0x126] = 0xF1;
+	state.mem.ioamhram.ptr[0x140] = 0x91;
+
+	state.mem.divLastUpdate = -0x1C00;
+
+	state.ppu.videoCycles = cgb ? 144*456ul + 164 : 153*456ul + 396;
+	state.ppu.enableDisplayM0Time = state.cpu.cycleCounter;
+
+	state.spu.cycleCounter = (cgb ? 0x1E00 : 0x2400) | (state.cpu.cycleCounter >> 1 & 0x1FF);
+
+	if (cgb) {
+		state.spu.ch1.duty.nextPosUpdate = (state.spu.cycleCounter & ~1ul) + 37 * 2;
+		state.spu.ch1.duty.pos = 6;
+		state.spu.ch1.duty.high = true;
+	} else {
+		state.spu.ch1.duty.nextPosUpdate = (state.spu.cycleCounter & ~1ul) + 69 * 2;
+		state.spu.ch1.duty.pos = 3;
+		state.spu.ch1.duty.high = false;
+	}
+	state.spu.ch1.duty.nr3 = 0xC1;
+	state.spu.ch1.lcounter.lengthCounter = 0x40;
+	state.spu.ch1.nr4 = 0x07;
+	state.spu.ch1.master = true;
+
+	state.spu.ch2.lcounter.lengthCounter = 0x40;
+
+	state.spu.ch4.lcounter.lengthCounter = 0x40;
 }

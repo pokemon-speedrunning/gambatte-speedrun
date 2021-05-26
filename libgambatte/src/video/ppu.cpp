@@ -1784,9 +1784,10 @@ void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 	}
 }
 
-void PPU::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb) {
+void PPU::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb, bool agb) {
 	p_.vram = vram;
 	p_.cgb = cgb;
+	p_.agb = agb;
 	p_.cgbDmg = false;
 	p_.spriteMapper.reset(oamram, cgb);
 }

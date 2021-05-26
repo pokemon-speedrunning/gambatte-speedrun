@@ -133,12 +133,12 @@ LCD::LCD(unsigned char const *oamram, unsigned char const *vram,
 	std::memset( bgpData_, 0, sizeof  bgpData_);
 	std::memset(objpData_, 0, sizeof objpData_);
 
-	reset(oamram, vram, false);
+	reset(oamram, vram, false, false);
 	setVideoBuffer(0, lcd_hres);
 }
 
-void LCD::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb) {
-	ppu_.reset(oamram, vram, cgb);
+void LCD::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb, bool agb) {
+	ppu_.reset(oamram, vram, cgb, agb);
 	lycIrq_.setCgb(cgb);
 	refreshPalettes();
 }
@@ -782,7 +782,7 @@ unsigned LCD::getStat(unsigned const lycReg, unsigned long const cc) {
 		long const frameCycles = 1l * ly * lcd_cycles_per_line + lineCycles;
 		if (frameCycles >= lcd_vres * lcd_cycles_per_line - 3 && frameCycles < lcd_cycles_per_frame - 3) {
 			if (frameCycles >= lcd_vres * lcd_cycles_per_line - 2
-					&& frameCycles < lcd_cycles_per_frame - 4 + isDoubleSpeed()) {
+					&& frameCycles < lcd_cycles_per_frame - 4 + isDoubleSpeed() + (ly == lcd_lines_per_frame - 1 && isAgb())) {
 				stat = 1;
 			}
 		} else if (lineCycles < 77 || lineCycles >= lcd_cycles_per_line - 3) {
