@@ -1400,7 +1400,7 @@ void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb
 
 	state.mem.divLastUpdate = -0x1C00;
 
-	state.ppu.videoCycles = cgb ? 144*456ul + 164 : 153*456ul + 396;
+	state.ppu.videoCycles = cgb ? (agb ? 144*456ul + 164 + 4 : 144*456ul + 164) : 153*456ul + 396;
 	state.ppu.enableDisplayM0Time = state.cpu.cycleCounter;
 
 	state.spu.cycleCounter = (cgb ? 0x1E00 : 0x2400) | (state.cpu.cycleCounter >> 1 & 0x1FF);
