@@ -50,7 +50,7 @@ class LCD {
 public:
 	LCD(unsigned char const *oamram, unsigned char const *vram,
 	    VideoInterruptRequester memEventRequester);
-	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb);
+	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb, bool agb);
 	void setCgbDmg(bool enabled) { ppu_.setCgbDmg(enabled); }
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state) const;
@@ -146,6 +146,7 @@ public:
 	bool hdmaIsEnabled() const { return eventTimes_(memevent_hdma) != disabled_time; }
 	void update(unsigned long cycleCounter);
 	bool isCgb() const { return ppu_.cgb(); }
+	bool isAgb() const { return ppu_.agb(); }
 	bool isCgbDmg() const { return ppu_.cgbDmg(); }
 	bool isDoubleSpeed() const { return ppu_.lyCounter().isDoubleSpeed(); }
 	bool isTrueColors() const { return ppu_.trueColors(); }

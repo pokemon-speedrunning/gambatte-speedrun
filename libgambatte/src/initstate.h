@@ -23,6 +23,7 @@ namespace gambatte {
 
 void setInitState(struct SaveState &state, bool cgb, bool sgb);
 void setInitStateCart(struct SaveState &state);
+void setPostBiosState(struct SaveState &state, bool cgb, bool agb);
 
 }
 

@@ -97,6 +97,7 @@ struct PPUPriv {
 	unsigned char endx;
 
 	bool cgb;
+	bool agb;
 	bool cgbDmg;
 	bool weMaster;
 	bool trueColors;
@@ -114,6 +115,7 @@ public:
 
 	unsigned long * bgPalette() { return p_.bgPalette; }
 	bool cgb() const { return p_.cgb; }
+	bool agb() const { return p_.agb; }
 	bool cgbDmg() const { return p_.cgbDmg; }
 	bool trueColors() const { return p_.trueColors; }
 	void doLyCountEvent() { p_.lyCounter.doEvent(); }
@@ -132,7 +134,7 @@ public:
 	void oamChange(unsigned long cc) { p_.spriteMapper.oamChange(cc); }
 	void oamChange(unsigned char const *oamram, unsigned long cc) { p_.spriteMapper.oamChange(oamram, cc); }
 	unsigned long predictedNextXposTime(unsigned xpos) const;
-	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb);
+	void reset(unsigned char const *oamram, unsigned char const *vram, bool cgb, bool agb);
 	void setCgbDmg(bool enabled) { p_.cgbDmg = enabled; }
 	void resetCc(unsigned long oldCc, unsigned long newCc);
 	void saveState(SaveState &ss) const;

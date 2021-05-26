@@ -42,7 +42,8 @@ public:
 		                            MBCs disguised as MBC1. */
 		SGB_MODE         = 8,  /**< Treat the ROM as having SGB support regardless of
 		                            what its header advertises. */
-		READONLY_SAV     = 16  /**< Prevent implicit saveSavedata calls for the ROM. */
+		READONLY_SAV     = 16, /**< Prevent implicit saveSavedata calls for the ROM. */
+		NO_BIOS          = 32  /**< Use heuristics to boot without a BIOS. */
 	};
 
 	/**
