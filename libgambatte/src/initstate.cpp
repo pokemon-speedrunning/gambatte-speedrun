@@ -1378,7 +1378,7 @@ void gambatte::setInitStateCart(SaveState &state) {
 }
 
 void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb) {
-	state.cpu.cycleCounter = cgb ? (agb ? 0x102A0 + 0x8 : 0x102A0) : 0x102A0 + 0x8D2C;
+	state.cpu.cycleCounter = cgb ? (agb ? 0x102A0 + 0x4 : 0x102A0) : 0x102A0 + 0x8D2C;
 	state.cpu.pc = 0x100;
 	state.cpu.sp = 0xFFFE;
 	state.cpu.a = cgb * 0x10 | 0x01;
