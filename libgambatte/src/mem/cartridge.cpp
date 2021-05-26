@@ -570,7 +570,7 @@ public:
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
 		switch (p >> 13 & 3) {
 		case 0:
-			enableRam_ = (data & 0xF) == 0xA;
+			enableRam_ = data == 0xA;
 			setRambank();
 			break;
 		case 1:
