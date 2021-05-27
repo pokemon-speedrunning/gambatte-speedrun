@@ -127,12 +127,12 @@ void Memory::loadState(SaveState const &state) {
 	haltHdmaState_ = static_cast<HdmaState>(std::min(1u * state.mem.haltHdmaState, 1u * hdma_requested));
 	serialCnt_ = intreq_.eventTime(intevent_serial) != disabled_time
 		? serialCntFrom(intreq_.eventTime(intevent_serial) - state.cpu.cycleCounter,
-			ioamhram_[0x102] & isCgb() * 2)
+			ioamhram_[0x102] & (isCgb() & !isCgbDmg()) * 2)
 		: 8;
 
-	cart_.setVrambank(ioamhram_[0x14F] & isCgb());
+	cart_.setVrambank(ioamhram_[0x14F] & (isCgb() & !isCgbDmg()));
 	cart_.setOamDmaSrc(oam_dma_src_off);
-	cart_.setWrambank(isCgb() && (ioamhram_[0x170] & 0x07) ? ioamhram_[0x170] & 0x07 : 1);
+	cart_.setWrambank((isCgb() && !isCgbDmg()) && (ioamhram_[0x170] & 0x07) ? ioamhram_[0x170] & 0x07 : 1);
 
 	if (lastOamDmaUpdate_ != disabled_time) {
 		if (lastOamDmaUpdate_ > state.cpu.cycleCounter) {
@@ -151,7 +151,7 @@ void Memory::loadState(SaveState const &state) {
 		: state.cpu.cycleCounter);
 	blanklcd_ = false;
 
-	if (!isCgb())
+	if (!isCgb() || isCgbDmg())
 		std::fill_n(cart_.vramdata() + vrambank_size(), vrambank_size(), 0);
 }
 
@@ -173,7 +173,7 @@ void Memory::updateSerial(unsigned long const cc) {
 			intreq_.setEventTime<intevent_serial>(disabled_time);
 		} else {
 			int const targetCnt = serialCntFrom(intreq_.eventTime(intevent_serial) - cc,
-				ioamhram_[0x102] & isCgb() * 2);
+				ioamhram_[0x102] & (isCgb() & !isCgbDmg()) * 2);
 			ioamhram_[0x101] = (((ioamhram_[0x101] + 1) << (serialCnt_ - targetCnt)) - 1) & 0xFF;
 			serialCnt_ = targetCnt;
 		}
@@ -423,7 +423,7 @@ unsigned long Memory::stop(unsigned long cc, bool &skip) {
 	intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + 4);
 
 	// speed change.
-	if (ioamhram_[0x14D] & isCgb()) {
+	if (ioamhram_[0x14D] & (isCgb() & !isCgbDmg())) {
 		tima_.speedChange(TimaInterruptRequester(intreq_));
 		// DIV reset.
 		nontrivial_ff_write(0x04, 0, cc);
@@ -652,10 +652,18 @@ unsigned Memory::nontrivial_ff_read(unsigned const p, unsigned long const cc) {
 		return ioamhram_[0x141] | lcd_.getStat(ioamhram_[0x145], cc);
 	case 0x44:
 		return lcd_.getLyReg(cc);
+	case 0x4C:
+		if (!biosMode_)
+			return 0xFF;
+		break;
 	case 0x69:
-		return lcd_.cgbBgColorRead(ioamhram_[0x168] & 0x3F, cc);
+		if (isCgb() && !isCgbDmg())
+			return lcd_.cgbBgColorRead(ioamhram_[0x168] & 0x3F, cc);
+		break;
 	case 0x6B:
-		return lcd_.cgbSpColorRead(ioamhram_[0x16A] & 0x3F, cc);
+		if (isCgb() && !isCgbDmg())
+			return lcd_.cgbSpColorRead(ioamhram_[0x16A] & 0x3F, cc);
+		break;
 	default:
 		break;
 	}
@@ -737,13 +745,13 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		updateSerial(cc);
 		serialCnt_ = 8;
 		if ((data & 0x81) == 0x81) {
-			intreq_.setEventTime<intevent_serial>(data & isCgb() * 2
+			intreq_.setEventTime<intevent_serial>(data & (isCgb() & !isCgbDmg()) * 2
 				? cc - (cc - tima_.divLastUpdate()) % 8 + 0x10 * serialCnt_
 				: cc - (cc - tima_.divLastUpdate()) % 0x100 + 0x200 * serialCnt_);
 		} else
 			intreq_.setEventTime<intevent_serial>(disabled_time);
 
-		data |= 0x7E - isCgb() * 2;
+		data |= 0x7E - (isCgb() & !isCgbDmg()) * 2;
 		break;
 	case 0x04:
 		if (intreq_.eventTime(intevent_serial) != disabled_time
@@ -1066,9 +1074,16 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		if (isCgb() && (ioamhram_[0x14C] & 0x04)) {
 			lcd_.copyCgbPalettesToDmg();
 			lcd_.setCgbDmg(true);
+			ioamhram_[0x102] |= 0x02;
+			ioamhram_[0x14D] |= 0x81;
+			ioamhram_[0x156] |= 0xC1;
+			ioamhram_[0x16B] |= 0xFF;
+			ioamhram_[0x170] |= 0x07;
+			ioamhram_[0x174] |= 0xFF;
 		}
 
 		biosMode_ = false;
+		
 		return;
 	case 0x51:
 		dmaSource_ = data << 8 | (dmaSource_ & 0xFF);
@@ -1083,7 +1098,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		dmaDestination_ = (dmaDestination_ & 0xFF00) | (data & 0xF0);
 		return;
 	case 0x55:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			ioamhram_[0x155] = data & 0x7F;
 
 			if (lcd_.hdmaIsEnabled()) {
@@ -1104,17 +1119,17 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x56:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x156] = data | 0x3E;
 
 		return;
 	case 0x68:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x168] = data | 0x40;
 
 		return;
 	case 0x69:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			unsigned index = ioamhram_[0x168] & 0x3F;
 			lcd_.cgbBgColorChange(index, data, cc);
 			ioamhram_[0x168] = (ioamhram_[0x168] & ~0x3Fu)
@@ -1123,12 +1138,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6A:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x16A] = data | 0x40;
 
 		return;
 	case 0x6B:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			unsigned index = ioamhram_[0x16A] & 0x3F;
 			lcd_.cgbSpColorChange(index, data, cc);
 			ioamhram_[0x16A] = (ioamhram_[0x16A] & ~0x3Fu)
@@ -1137,7 +1152,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x16C] = data | 0xFE;
 
 		return;
@@ -1150,8 +1165,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		return;
 	case 0x72:
 	case 0x73:
-	case 0x74:
 		if (isCgb())
+			break;
+		
+		return;
+	case 0x74:
+		if (isCgb() && !isCgbDmg())
 			break;
 
 		return;
