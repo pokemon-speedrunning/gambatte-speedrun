@@ -253,6 +253,20 @@ public:
 	  *            [pc, sp, a, b, c, d, e, f, h, l]
 	  */
 	void setRegs(int *src);
+	
+	/**
+	  * Get MBC3 RTC reg values.
+	  * @param dest length of at least 11, please
+	  *             [dh, dl, h, m, s, c, dhl, dll, hl, ml, sl]
+	  */
+	void getRtcRegs(unsigned long *dest);
+
+	/**
+	  * Set MBC3 RTC reg values.
+	  * @param src length of at least 11, please
+	  *            [dh, dl, h, m, s, c, dhl, dll, hl, ml, sl]
+	  */
+	void setRtcRegs(unsigned long *src);
 
 	/**
 	  * Sets addresses the CPU will interrupt processing at before the instruction.
@@ -263,7 +277,7 @@ public:
 	/** Gets the address the CPU was interrupted at or -1 if stopped normally. */
 	int getHitInterruptAddress();
 
-	/** Returns the current cycle-based time counter as dividers. (2^21/sec) */
+	/** Returns the current cycle-based time counter as dividers. (2^21/sec) HuC3 use only.*/
 	unsigned timeNow() const;
 
 	/** Return a value in range 0-3FFF representing current "position" of internal divider */

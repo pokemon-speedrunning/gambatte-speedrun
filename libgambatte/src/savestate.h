@@ -217,13 +217,17 @@ struct SaveState {
 	} time;
 
 	struct RTC {
-		unsigned long haltTime;
 		unsigned char dataDh;
 		unsigned char dataDl;
-		unsigned char dataH;
-		unsigned char dataM;
-		unsigned char dataS;
-		unsigned char /*bool*/ lastLatchData;
+		unsigned char /*signed*/ dataH;
+		unsigned char /*signed*/ dataM;
+		unsigned char /*signed*/ dataS;
+		unsigned long dataC;
+		unsigned char latchDh;
+		unsigned char latchDl;
+		unsigned char latchH;
+		unsigned char latchM;
+		unsigned char latchS;
 	} rtc;
     
 	struct HuC3 {

@@ -159,8 +159,11 @@ public:
 		std::memcpy(bios_, buffer, size);
 		biosSize_ = size;
 	}
-
+	
 	unsigned timeNow(unsigned long const cc) const { return cart_.timeNow(cc); }
+	
+	void getRtcRegs(unsigned long *dest, unsigned long cc) { cart_.getRtcRegs(dest, cc); }
+	void setRtcRegs(unsigned long *src) { cart_.setRtcRegs(src); }
 
 	unsigned long getDivLastUpdate() { return divLastUpdate_; }
 	unsigned char getRawIOAMHRAM(int offset) { return ioamhram_[offset]; }
