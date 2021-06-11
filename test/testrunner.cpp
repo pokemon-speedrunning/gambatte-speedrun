@@ -313,8 +313,12 @@ static void runTestRom(
 
 	std::putchar(cgb ? (agb ? 'a' : 'c') : 'd');
 	std::fflush(stdout);
+	
+	long biosLength = cgb ? 186 : 334;
+	if (flags & gambatte::GB::LoadFlag::NO_BIOS)
+		biosLength = 0;
 
-	long samplesLeft = samples_per_frame * ((cgb ? 186 : 334) + 15);
+	long samplesLeft = samples_per_frame * (biosLength + 15);
 
 	while (samplesLeft >= 0) {
 		std::size_t samples = samples_per_frame;
