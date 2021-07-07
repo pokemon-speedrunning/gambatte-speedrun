@@ -262,14 +262,14 @@ public:
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data, unsigned long const /*cc*/) {
-		switch (p & 0x6100) {
+		switch (p & 0x4100) {
 		case 0x0000:
 			enableRam_ = (data & 0xF) == 0xA;
 			memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
 			break;
-		case 0x2100:
+		case 0x0100:
 			rombank_ = data & 0xF;
-			memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+			memptrs_.setRombank(std::max((unsigned) rombank_, 1u) & (rombanks(memptrs_) - 1));
 			break;
 		}
 	}
@@ -283,7 +283,7 @@ public:
 		rombank_ = ss.rombank;
 		enableRam_ = ss.enableRam;
 		memptrs_.setRambank(enableRam_ ? MemPtrs::read_en | MemPtrs::write_en : MemPtrs::disabled, 0);
-		memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+		memptrs_.setRombank(std::max((unsigned) rombank_, 1u) & (rombanks(memptrs_) - 1));
 	}
 
 private:
@@ -845,7 +845,7 @@ LoadRes Cartridge::loadROM(std::string const &romfile,
 			mbc_.reset(new Mbc1(memptrs_));
 
 		break;
-	case type_mbc2: mbc_.reset(new Mbc2(memptrs_)); break;
+	case type_mbc2: mbc_.reset(new Mbc2(memptrs_)); mbc2_ = true; break;
 	case type_mbc3:
 		mbc_.reset(new Mbc3(memptrs_, hasRtc(memptrs_.romdata()[0x147]) ? &rtc_ : 0, mbc30));
 		break;
