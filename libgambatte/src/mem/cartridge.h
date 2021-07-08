@@ -68,15 +68,35 @@ public:
 	bool disabledRam() const { return mbc_->disabledRam(); }
 	void mbcWrite(unsigned addr, unsigned data, unsigned long const cc) { mbc_->romWrite(addr, data, cc); }
 	bool isCgb() const { return gambatte::isCgb(memptrs_); }
-	void resetCc(unsigned long const oldCc, unsigned long const newCc) { time_.resetCc(oldCc, newCc); }
-	void speedChange(unsigned long const cc) { time_.speedChange(cc); }
-	void setTimeMode(bool useCycles, unsigned long const cc) { time_.setTimeMode(useCycles, cc); }
+	void resetCc(unsigned long const oldCc, unsigned long const newCc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(oldCc);
+
+		time_.resetCc(oldCc, newCc, isHuC3);
+	}
+	void speedChange(unsigned long const cc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(cc);
+		
+		time_.speedChange(cc, isHuC3);
+	}
+	void setTimeMode(bool useCycles, unsigned long const cc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(cc);
+
+		time_.setTimeMode(useCycles, cc, isHuC3);
+	}
 	void setRtcDivisorOffset(long const rtcDivisorOffset) { time_.setRtcDivisorOffset(rtcDivisorOffset); }
 	unsigned timeNow(unsigned long const cc) const { return time_.timeNow(cc); }
+	void getRtcRegs(unsigned long *dest, unsigned long cc) { rtc_.getRtcRegs(dest, cc); }
+	void setRtcRegs(unsigned long *src) { rtc_.setRtcRegs(src); }
 	void rtcWrite(unsigned data, unsigned long const cc) { rtc_.write(data, cc); }
-	unsigned char rtcRead() const { return *rtc_.activeData(); }
-	void loadSavedata(unsigned long cycleCounter);
+	unsigned char rtcRead() const { return *rtc_.activeLatch(); }
 	void saveSavedata(unsigned long cycleCounter);
+	void loadSavedata(unsigned long cycleCounter);
 	std::string const saveBasePath() const;
 	void setSaveDir(std::string const &dir);
 	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);

@@ -28,17 +28,17 @@ struct SaveState;
 class Rtc {
 public:
 	Rtc(Time &time);
-	unsigned char const * activeData() const { return activeData_; }
+	unsigned char const * activeLatch() const { return activeLatch_; }
 
-	void latch(unsigned data, unsigned long const cc) {
-		if (!lastLatchData_ && data == 1)
-			doLatch(cc);
-
-		lastLatchData_ = data;
-	}
+	void latch(unsigned long const cc) { doLatch(cc); }
 
 	void saveState(SaveState &state) const;
 	void loadState(SaveState const &state);
+	
+	void getRtcRegs(unsigned long *dest, unsigned long const cc);
+	void setRtcRegs(unsigned long *src);
+	
+	void setBaseTime(timeval baseTime, unsigned long const cc);
 
 	void set(bool enabled, unsigned bank) {
 		bank &= 0xF;
@@ -51,22 +51,27 @@ public:
 
 	void write(unsigned data, unsigned long const cc) {
 		(this->*activeSet_)(data, cc);
-		*activeData_ = data;
 	}
+	
+	void update(unsigned long const cc);
 
 private:
 	Time &time_;
-	unsigned char *activeData_;
+	unsigned char *activeLatch_;
 	void (Rtc::*activeSet_)(unsigned, unsigned long);
-	std::time_t haltTime_;
 	unsigned char index_;
+	bool enabled_;
 	unsigned char dataDh_;
 	unsigned char dataDl_;
-	unsigned char dataH_;
-	unsigned char dataM_;
-	unsigned char dataS_;
-	bool enabled_;
-	bool lastLatchData_;
+	signed char dataH_;
+	signed char dataM_;
+	signed char dataS_;
+	unsigned long dataC_;
+	unsigned char latchDh_;
+	unsigned char latchDl_;
+	unsigned char latchH_;
+	unsigned char latchM_;
+	unsigned char latchS_;
 
 	void doLatch(unsigned long cycleCounter);
 	void doSwapActive();
@@ -75,10 +80,6 @@ private:
 	void setH(unsigned newHours, unsigned long cycleCounter);
 	void setM(unsigned newMinutes, unsigned long cycleCounter);
 	void setS(unsigned newSeconds, unsigned long cycleCounter);
-
-	std::time_t time(unsigned long const cc) {
-		return dataDh_ & 0x40 ? haltTime_ : time_.get(cc);
-	}
 };
 
 }

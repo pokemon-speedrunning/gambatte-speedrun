@@ -87,6 +87,8 @@ public:
 
 	void getRegs(int *dest);
 	void setRegs(int *src);
+	void getRtcRegs(unsigned long *dest) { mem_.getRtcRegs(dest, cycleCounter_); }
+	void setRtcRegs(unsigned long *src) { mem_.setRtcRegs(src); }
 	void setInterruptAddresses(int *addrs, int numAddrs);
 	int getHitInterruptAddress();
 

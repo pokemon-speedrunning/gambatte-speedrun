@@ -1351,14 +1351,6 @@ void gambatte::setInitState(SaveState &state, bool const cgb, bool const sgb) {
 
 	state.time.lastCycles = state.time.lastCycles - (cc - state.cpu.cycleCounter);
 
-	state.rtc.haltTime = state.time.seconds;
-	state.rtc.dataDh = 0;
-	state.rtc.dataDl = 0;
-	state.rtc.dataH = 0;
-	state.rtc.dataM = 0;
-	state.rtc.dataS = 0;
-	state.rtc.lastLatchData = false;
-
 	state.huc3.haltTime = state.time.seconds;
 	state.huc3.dataTime = 0;
 	state.huc3.writingTime = 0;
@@ -1375,6 +1367,18 @@ void gambatte::setInitStateCart(SaveState &state) {
 	state.time.lastTimeSec = Time::now().tv_sec;
 	state.time.lastTimeUsec = Time::now().tv_usec;
 	state.time.lastCycles = state.cpu.cycleCounter;
+	
+	state.rtc.dataDh = 0;
+	state.rtc.dataDl = 0;
+	state.rtc.dataH = 0;
+	state.rtc.dataM = 0;
+	state.rtc.dataS = 0;
+	state.rtc.dataC = 0;
+	state.rtc.latchDh = 0;
+	state.rtc.latchDl = 0;
+	state.rtc.latchH = 0;
+	state.rtc.latchM = 0;
+	state.rtc.latchS = 0;
 }
 
 void gambatte::setPostBiosState(SaveState &state, bool const cgb, bool const agb) {
