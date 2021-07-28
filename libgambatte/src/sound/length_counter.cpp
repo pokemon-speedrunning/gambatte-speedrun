@@ -75,3 +75,8 @@ void LengthCounter::loadState(SaveState::SPU::LCounter const &lstate, unsigned l
 	counter_ = std::max(lstate.counter, cc);
 	lengthCounter_ = lstate.lengthCounter;
 }
+
+SYNCFUNC(LengthCounter) {
+	NSS(counter_);
+	NSS(lengthCounter_);
+}

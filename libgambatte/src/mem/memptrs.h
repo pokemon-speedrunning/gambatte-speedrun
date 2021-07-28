@@ -20,6 +20,7 @@
 #define MEMPTRS_H
 
 #include "array.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -80,6 +81,7 @@ public:
 	void setVrambank(unsigned bank) { vrambankptr_ = vramdata() + bank * vrambank_size() - mm_vram_begin; }
 	void setWrambank(unsigned bank);
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	unsigned char const *rmem_[0x10];
@@ -93,6 +95,12 @@ private:
 	unsigned char *rambankdata_;
 	unsigned char *wramdataend_;
 	OamDmaSrc oamDmaSrc_;
+
+	unsigned curRomBank_;
+
+	int memchunk_len;
+	int memchunk_saveoffs;
+	int memchunk_savelen;
 
 	static std::size_t pre_rom_pad_size() { return mm_rom1_begin; }
 	void disconnectOamDmaAreas();

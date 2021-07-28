@@ -19,6 +19,7 @@ sourceFiles = Split('''
 			src/interruptrequester.cpp
 			src/loadres.cpp
 			src/memory.cpp
+			src/newstate.cpp
 			src/sound.cpp
 			src/state_osd_elements.cpp
 			src/statesaver.cpp

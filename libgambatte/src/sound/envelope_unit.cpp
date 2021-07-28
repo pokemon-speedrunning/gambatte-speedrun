@@ -94,3 +94,9 @@ bool EnvelopeUnit::nr4Init(unsigned long const cc) {
 	volume_ = nr2_ / (1u * psg_nr2_initvol & -psg_nr2_initvol);
 	return !(nr2_ & (psg_nr2_initvol | psg_nr2_inc));
 }
+
+SYNCFUNC(EnvelopeUnit) {
+	NSS(counter_);
+	NSS(nr2_);
+	NSS(volume_);
+}

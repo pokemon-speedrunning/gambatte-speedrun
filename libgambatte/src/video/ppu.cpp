@@ -117,11 +117,11 @@ int const xpos_end = 168;
 
 inline int spx(PPUPriv::Sprite const &s) { return s.spx; }
 
-inline int lcdcEn(   PPUPriv const &p) { return p.lcdc & lcdc_en;    }
-inline int lcdcWinEn(PPUPriv const &p) { return p.lcdc & lcdc_we;    }
-inline int lcdcObj2x(PPUPriv const &p) { return p.lcdc & lcdc_obj2x; }
-inline int lcdcObjEn(PPUPriv const &p) { return p.lcdc & lcdc_objen; }
-inline int lcdcBgEn( PPUPriv const &p) { return p.lcdc & lcdc_bgen;  }
+inline int lcdcEn(   PPUPriv const &p) { return p.lcdc & lcdc_en;                                         }
+inline int lcdcWinEn(PPUPriv const &p) { return (p.lcdc & lcdc_we) && (p.layersMask & layer_mask_window); }
+inline int lcdcObj2x(PPUPriv const &p) { return p.lcdc & lcdc_obj2x;                                      }
+inline int lcdcObjEn(PPUPriv const &p) { return (p.lcdc & lcdc_objen) && (p.layersMask & layer_mask_obj); }
+inline int lcdcBgEn( PPUPriv const &p) { return (p.lcdc & lcdc_bgen) && (p.layersMask & layer_mask_bg);   }
 
 inline int weMasterCheckLy0LineCycle(bool cgb) { return 1 + cgb; }
 inline int weMasterCheckPriorToLyIncLineCycle(bool /*cgb*/) { return 450; }
@@ -463,7 +463,7 @@ void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, uint_least32_t *const db
 
 		if (!(p.speedupFlags & GB::NO_VIDEO)) {
 			uint_least32_t *const dst = dbufline + (xpos - tile_len);
-			unsigned const tileword = -(p.lcdc & 1u * lcdc_bgen) & p.ntileword;
+			unsigned const tileword = -((p.lcdc & 1u * lcdc_bgen) & p.layersMask) & p.ntileword;
 
 			dst[0] = p.bgPalette[ tileword & tile_bpp_mask                                 ];
 			dst[1] = p.bgPalette[(tileword & tile_bpp_mask << 1 * tile_bpp) >> 1 * tile_bpp];
@@ -612,7 +612,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 			p.cycles -= n;
 
 			unsigned ntileword = p.ntileword;
-			unsigned nattrib = p.nattrib;
+			unsigned nattrib = -(p.layersMask & layer_mask_bg) & p.nattrib;
 			uint_least32_t *dst = dbufline + xpos - tile_len;
 			uint_least32_t *const dstend = dst + n;
 			xpos += n;
@@ -639,8 +639,8 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 					dst[7] = bgPalette[ ntileword                                  >> 7 * tile_bpp];
 					dst += tile_len;
 
-					unsigned const tno = tileMapLine[tileMapXpos % tile_map_len                 ];
-					nattrib            = tileMapLine[tileMapXpos % tile_map_len + vram_bank_size];
+					unsigned const tno =                                   tileMapLine[tileMapXpos % tile_map_len                 ];
+					nattrib            = -(p.layersMask & layer_mask_bg) & tileMapLine[tileMapXpos % tile_map_len + vram_bank_size];
 					tileMapXpos = tileMapXpos % tile_map_len + 1;
 
 					unsigned const tdo = tdoffset & ~(tno << 5);
@@ -648,7 +648,7 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 						+ (nattrib & attr_yflip ? tdo ^ tile_line_size * (tile_len - 1) : tdo)
 						+ vram_bank_size / attr_tdbank * tdbank(p, nattrib);
 					unsigned short const *const explut = expand_lut + (0x100 / attr_xflip * nattrib & 0x100);
-					ntileword = explut[td[0]] + explut[td[1]] * 2;
+					ntileword = -(p.layersMask & layer_mask_bg) & (explut[td[0]] + explut[td[1]] * 2);
 				} while (dst != dstend);
 			}
 
@@ -665,8 +665,8 @@ void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, uint_least32_t *const db
 
 		if (!(p.speedupFlags & GB::NO_VIDEO)) {
 			uint_least32_t *const dst = dbufline + (xpos - tile_len);
-			unsigned const tileword = ((p.lcdc & 1u * lcdc_bgen) | !p.cgbDmg) * p.ntileword;
-			unsigned const attrib   = p.nattrib;
+			unsigned const tileword = -(p.layersMask & layer_mask_bg) & (((p.lcdc & 1u * lcdc_bgen) | !p.cgbDmg) * p.ntileword);
+			unsigned const attrib   = -(p.layersMask & layer_mask_bg) & p.nattrib;
 			unsigned long const *const bgPalette = p.bgPalette
 				+ (attrib & attr_cgbpalno) * num_palette_entries;
 			dst[0] = bgPalette[ tileword & tile_bpp_mask                                 ];
@@ -870,8 +870,8 @@ void plotPixel(PPUPriv &p) {
 	if (!(p.speedupFlags & GB::NO_VIDEO)) {
 		uint_least32_t *const fbline = p.framebuf.fbline();
 
-		unsigned const twdata = tileword & ((p.lcdc & lcdc_bgen) | (p.cgb * !p.cgbDmg)) * tile_bpp_mask;
-		unsigned long pixel = p.bgPalette[twdata + (p.attrib & attr_cgbpalno) * num_palette_entries];
+		unsigned const twdata = tileword & (((p.lcdc & lcdc_bgen) | (p.cgb * !p.cgbDmg)) & p.layersMask) * tile_bpp_mask;
+		unsigned long pixel = p.bgPalette[twdata + (p.attrib & attr_cgbpalno & -(p.layersMask & layer_mask_bg)) * num_palette_entries];
 		int i = static_cast<int>(p.nextSprite) - 1;
 
 		if (i >= 0 && spx(p.spriteList[i]) > xpos - tile_len) {
@@ -1564,6 +1564,7 @@ PPUPriv::PPUPriv(NextM0Time &nextM0Time, unsigned char const *const oamram, unsi
 , spwordList()
 , nextSprite(0)
 , currentSprite(0xFF)
+, layersMask(layer_mask_bg | layer_mask_window | layer_mask_obj)
 , vram(vram)
 , nextCallPtr(&M2_Ly0::f0_)
 , now(0)
@@ -1589,7 +1590,6 @@ PPUPriv::PPUPriv(NextM0Time &nextM0Time, unsigned char const *const oamram, unsi
 , endx(0)
 , cgb(false)
 , weMaster(false)
-, trueColors(false)
 , speedupFlags(0)
 {
 }
@@ -1859,4 +1859,70 @@ void PPU::update(unsigned long const cc) {
 		if (!(p_.speedupFlags & GB::NO_PPU_CALL))
 			p_.nextCallPtr->f(p_);
 	}
+}
+
+SYNCFUNC(PPU) {
+	NSS(p_.bgPalette);
+	NSS(p_.spPalette);
+	NSS(p_.spriteList);
+	NSS(p_.spwordList);
+	NSS(p_.nextSprite);
+	NSS(p_.currentSprite);
+	NSS(p_.layersMask);
+
+	EBS(p_.nextCallPtr, 0);
+	EVS(p_.nextCallPtr, &M2_Ly0::f0_, 1);
+	EVS(p_.nextCallPtr, &M2_LyNon0::f0_, 2);
+	EVS(p_.nextCallPtr, &M2_LyNon0::f1_, 3);
+	EVS(p_.nextCallPtr, &M3Start::f0_, 4);
+	EVS(p_.nextCallPtr, &M3Start::f1_, 5);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f0_, 6);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f1_, 7);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f2_, 8);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f3_, 9);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f4_, 10);
+	EVS(p_.nextCallPtr, &M3Loop::Tile::f5_, 11);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f0_, 12);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f1_, 13);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f2_, 14);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f3_, 15);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f4_, 16);
+	EVS(p_.nextCallPtr, &M3Loop::LoadSprites::f5_, 17);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f0_, 18);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f1_, 19);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f2_, 20);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f3_, 21);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f4_, 22);
+	EVS(p_.nextCallPtr, &M3Loop::StartWindowDraw::f5_, 23);
+	EES(p_.nextCallPtr, NULL);
+
+	NSS(p_.now);
+	NSS(p_.lastM0Time);
+	NSS(p_.cycles);
+
+	NSS(p_.tileword);
+	NSS(p_.ntileword);
+
+	SSS(p_.spriteMapper);
+	SSS(p_.lyCounter);
+
+	NSS(p_.lcdc);
+	NSS(p_.scy);
+	NSS(p_.scx);
+	NSS(p_.wy);
+	NSS(p_.wy2);
+	NSS(p_.wx);
+	NSS(p_.winDrawState);
+	NSS(p_.wscx);
+	NSS(p_.winYPos);
+	NSS(p_.reg0);
+	NSS(p_.reg1);
+	NSS(p_.attrib);
+	NSS(p_.nattrib);
+	NSS(p_.xpos);
+	NSS(p_.endx);
+
+	NSS(p_.cgb);
+	NSS(p_.cgbDmg);
+	NSS(p_.weMaster);
 }

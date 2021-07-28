@@ -19,11 +19,13 @@
 #ifndef INITSTATE_H
 #define INITSTATE_H
 
+#include <cstdlib>
+
 namespace gambatte {
 
-void setInitState(struct SaveState &state, bool cgb, bool sgb);
-void setInitStateCart(struct SaveState &state);
-void setPostBiosState(struct SaveState &state, bool cgb, bool agb);
+void setInitState(struct SaveState &state, bool cgb, bool sgb, bool agb, std::size_t stalledCycles);
+void setInitStateCart(struct SaveState &state, bool cgb, bool agb);
+void setPostBiosState(struct SaveState &state, bool cgb, bool agb, bool notCgbDmg);
 
 }
 

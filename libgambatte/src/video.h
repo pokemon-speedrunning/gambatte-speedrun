@@ -27,6 +27,7 @@
 #include "video/mstat_irq.h"
 #include "video/next_m0_time.h"
 #include "video/ppu.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -56,27 +57,30 @@ public:
 	void saveState(SaveState &state) const;
 	void loadState(SaveState const &state, unsigned char const *oamram);
 	void setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long rgb32);
+	void setCgbPalette(unsigned *lut);
 	void setVideoBuffer(uint_least32_t *videoBuf, std::ptrdiff_t pitch);
+	void setLayers(unsigned mask) { ppu_.setLayers(mask); }
 	void copyCgbPalettesToDmg();
-	void setTrueColors(bool trueColors);
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) { osdElement_ = osdElement; }
+
+	int peekLy() const { return ppu_.lyCounter().ly(); }
 
 	void dmgBgPaletteChange(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		bgpData_[0] = data;
-		setDmgPalette(ppu_.bgPalette(), dmgColorsBgr15_, data, isTrueColors());
+		setDmgPalette(ppu_.bgPalette(), dmgColorsRgb32_, data);
 	}
 
 	void dmgSpPalette1Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[0] = data;
-		setDmgPalette(ppu_.spPalette(), dmgColorsBgr15_ + 4, data, isTrueColors());
+		setDmgPalette(ppu_.spPalette(), dmgColorsRgb32_ + 4, data);
 	}
 
 	void dmgSpPalette2Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[1] = data;
-		setDmgPalette(ppu_.spPalette() + 4, dmgColorsBgr15_ + 8, data, isTrueColors());
+		setDmgPalette(ppu_.spPalette() + 4, dmgColorsRgb32_ + 8, data);
 	}
 
 	void cgbBgColorChange(unsigned index, unsigned data, unsigned long cycleCounter) {
@@ -98,10 +102,12 @@ public:
 	}
 
 	void updateScreen(bool blanklcd, unsigned long cc, unsigned stage);
+	void whiteScreen();
 	void blackScreen();
 	void resetCc(unsigned long oldCC, unsigned long newCc);
 	void speedChange(unsigned long cycleCounter);
 	bool vramReadable(unsigned long cycleCounter);
+	bool vramExactlyReadable(unsigned long cycleCounter);
 	bool vramWritable(unsigned long cycleCounter);
 	bool oamReadable(unsigned long cycleCounter);
 	bool oamWritable(unsigned long cycleCounter);
@@ -140,7 +146,7 @@ public:
 	void lcdcChange(unsigned data, unsigned long cycleCounter);
 	void lcdstatChange(unsigned data, unsigned long cycleCounter);
 	void lycRegChange(unsigned data, unsigned long cycleCounter);
-	void enableHdma(unsigned long cycleCounter);
+	void enableHdma(unsigned long cycleCounter, bool lcdEnabled);
 	void disableHdma(unsigned long cycleCounter);
 	bool isHdmaPeriod(unsigned long cycleCounter);
 	bool hdmaIsEnabled() const { return eventTimes_(memevent_hdma) != disabled_time; }
@@ -149,8 +155,14 @@ public:
 	bool isAgb() const { return ppu_.agb(); }
 	bool isCgbDmg() const { return ppu_.cgbDmg(); }
 	bool isDoubleSpeed() const { return ppu_.lyCounter().isDoubleSpeed(); }
-	bool isTrueColors() const { return ppu_.trueColors(); }
 	void setSpeedupFlags(unsigned flags) { ppu_.setSpeedupFlags(flags); }
+
+	template<bool isReader>void SyncState(NewState *ns);
+
+	unsigned long *bgPalette() { return ppu_.bgPalette(); }
+	unsigned long *spPalette() { return ppu_.spPalette(); }
+
+	void setScanlineCallback(void (*callback)(), int sl) { scanlinecallback = callback; scanlinecallbacksl = sl; }
 
 private:
 	enum Event { event_mem,
@@ -195,6 +207,12 @@ private:
 		void flagIrq(unsigned bit, unsigned long cc) { memEventRequester_.flagIrq(bit, cc); }
 		void flagHdmaReq() { memEventRequester_.flagHdmaReq(); }
 
+		template<bool isReader>
+		void SyncState(NewState *ns) {
+			SSS(eventMin_);
+			SSS(memEventMin_);
+		}
+
 	private:
 		MinKeeper<num_events> eventMin_;
 		MinKeeper<num_memevents> memEventMin_;
@@ -208,7 +226,8 @@ private:
 	};
 
 	PPU ppu_;
-	unsigned short dmgColorsBgr15_[3 * 4];
+	unsigned long dmgColorsRgb32_[3 * 4];
+	unsigned long cgbColorsRgb32_[32768];
 	unsigned char  bgpData_[2 * max_num_palettes * num_palette_entries];
 	unsigned char objpData_[2 * max_num_palettes * num_palette_entries];
 	EventTimes eventTimes_;
@@ -217,11 +236,14 @@ private:
 	NextM0Time nextM0Time_;
 	scoped_ptr<OsdElement> osdElement_;
 	unsigned char statReg_;
+	bool vramHasBeenExactlyRead = false;
 
 	static void setDmgPalette(unsigned long palette[],
-	                          unsigned short const dmgColors[],
-	                          unsigned data,
-	                          bool trueColor);
+	                          unsigned long const dmgColors[],
+	                          unsigned data);
+
+	unsigned long gbcToRgb32(const unsigned bgr15);
+	void doCgbColorChange(unsigned char *const pdata, unsigned long *const palette, unsigned index, const unsigned data);
 	void refreshPalettes();
 	void setDBuffer();
 	void doMode2IrqEvent();
@@ -237,6 +259,10 @@ private:
 	void mode3CyclesChange();
 	void doCgbBgColorChange(unsigned index, unsigned data, unsigned long cycleCounter);
 	void doCgbSpColorChange(unsigned index, unsigned data, unsigned long cycleCounter);
+
+	void (*scanlinecallback)();
+	int scanlinecallbacksl;
+
 };
 
 }

@@ -23,6 +23,7 @@
 #include "sound/channel2.h"
 #include "sound/channel3.h"
 #include "sound/channel4.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -74,6 +75,8 @@ public:
 	unsigned getStatus() const;
 
 	void setSpeedupFlags(unsigned flags) { speedupFlags_ = flags; }
+
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	Channel1 ch1_;

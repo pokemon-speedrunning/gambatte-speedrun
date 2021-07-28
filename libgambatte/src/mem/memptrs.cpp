@@ -82,6 +82,8 @@ MemPtrs::MemPtrs()
 , rambankdata_(0)
 , wramdataend_(0)
 , oamDmaSrc_(oam_dma_src_off)
+, curRomBank_(1)
+, memchunk_len(0)
 {
 }
 
@@ -110,6 +112,10 @@ void MemPtrs::reset(unsigned const rombanks, unsigned const rambanks, unsigned c
 	setRambank(disabled, 0);
 	setVrambank(0);
 	setWrambank(1);
+
+	// we save only the ram areas
+	memchunk_saveoffs = vramdata() - memchunk_;
+	memchunk_savelen = wramdataend() - memchunk_ - memchunk_saveoffs;
 }
 
 void MemPtrs::setRombank0(unsigned bank) {
@@ -119,6 +125,7 @@ void MemPtrs::setRombank0(unsigned bank) {
 }
 
 void MemPtrs::setRombank(unsigned bank) {
+	curRomBank_ = bank;
 	romdata_[1] = romdata() + bank * rombank_size() - mm_rom1_begin;
 	rmem_[0x7] = rmem_[0x6] = rmem_[0x5] = rmem_[0x4] = romdata_[1];
 	disconnectOamDmaAreas();
@@ -170,9 +177,64 @@ void MemPtrs::disconnectOamDmaAreas() {
 	: ::disconnectOamDmaAreas<false>(rmem_, wmem_, oamDmaSrc_);
 }
 
-bool MemPtrs::isInOamDmaConflictArea(unsigned p) const
-{
+bool MemPtrs::isInOamDmaConflictArea(unsigned p) const {
 	return isCgb(*this)
 	? ::isInOamDmaConflictArea<true>(oamDmaSrc_, p)
 	: ::isInOamDmaConflictArea<false>(oamDmaSrc_, p);
+}
+
+// all pointers here are relative to memchunk_
+#define MSS(a) RSS(a,memchunk_)
+#define MSL(a) RSL(a,memchunk_)
+
+SYNCFUNC(MemPtrs) {
+	NSS(memchunk_len);
+	NSS(memchunk_saveoffs);
+	NSS(memchunk_savelen);
+
+	PSS(memchunk_ + memchunk_saveoffs, memchunk_savelen);
+
+	MSS(rmem_[0x0]);
+	MSS(wmem_[0x0]);
+	MSS(rmem_[0x1]);
+	MSS(wmem_[0x1]);
+	MSS(rmem_[0x2]);
+	MSS(wmem_[0x2]);
+	MSS(rmem_[0x3]);
+	MSS(wmem_[0x3]);
+	MSS(rmem_[0x4]);
+	MSS(wmem_[0x4]);
+	MSS(rmem_[0x5]);
+	MSS(wmem_[0x5]);
+	MSS(rmem_[0x6]);
+	MSS(wmem_[0x6]);
+	MSS(rmem_[0x7]);
+	MSS(wmem_[0x7]);
+	MSS(rmem_[0x8]);
+	MSS(wmem_[0x8]);
+	MSS(rmem_[0x9]);
+	MSS(wmem_[0x9]);
+	MSS(rmem_[0xa]);
+	MSS(wmem_[0xa]);
+	MSS(rmem_[0xb]);
+	MSS(wmem_[0xb]);
+	MSS(rmem_[0xc]);
+	MSS(wmem_[0xc]);
+	MSS(rmem_[0xd]);
+	MSS(wmem_[0xd]);
+	MSS(rmem_[0xe]);
+	MSS(wmem_[0xe]);
+	MSS(rmem_[0xf]);
+	MSS(wmem_[0xf]);
+	MSS(romdata_[0]);
+	MSS(romdata_[1]);
+	MSS(wramdata_[0]);
+	MSS(wramdata_[1]);
+	MSS(vrambankptr_);
+	MSS(rsrambankptr_);
+	MSS(wsrambankptr_);
+	MSS(rambankdata_);
+	MSS(wramdataend_);
+	NSS(oamDmaSrc_);
+	NSS(curRomBank_);
 }

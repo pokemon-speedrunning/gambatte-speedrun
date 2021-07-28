@@ -35,10 +35,9 @@ struct SaveState {
 		void set(T *p, std::size_t size) { ptr = p; size_ = size; }
 
 		friend class SaverList;
-		friend void setInitState(SaveState &, bool, bool);
-		friend void setInitStateCart(SaveState &);
-		friend void setPostBiosState(SaveState &, bool, bool);
-
+		friend void setInitState(SaveState &, bool, bool, bool, std::size_t);
+		friend void setInitStateCart(SaveState &, bool, bool);
+		friend void setPostBiosState(SaveState &, bool, bool, bool);
 	private:
 		T *ptr;
 		std::size_t size_;
@@ -73,6 +72,7 @@ struct SaveState {
 		unsigned long lastOamDmaUpdate;
 		unsigned long minIntTime;
 		unsigned long unhaltTime;
+		unsigned long lastCartBusUpdate;
 		unsigned short rombank;
 		unsigned short dmaSource;
 		unsigned short dmaDestination;
@@ -83,7 +83,6 @@ struct SaveState {
 		unsigned char /*bool*/ IME;
 		unsigned char /*bool*/ halted;
 		unsigned char /*bool*/ enableRam;
-		unsigned char /*bool*/ mbcLockup;
 		unsigned char /*bool*/ rambankMode;
 		unsigned char /*bool*/ hdmaTransfer;
 		unsigned char /*bool*/ biosMode;
@@ -106,7 +105,6 @@ struct SaveState {
 	} mem;
 
 	struct PPU {
-		Ptr<unsigned short> dmgColorsBgr15;
 		Ptr<unsigned char> bgpData;
 		Ptr<unsigned char> objpData;
 		//SpriteMapper::OamReader
@@ -217,15 +215,19 @@ struct SaveState {
 	} time;
 
 	struct RTC {
-		unsigned long haltTime;
 		unsigned char dataDh;
 		unsigned char dataDl;
-		unsigned char dataH;
-		unsigned char dataM;
-		unsigned char dataS;
-		unsigned char /*bool*/ lastLatchData;
+		unsigned char /*signed*/ dataH;
+		unsigned char /*signed*/ dataM;
+		unsigned char /*signed*/ dataS;
+		unsigned long dataC;
+		unsigned char latchDh;
+		unsigned char latchDl;
+		unsigned char latchH;
+		unsigned char latchM;
+		unsigned char latchS;
 	} rtc;
-    
+
 	struct HuC3 {
 		unsigned long haltTime;
 		unsigned long dataTime;

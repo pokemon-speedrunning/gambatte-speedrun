@@ -24,6 +24,7 @@
 #include "gbint.h"
 #include "length_counter.h"
 #include "static_output_tester.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -43,6 +44,7 @@ public:
 	void resetCc(unsigned long cc, unsigned long ncc) { dutyUnit_.resetCc(cc, ncc); }
 	void saveState(SaveState &state, unsigned long cc);
 	void loadState(SaveState const &state);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	friend class StaticOutputTester<Channel2, DutyUnit>;

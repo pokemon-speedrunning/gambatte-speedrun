@@ -24,6 +24,7 @@
 #include "length_counter.h"
 #include "master_disabler.h"
 #include "static_output_tester.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -43,6 +44,7 @@ public:
 	void resetCc(unsigned long cc, unsigned long newCc) { lfsr_.resetCc(cc, newCc); }
 	void saveState(SaveState &state, unsigned long cc);
 	void loadState(SaveState const &state);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	class Lfsr : public SoundUnit {
@@ -60,6 +62,7 @@ private:
 		void disableMaster() { killCounter(); master_ = false; reg_ = 0x7FFF; }
 		void killCounter() { counter_ = counter_disabled; }
 		void reviveCounter(unsigned long cc);
+		template<bool isReader>void SyncState(NewState *ns);
 
 	private:
 		unsigned long backupCounter_;

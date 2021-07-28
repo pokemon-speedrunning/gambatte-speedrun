@@ -20,6 +20,8 @@
 #define SGB_H
 
 #include "gbint.h"
+#include "newstate.h"
+
 #include <cstddef>
 
 namespace gambatte {
@@ -40,15 +42,21 @@ public:
 		pitch_ = pitch;
 	}
 
-	void setTrueColors(bool trueColors) {
-		trueColors_ = trueColors;
+	unsigned long gbcToRgb32(const unsigned bgr15);
+
+	void setCgbPalette(unsigned *lut) {
+		for (int i = 0; i < 32768; i++)
+			cgbColorsRgb32_[i] = lut[i];
 		refreshPalettes();
 	}
 
 	void onJoypad(unsigned data);
 	void updateScreen();
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
+	unsigned long cgbColorsRgb32_[32768];
+
 	unsigned char transfer;
 	unsigned char packet[0x10];
 	unsigned char command[0x10 * 7];
@@ -59,7 +67,6 @@ private:
 
 	uint_least32_t *videoBuf_;
 	std::ptrdiff_t pitch_;
-	bool trueColors_;
 
 	unsigned short systemColors[512 * 4];
 	unsigned short colors[4 * 4];

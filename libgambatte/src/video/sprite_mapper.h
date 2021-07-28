@@ -21,6 +21,7 @@
 
 #include "ly_counter.h"
 #include "../savestate.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -71,6 +72,8 @@ public:
 		return lyCounter.nextLineCycle(2 * lcd_num_oam_entries, cc);
 	}
 
+	template<bool isReader>void SyncState(NewState *ns);
+
 private:
 	class OamReader {
 	public:
@@ -91,6 +94,7 @@ private:
 		void loadState(SaveState const &ss, unsigned char const *oamram);
 		bool inactivePeriodAfterDisplayEnable(unsigned long cc) const { return cc < lu_; }
 		unsigned lineTime() const { return lyCounter_.lineTime(); }
+		template<bool isReader>void SyncState(NewState *ns);
 
 	private:
 		unsigned char buf_[2 * lcd_num_oam_entries];

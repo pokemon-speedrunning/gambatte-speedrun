@@ -38,12 +38,13 @@ Time::Time()
 {
 }
 
-void Time::saveState(SaveState &state, unsigned long const cc) {
-	if (useCycles_)
-		timeFromCycles(cc);
-	else
-		cyclesFromTime(cc);
-
+void Time::saveState(SaveState &state, unsigned long const cc, bool isHuC3) {
+	if (isHuC3) {
+		if (useCycles_)
+			timeFromCycles(cc);
+		else
+			cyclesFromTime(cc);
+	}
 	state.time.seconds = seconds_;
 	state.time.lastTimeSec = lastTime_.tv_sec;
 	state.time.lastTimeUsec = lastTime_.tv_usec;
@@ -55,7 +56,7 @@ void Time::loadState(SaveState const &state) {
 	lastTime_.tv_sec = state.time.lastTimeSec;
 	lastTime_.tv_usec = state.time.lastTimeUsec;
 	lastCycles_ = state.time.lastCycles;
-	ds_ = state.mem.ioamhram.get()[0x14D] >> 7;
+	ds_ = (!state.ppu.notCgbDmg) & state.mem.ioamhram.get()[0x14D] >> 7;
 }
 
 std::time_t Time::get(unsigned long const cc) {
@@ -74,29 +75,35 @@ void Time::reset(std::time_t seconds, unsigned long const cc) {
 	lastCycles_ = cc;
 }
 
-void Time::resetCc(unsigned long const oldCc, unsigned long const newCc) {
-	update(oldCc);
+void Time::resetCc(unsigned long const oldCc, unsigned long const newCc, bool isHuC3) {
+	if (isHuC3)
+		update(oldCc);
+
 	lastCycles_ -= oldCc - newCc;
 }
 
-void Time::speedChange(unsigned long const cc) {
-	update(cc);
-
-	if (useCycles_) {
-		unsigned long diff = cc - lastCycles_;
-		lastCycles_ = cc - (ds_ ? diff >> 1 : diff << 1);
+void Time::speedChange(unsigned long const cc, bool isHuC3) {
+	if (isHuC3) {
+		update(cc);
+		if (useCycles_) {
+			unsigned long diff = cc - lastCycles_;
+			lastCycles_ = cc - (ds_ ? diff >> 1 : diff << 1);
+		}
 	}
 
 	ds_ = !ds_;
 }
 
-timeval Time::baseTime(unsigned long const cc) {
-	if (useCycles_)
-		timeFromCycles(cc);
+timeval Time::baseTime(unsigned long const cc, bool isHuC3) {
+	if (isHuC3) {
+		if (useCycles_)
+			timeFromCycles(cc);
 
-	timeval baseTime = lastTime_;
-	baseTime.tv_sec -= seconds_;
-	return baseTime;
+		timeval baseTime = lastTime_;
+		baseTime.tv_sec -= seconds_;
+		return baseTime;
+	} else
+		return now();
 }
 
 void Time::setBaseTime(timeval baseTime, unsigned long const cc) {
@@ -108,13 +115,14 @@ void Time::setBaseTime(timeval baseTime, unsigned long const cc) {
 		cyclesFromTime(cc);
 }
 
-void Time::setTimeMode(bool useCycles, unsigned long const cc) {
+void Time::setTimeMode(bool useCycles, unsigned long const cc, bool isHuC3) {
 	if (useCycles != useCycles_) {
-		if (useCycles_)
-			timeFromCycles(cc);
-		else
-			cyclesFromTime(cc);
-
+		if (isHuC3) {
+			if (useCycles_)
+				timeFromCycles(cc);
+			else
+				cyclesFromTime(cc);
+		}
 		useCycles_ = useCycles;
 	}
 }
@@ -146,6 +154,30 @@ void Time::timeFromCycles(unsigned long const cc) {
 	unsigned long diff = cc - lastCycles_;
 	timeval usec = { 0, (long)(diff / ((rtcDivisor_ << ds_) / 1000000.0f)) };
 	lastTime_ = now() - usec;
+}
+
+unsigned long Time::diff(unsigned long const cc) {
+	unsigned long diff_;
+	timeval now_ = now();
+	if (useCycles_) {
+		unsigned long diff = (cc - lastCycles_) >> ds_;
+		diff_ = diff;
+	} else {
+		timeval diff = { now_.tv_sec - lastTime_.tv_sec, 0 };
+		diff_ = diff.tv_sec * rtcDivisor_;
+	}
+	lastCycles_ = cc;
+	lastTime_ = now_;
+	return diff_;
+}
+
+SYNCFUNC(Time) {
+	NSS(seconds_);
+	NSS(lastTime_.tv_sec);
+	NSS(lastTime_.tv_usec);
+	NSS(lastCycles_);
+	NSS(useCycles_);
+	NSS(ds_);
 }
 
 }

@@ -25,6 +25,7 @@
 #include "length_counter.h"
 #include "master_disabler.h"
 #include "static_output_tester.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -46,6 +47,7 @@ public:
 	void init(bool cgb);
 	void saveState(SaveState &state, unsigned long cc);
 	void loadState(SaveState const &state);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	class SweepUnit : public SoundUnit {
@@ -58,6 +60,7 @@ private:
 		void init(bool cgb) { cgb_ = cgb; }
 		void saveState(SaveState &state) const;
 		void loadState(SaveState const &state);
+		template<bool isReader>void SyncState(NewState *ns);
 
 	private:
 		MasterDisabler &disableMaster_;

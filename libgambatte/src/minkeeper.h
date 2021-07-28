@@ -20,6 +20,7 @@
 #define MINKEEPER_H
 
 #include <algorithm>
+#include "newstate.h"
 
 namespace min_keeper_detail {
 
@@ -58,6 +59,14 @@ public:
 	}
 
 	unsigned long value(int id) const { return values_[id]; }
+
+	// not sure if i understood everything in minkeeper correctly, so something might be missing here?
+	template<bool isReader>
+	void SyncState(gambatte::NewState *ns) {
+		NSS(values_);
+		NSS(minValue_);
+		NSS(a_);
+	}
 
 private:
 	enum { height = min_keeper_detail::CeiledLog2<ids>::r };
@@ -110,6 +119,7 @@ private:
 	int a_[Sum<height>::r];
 
 	template<int id> static void updateValue(MinKeeper<ids> &m);
+
 };
 
 template<int ids> typename MinKeeper<ids>::UpdateValueLut MinKeeper<ids>::updateValueLut;

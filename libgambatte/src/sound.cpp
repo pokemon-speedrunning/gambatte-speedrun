@@ -228,3 +228,16 @@ unsigned PSG::getStatus() const {
 	     | ch3_.isActive() << 2
 	     | ch4_.isActive() << 3;
 }
+
+// the buffer and position are not saved, as they're set and flushed on each runfor() call
+SYNCFUNC(PSG) {
+	SSS(ch1_);
+	SSS(ch2_);
+	SSS(ch3_);
+	SSS(ch4_);
+	NSS(lastUpdate_);
+	NSS(cycleCounter_);
+	NSS(soVol_);
+	NSS(rsum_);
+	NSS(enabled_);
+}

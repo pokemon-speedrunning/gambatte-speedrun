@@ -26,6 +26,7 @@
 #include "huc3.h"
 #include "savestate.h"
 #include "scoped_ptr.h"
+#include "newstate.h"
 
 #include <string>
 #include <vector>
@@ -41,6 +42,11 @@ public:
 	virtual void saveState(SaveState::Mem &ss) const = 0;
 	virtual void loadState(SaveState::Mem const &ss) = 0;
 	virtual bool isAddressWithinAreaRombankCanBeMappedTo(unsigned address, unsigned rombank) const = 0;
+	template<bool isReader>void SyncState(NewState *ns) {
+		// can't have virtual templates, so..
+		SyncState(ns, isReader);
+	}
+	virtual void SyncState(NewState *ns, bool isReader) = 0;
 };
 
 class Cartridge {
@@ -68,26 +74,54 @@ public:
 	bool disabledRam() const { return mbc_->disabledRam(); }
 	void mbcWrite(unsigned addr, unsigned data, unsigned long const cc) { mbc_->romWrite(addr, data, cc); }
 	bool isCgb() const { return gambatte::isCgb(memptrs_); }
-	void resetCc(unsigned long const oldCc, unsigned long const newCc) { time_.resetCc(oldCc, newCc); }
-	void speedChange(unsigned long const cc) { time_.speedChange(cc); }
-	void setTimeMode(bool useCycles, unsigned long const cc) { time_.setTimeMode(useCycles, cc); }
+	void resetCc(unsigned long const oldCc, unsigned long const newCc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(oldCc);
+
+		time_.resetCc(oldCc, newCc, isHuC3);
+	}
+	void speedChange(unsigned long const cc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(cc);
+
+		time_.speedChange(cc, isHuC3);
+	}
+	void setTimeMode(bool useCycles, unsigned long const cc) {
+		bool isHuC3 = huc3_.isHuC3();
+		if (!isHuC3)
+			rtc_.update(cc);
+
+		time_.setTimeMode(useCycles, cc, isHuC3);
+	}
 	void setRtcDivisorOffset(long const rtcDivisorOffset) { time_.setRtcDivisorOffset(rtcDivisorOffset); }
-	unsigned timeNow(unsigned long const cc) const { return time_.timeNow(cc); }
+	unsigned timeNow(unsigned long const cc) const { return time_.timeNow(cc); }	
+	void getRtcRegs(unsigned long *dest, unsigned long cc) { rtc_.getRtcRegs(dest, cc); }
+	void setRtcRegs(unsigned long *src) { rtc_.setRtcRegs(src); }
 	void rtcWrite(unsigned data, unsigned long const cc) { rtc_.write(data, cc); }
-	unsigned char rtcRead() const { return *rtc_.activeData(); }
+	unsigned char rtcRead() const { return *rtc_.activeLatch(); }
 	void loadSavedata(unsigned long cycleCounter);
 	void saveSavedata(unsigned long cycleCounter);
+	int saveSavedataLength(bool isDeterministic);
+	void loadSavedata(char const *data, unsigned long cycleCounter, bool isDeterministic);
+	void saveSavedata(char *dest, unsigned long cycleCounter, bool isDeterministic);
+	bool getMemoryArea(int which, unsigned char **data, int *length) const;
 	std::string const saveBasePath() const;
 	void setSaveDir(std::string const &dir);
 	LoadRes loadROM(std::string const &romfile, bool cgbMode, bool multicartCompat);
+	LoadRes loadROM(char const *romfiledata, unsigned romfilelength, bool cgbMode, bool multicartCompat);
 	char const * romTitle() const { return reinterpret_cast<char const *>(memptrs_.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
+	bool isMbc2() const { return mbc2_; }
 	bool isHuC3() const { return huc3_.isHuC3(); }
 	unsigned char HuC3Read(unsigned p, unsigned long const cc) { return huc3_.read(p, cc); }
 	void HuC3Write(unsigned p, unsigned data, unsigned long const cc) { huc3_.write(p, data, cc); }
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
+	bool mbc2_ = false;
 	struct AddrData {
 		unsigned long addr;
 		unsigned char data;

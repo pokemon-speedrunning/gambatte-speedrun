@@ -166,3 +166,14 @@ void DutyUnit::reviveCounter(unsigned long const cc) {
 	enableEvents_ = true;
 	setCounter();
 }
+
+SYNCFUNC(DutyUnit) {
+	NSS(counter_);
+	NSS(nextPosUpdate_);
+	NSS(period_);
+	NSS(pos_);
+	NSS(duty_);
+	NSS(inc_);
+	NSS(high_);
+	NSS(enableEvents_);
+}

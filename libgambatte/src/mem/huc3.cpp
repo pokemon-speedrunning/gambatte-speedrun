@@ -186,4 +186,16 @@ void HuC3Chip::updateTime(unsigned long const cc) {
     
 }
 
+SYNCFUNC(HuC3Chip) {
+	NSS(haltTime_);
+	NSS(dataTime_);
+	NSS(writingTime_);
+	NSS(ramValue_);
+	NSS(shift_);
+	NSS(halted_);
+	NSS(modeflag_);
+	NSS(irBaseCycle_);
+	NSS(irReceivingPulse_);
+}
+
 }

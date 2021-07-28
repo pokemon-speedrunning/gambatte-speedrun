@@ -22,24 +22,14 @@
 
 namespace gambatte {
 
-static unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
-	unsigned long const r = bgr15       & 0x1F;
-	unsigned long const g = bgr15 >>  5 & 0x1F;
-	unsigned long const b = bgr15 >> 10 & 0x1F;
-    
-    if (trueColor) {
-        return (r << 19) | (g << 11) | (b << 3);
-    }
-
-	return ((r * 13 + g * 2 + b) >> 1) << 16
-	     | (g * 3 + b) << 9
-	     | (r * 3 + g * 2 + b * 11) >> 1;
-}
-
 Sgb::Sgb()
 : transfer(0xFF)
 , pending(0xFF)
 {
+}
+
+unsigned long Sgb::gbcToRgb32(unsigned const bgr15) {
+	return cgbColorsRgb32_[bgr15 & 0x7FFF];
 }
 
 void Sgb::setStatePtrs(SaveState &state) {
@@ -189,7 +179,7 @@ void Sgb::onTransfer(unsigned char *frame) {
 
 void Sgb::refreshPalettes() {
 	for (int i = 0; i < 16; i++)
-		palette[i] = gbcToRgb32(colors[i * ((i & 3) != 0)], trueColors_);
+		palette[i] = gbcToRgb32(colors[i * ((i & 3) != 0)]);
 }
 
 void Sgb::palnn(unsigned a, unsigned b) {
@@ -261,6 +251,25 @@ void Sgb::pal_set() {
 	}
 
 	refreshPalettes();
+}
+
+SYNCFUNC(Sgb) {
+	NSS(transfer);
+	NSS(packet);
+	NSS(command);
+	NSS(commandIndex);
+
+	NSS(joypadIndex);
+	NSS(joypadMask);
+
+	NSS(systemColors);
+	NSS(colors);
+	NSS(palette);
+	NSS(attributes);
+
+	NSS(pending);
+	NSS(pendingCount);
+	NSS(mask);
 }
 
 }

@@ -212,3 +212,24 @@ void Channel3::update(uint_least32_t *buf, unsigned long const soBaseVol, unsign
 			waveCounter_ -= SoundUnit::counter_max;
 	}
 }
+
+SYNCFUNC(Channel3) {
+	NSS(waveRam_);
+
+	SSS(lengthCounter_);
+
+	NSS(soMask_);
+	NSS(prevOut_);
+	NSS(waveCounter_);
+	NSS(lastReadTime_);
+
+	NSS(nr0_);
+	NSS(nr3_);
+	NSS(nr4_);
+	NSS(wavePos_);
+	NSS(rshift_);
+	NSS(sampleBuf_);
+
+	NSS(master_);
+	NSS(cgb_);
+}

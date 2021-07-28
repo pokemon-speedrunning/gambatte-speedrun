@@ -48,8 +48,11 @@ struct GB::Priv {
 	CPU cpu;
 	int stateNo;
 	unsigned loadflags;
+	unsigned layersMask;
 
-	Priv() : stateNo(1), loadflags(0) {}
+	uint_least32_t vbuff[160 * 144];
+
+	Priv() : stateNo(1), loadflags(0), layersMask(layer_mask_bg | layer_mask_window | layer_mask_obj) {}
 
 	unsigned criticalLoadflags() {
 		return loadflags & (CGB_MODE | SGB_MODE);
@@ -86,6 +89,37 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	     : cyclesSinceBlit;
 }
 
+std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const soundBuf, std::size_t &samples) {
+	if (!p_->cpu.loaded()) {
+		samples = 0;
+		return -1;
+	}
+
+	p_->cpu.setVideoBuffer(p_->vbuff, 160);
+	p_->cpu.setSoundBuffer(soundBuf);
+
+	long const cyclesSinceBlit = p_->cpu.runFor(samples * 2);
+	samples = p_->cpu.fillSoundBuffer();
+	return cyclesSinceBlit >= 0
+	     ? static_cast<std::ptrdiff_t>(samples) - (cyclesSinceBlit >> 1)
+	     : cyclesSinceBlit;
+}
+
+void GB::setLayers(unsigned mask) {
+	p_->cpu.setLayers(mask);
+}
+
+void GB::blitTo(gambatte::uint_least32_t *videoBuf, std::ptrdiff_t pitch) {
+	gambatte::uint_least32_t *src = p_->vbuff;
+	gambatte::uint_least32_t *dst = videoBuf;
+
+	for (int i = 0; i < 144; i++) {
+		std::memcpy(dst, src, sizeof (gambatte::uint_least32_t) * 160);
+		src += 160;
+		dst += pitch;
+	}
+}
+
 void GB::reset(std::size_t samplesToStall, std::string const &build) {
 	if (p_->cpu.loaded()) {
 		if (p_->implicitSave())
@@ -94,14 +128,14 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->cpu.saveState(state);
-		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & SGB_MODE);
+		setInitState(state, p_->loadflags & CGB_MODE, p_->loadflags & SGB_MODE, p_->loadflags & GBA_FLAG, samplesToStall > 0 ? samplesToStall << 1 : 0);
 		if (p_->loadflags & NO_BIOS)
-			setPostBiosState(state, p_->loadflags & CGB_MODE, p_->loadflags & GBA_FLAG);
+			setPostBiosState(state, p_->loadflags & CGB_MODE, p_->loadflags & GBA_FLAG, externalRead(0x143) & 0x80);
 
 		p_->cpu.loadState(state);
 
 		if (samplesToStall > 0)
-			p_->cpu.stall(samplesToStall * 2);
+			p_->cpu.stall(samplesToStall << 1);
 
 		if (!build.empty())
 			p_->cpu.setOsdElement(newResetElement(build, GB::pakInfo().crc()));
@@ -110,6 +144,38 @@ void GB::reset(std::size_t samplesToStall, std::string const &build) {
 
 void GB::setInputGetter(InputGetter *getInput, void *p) {
 	p_->cpu.setInputGetter(getInput, p);
+}
+
+void GB::setReadCallback(MemoryCallback callback) {
+	p_->cpu.setReadCallback(callback);
+}
+
+void GB::setWriteCallback(MemoryCallback callback) {
+	p_->cpu.setWriteCallback(callback);
+}
+
+void GB::setExecCallback(MemoryCallback callback) {
+	p_->cpu.setExecCallback(callback);
+}
+
+void GB::setCDCallback(CDCallback cdc) {
+	p_->cpu.setCDCallback(cdc);
+}
+
+void GB::setTraceCallback(void (*callback)(void *)) {
+	p_->cpu.setTraceCallback(callback);
+}
+
+void GB::setScanlineCallback(void (*callback)(), int sl) {
+	p_->cpu.setScanlineCallback(callback, sl);
+}
+
+void GB::setLinkCallback(void(*callback)()) {
+	p_->cpu.setLinkCallback(callback);
+}
+
+void GB::setCartBusPullUpTime(unsigned long const cartBusPullUpTime) {
+	p_->cpu.setCartBusPullUpTime(cartBusPullUpTime);
 }
 
 void GB::setRtcDivisorOffset(long const rtcDivisorOffset) {
@@ -130,16 +196,37 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
 		p_->loadflags = flags;
-		setInitState(state, flags & CGB_MODE, flags & SGB_MODE);
+		setInitState(state, flags & CGB_MODE, flags & SGB_MODE, flags & GBA_FLAG, 0);
 		if (flags & NO_BIOS)
-			setPostBiosState(state, flags & CGB_MODE, flags & GBA_FLAG);
+			setPostBiosState(state, flags & CGB_MODE, flags & GBA_FLAG, externalRead(0x143) & 0x80);
 
-		setInitStateCart(state);
+		setInitStateCart(state, flags & CGB_MODE, flags & GBA_FLAG);
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 
 		p_->stateNo = 1;
 		p_->cpu.setOsdElement(transfer_ptr<OsdElement>());
+	}
+
+	return loadres;
+}
+
+LoadRes GB::load(char const *romfiledata, unsigned romfilelength, unsigned const flags) {
+	LoadRes const loadres = p_->cpu.load(romfiledata, romfilelength, flags);
+
+	if (loadres == LOADRES_OK) {
+		SaveState state;
+		p_->cpu.setStatePtrs(state);
+		p_->loadflags = flags;
+		setInitState(state, flags & CGB_MODE, flags & SGB_MODE, flags & GBA_FLAG, (flags & GBA_FLAG) ? 971616 : 0);
+		if (flags & NO_BIOS)
+			setPostBiosState(state, flags & CGB_MODE, flags & GBA_FLAG, externalRead(0x143) & 0x80);
+
+		setInitStateCart(state, flags & CGB_MODE, flags & GBA_FLAG);
+		p_->cpu.loadState(state);
+
+		if (flags & GBA_FLAG && !(flags & NO_BIOS))
+			p_->cpu.stall(971616); // GBA takes 971616 cycles to switch to CGB mode; CGB CPU is inactive during this time.
 	}
 
 	return loadres;
@@ -170,13 +257,30 @@ int GB::loadBios(std::string const &biosfile, std::size_t size, unsigned crc) {
 		if (crc32(0, maskedBiosBuffer, sz) != crc)
 			return -3;
 	}
-	
+
+	if ((p_->loadflags & GBA_FLAG) && (crc32(0, newBiosBuffer, sz) == 0x41884E46)) { // patch cgb bios to re'd agb bios equal 
+		newBiosBuffer[0xF3] ^= 0x03;
+		for (int i = 0xF5; i < 0xFB; i++)
+			newBiosBuffer[i] = newBiosBuffer[i + 1];
+
+		newBiosBuffer[0xFB] ^= 0x74;
+	}
+
 	p_->cpu.setBios(newBiosBuffer, sz);
+	return 0;
+}
+
+int GB::loadBios(char const *biosfiledata, std::size_t size) {
+	p_->cpu.setBios((unsigned char*)biosfiledata, size);
 	return 0;
 }
 
 bool GB::isCgb() const {
 	return p_->cpu.isCgb();
+}
+
+bool GB::isCgbDmg() const {
+	return p_->cpu.isCgbDmg();
 }
 
 bool GB::isLoaded() const {
@@ -188,12 +292,36 @@ void GB::saveSavedata() {
 		p_->cpu.saveSavedata();
 }
 
+int GB::saveSavedataLength(bool isDeterministic) {
+	if (p_->cpu.loaded())
+		return p_->cpu.saveSavedataLength(isDeterministic);
+	else
+		return -1;
+}
+
+void GB::loadSavedata(char const *data, bool isDeterministic) {
+	if (p_->cpu.loaded())
+		p_->cpu.loadSavedata(data, isDeterministic);
+}
+
+void GB::saveSavedata(char *dest, bool isDeterministic) {
+	if (p_->cpu.loaded())
+		p_->cpu.saveSavedata(dest, isDeterministic);
+}
+
+bool GB::getMemoryArea(int which, unsigned char **data, int *length) {
+	if (p_->cpu.loaded())
+		return p_->cpu.getMemoryArea(which, data, length);
+	else
+		return false;
+}
+
 void GB::setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 	p_->cpu.setDmgPaletteColor(palNum, colorNum, rgb32);
 }
 
-void GB::setTrueColors(bool trueColors) {
-	p_->cpu.setTrueColors(trueColors);
+void GB::setCgbPalette(unsigned *lut) {
+	p_->cpu.setCgbPalette(lut);
 }
 
 void GB::setTimeMode(bool useCycles) {
@@ -318,12 +446,24 @@ void GB::externalWrite(unsigned short addr, unsigned char val) {
 		p_->cpu.externalWrite(addr, val);
 }
 
+int GB::linkStatus(int which) {
+	return p_->cpu.linkStatus(which);
+}
+
 void GB::getRegs(int *dest) {
 	p_->cpu.getRegs(dest);
 }
 
 void GB::setRegs(int *src) {
 	p_->cpu.setRegs(src);
+}
+
+void GB::getRtcRegs(unsigned long *dest) {
+	p_->cpu.getRtcRegs(dest);
+}
+
+void GB::setRtcRegs(unsigned long *src) {
+	p_->cpu.setRtcRegs(src);
 }
 
 void GB::setInterruptAddresses(int *addrs, int numAddrs) {
@@ -347,4 +487,10 @@ int GB::getDivState() {
 
 void GB::setSpeedupFlags(unsigned flags) {
 	p_->cpu.setSpeedupFlags(flags);
+}
+
+SYNCFUNC(GB) {
+	SSS(p_->cpu);
+	NSS(p_->loadflags);
+	NSS(p_->vbuff);
 }

@@ -49,6 +49,7 @@ public:
 	unsigned long divLastUpdate() const { return divLastUpdate_; }
 	unsigned tima(unsigned long cc);
 	void doIrqEvent(TimaInterruptRequester timaIrq);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	unsigned long divLastUpdate_;

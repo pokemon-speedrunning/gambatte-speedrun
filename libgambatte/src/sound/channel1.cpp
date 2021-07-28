@@ -104,6 +104,15 @@ void Channel1::SweepUnit::loadState(SaveState const &state) {
 	neg_ = state.spu.ch1.sweep.neg;
 }
 
+template<bool isReader>
+void Channel1::SweepUnit::SyncState(NewState *ns) {
+	NSS(counter_);
+	NSS(shadow_);
+	NSS(nr0_);
+	NSS(neg_);
+	NSS(cgb_);
+}
+
 Channel1::Channel1()
 : staticOutputTest_(*this, dutyUnit_)
 , disableMaster_(master_, dutyUnit_)
@@ -243,4 +252,24 @@ void Channel1::update(uint_least32_t *buf, unsigned long const soBaseVol, unsign
 		envelopeUnit_.resetCounters(cc);
 		sweepUnit_.resetCounters(cc);
 	}
+}
+
+SYNCFUNC(Channel1) {
+	SSS(lengthCounter_);
+	SSS(dutyUnit_);
+	SSS(envelopeUnit_);
+	SSS(sweepUnit_);
+
+	EBS(nextEventUnit_, 0);
+	EVS(nextEventUnit_, &dutyUnit_, 1);
+	EVS(nextEventUnit_, &sweepUnit_, 2);
+	EVS(nextEventUnit_, &envelopeUnit_, 3);
+	EVS(nextEventUnit_, &lengthCounter_, 4);
+	EES(nextEventUnit_, NULL);
+
+	NSS(soMask_);
+	NSS(prevOut_);
+
+	NSS(nr4_);
+	NSS(master_);
 }

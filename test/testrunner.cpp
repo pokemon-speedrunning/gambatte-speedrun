@@ -304,16 +304,23 @@ static void runTestRom(
 		std::abort();
 	}
 
-	if (!cgb) {
+	if (cgb) {
+		unsigned lut[32768];
+		int i = 0;
+		for (int b = 0; b < 32; b++)
+			for (int g = 0; g < 32; g++)
+				for (int r = 0; r < 32; r++)
+					lut[i++] = ((r * 3 + g * 2 + b * 11) >> 1) | ((g * 3 + b) << 1) << 8 | ((r * 13 + g * 2 + b) >> 1) << 16 | 255 << 24;
+
+		gb.setCgbPalette(lut);
+	} else {
 		for (int i = 0; i < 12; ++i)
 			gb.setDmgPaletteColor(i / 4, i % 4, (3 - (i & 3)) * 85 * 0x010101ul);
 	}
 
-	gb.setTrueColors(false);
-
 	std::putchar(cgb ? (agb ? 'a' : 'c') : 'd');
 	std::fflush(stdout);
-	
+
 	long biosLength = cgb ? 186 : 334;
 	if (flags & gambatte::GB::LoadFlag::NO_BIOS)
 		biosLength = 0;

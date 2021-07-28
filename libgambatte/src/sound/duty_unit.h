@@ -22,6 +22,7 @@
 #include "sound_unit.h"
 #include "master_disabler.h"
 #include "../savestate.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -44,6 +45,8 @@ public:
 	//intended for use by SweepUnit only.
 	unsigned freq() const { return 2048 - (period_ >> 1); }
 	void setFreq(unsigned newFreq, unsigned long cc);
+
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	unsigned long nextPosUpdate_;

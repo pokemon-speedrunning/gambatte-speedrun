@@ -66,4 +66,11 @@ void LyCounter::setDoubleSpeed(bool ds) {
 	lineTime_ = lcd_cycles_per_line << ds;
 }
 
+SYNCFUNC(LyCounter) {
+	NSS(time_);
+	NSS(lineTime_);
+	NSS(ly_);
+	NSS(ds_);
+}
+
 }

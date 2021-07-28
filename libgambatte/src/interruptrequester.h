@@ -21,6 +21,7 @@
 
 #include "counterdef.h"
 #include "minkeeper.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -63,8 +64,11 @@ public:
 	void setEventTime(IntEventId id, unsigned long value) { eventTimes_.setValue(id, value); }
 	unsigned long eventTime(IntEventId id) const { return eventTimes_.value(id); }
 
+	template<bool isReader>void SyncState(NewState *ns);
+
 private:
 	class IntFlags {
+		friend class InterruptRequester;
 	public:
 		IntFlags() : flags_(0) {}
 		bool ime() const { return flags_ & flag_ime; }

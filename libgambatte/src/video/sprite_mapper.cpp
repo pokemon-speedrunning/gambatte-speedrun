@@ -129,6 +129,16 @@ void SpriteMapper::OamReader::loadState(SaveState const &ss, unsigned char const
 	change(lu_);
 }
 
+SYNCFUNC(SpriteMapper::OamReader) {
+	NSS(buf_);
+	NSS(lsbuf_);
+
+	NSS(lu_);
+	NSS(lastChange_);
+	NSS(largeSpritesSrc_);
+	NSS(cgb_);
+}
+
 void SpriteMapper::OamReader::enableDisplay(unsigned long cc) {
 	std::fill_n(buf_, sizeof buf_ / sizeof *buf_, 0);
 	std::fill_n(lsbuf_, sizeof lsbuf_ / sizeof *lsbuf_, false);
@@ -187,4 +197,11 @@ unsigned long SpriteMapper::doEvent(unsigned long const time) {
 	return oamReader_.changed()
 	     ? time + oamReader_.lineTime()
 	     : static_cast<unsigned long>(disabled_time);
+}
+
+SYNCFUNC(SpriteMapper) {
+	NSS(spritemap_);
+	NSS(num_);
+
+	SSS(oamReader_);
 }

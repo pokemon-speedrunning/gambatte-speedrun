@@ -24,10 +24,28 @@
 #include "loadres.h"
 #include <cstddef>
 #include <string>
+#include "../src/newstate.h"
 
 namespace gambatte {
 
 enum { BG_PALETTE = 0, SP1_PALETTE = 1, SP2_PALETTE = 2 };
+
+typedef void (*MemoryCallback)(int32_t address, int64_t cycleOffset);
+typedef void (*CDCallback)(int32_t addr, int32_t addrtype, int32_t flags);
+
+enum eCDLog_AddrType {
+	eCDLog_AddrType_ROM,
+	eCDLog_AddrType_HRAM,
+	eCDLog_AddrType_WRAM,
+	eCDLog_AddrType_CartRAM,
+	eCDLog_AddrType_None,
+};
+
+enum eCDLog_Flags {
+	eCDLog_Flags_ExecOpcode = 1,
+	eCDLog_Flags_ExecOperand = 2,
+	eCDLog_Flags_Data = 4,
+};
 
 class GB {
 public:
@@ -55,6 +73,16 @@ public:
 	  * @return 0 on success, negative value on failure.
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
+	
+	/**
+	  * Load ROM image from buffer.
+	  *
+	  * @param romfiledata    Buffer with ROM data.
+	  * @param romfilelegnth  Length of ROM data in bytes.
+	  * @param flags          ORed combination of LoadFlags.
+	  * @return 0 on success, negative value on failure.
+	  */
+	LoadRes load(char const *romfiledata, unsigned romfilelength, unsigned flags);
 
 	/**
 	  * Load bios image.
@@ -65,6 +93,15 @@ public:
 	  * @return 0 on success, negative value on failure.
 	  */
 	int loadBios(std::string const &biosfile, std::size_t size = 0, unsigned crc = 0);
+
+	/**
+	  * Load bios image from buffer.
+	  *
+	  * @param biosfiledata   Buffer with bios data.
+	  * @param size           Length of bios data in bytes.
+	  * @return 0 on success, negative value on failure.
+	  */
+	int loadBios(char const *biosfiledata, std::size_t size);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
@@ -98,6 +135,30 @@ public:
 	                      gambatte::uint_least32_t *audioBuf, std::size_t &samples);
 
 	/**
+	  * @param audioBuf buffer with space >= samples + 2064
+	  * @param samples  in: number of stereo samples to produce,
+	  *                out: actual number of samples produced
+	  * @return sample offset in audioBuf at which the video frame was completed, or -1
+	  *         if no new video frame was completed.
+	  */
+	std::ptrdiff_t runFor(gambatte::uint_least32_t *soundBuf, std::size_t &samples);
+
+	/**
+	  * Blit from internal framebuffer to provided framebuffer.
+	  *
+	  * @param videoBuf 160x144 RGB32 (native endian) video frame buffer or 0
+	  * @param pitch distance in number of pixels (not bytes) from the start of one line
+	  *              to the next in videoBuf.
+	  */
+	void blitTo(gambatte::uint_least32_t *videoBuf, std::ptrdiff_t pitch);
+
+	/**
+	  * Sets layers to be rendered.
+	  * @param layermask, 1=BG, 2=OBJ, 4=WINDOW
+	  */
+	void setLayers(unsigned mask);
+
+	/**
 	  * Reset to initial state.
 	  * Equivalent to reloading a ROM image, or turning a Game Boy Color off and on again.
 	  */
@@ -109,8 +170,11 @@ public:
 	  */
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32);
 
-	/** Use GBP color conversion instead of GBC-screen approximation. */
-	void setTrueColors(bool trueColors);
+	/**
+	  * Set CGB palette lookup.
+	  * @param uint32[32768], input color (r,g,b) is at lut[r | g << 5 | b << 10]
+	  */
+	void setCgbPalette(unsigned *lut);
 
 	/** Use cycle-based RTC instead of real-time. */
 	void setTimeMode(bool useCycles);
@@ -118,8 +182,37 @@ public:
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput, void *p);
 
+	/** Sets a callback to occur immediately before every CPU read, except for opcode first byte fetches. */
+	void setReadCallback(MemoryCallback);
+
+	/** Sets a callback to occur immediately before every CPU write. */
+	void setWriteCallback(MemoryCallback);
+
+	/** Sets a callback to occur immediately before every CPU opcode (first byte) fetch. */
+	void setExecCallback(MemoryCallback);
+
+	/** Sets a callback which enables CD Logger feedback. */
+	void setCDCallback(CDCallback);
+
+	/** Sets a callback to occur immediately before each opcode is executed. */
+	void setTraceCallback(void (*callback)(void *));
+
+	/**
+	  * Sets a callback to occur when LY reaches a particular scanline (so at the beginning of the scanline).
+	  * When the LCD is active, typically 145 will be the first callback after the beginning of frame advance,
+	  * and 144 will be the last callback right before frame advance returns.
+	  * @param sl Scanline for callback, 0-153 inclusive
+	  */
+	void setScanlineCallback(void (*callback)(), int sl);
+
+	/** Sets the link data sent callback. */
+	void setLinkCallback(void(*callback)());
+
 	/** adjust the assumed clock speed of the CPU compared to the RTC */
 	void setRtcDivisorOffset(long const rtcDivisorOffset);
+
+	/** Sets how long until the cart bus pulls up */
+	void setCartBusPullUpTime(unsigned long const cartBusPullUpTime);
 
 	/**
 	  * Sets the directory used for storing save data. The default is the same directory as
@@ -130,11 +223,32 @@ public:
 	/** Returns true if the currently loaded ROM image is treated as having CGB support. */
 	bool isCgb() const;
 
+	/** Returns true if the currently loaded ROM image is treated as having CGB-DMG support. */
+	bool isCgbDmg() const;
+
 	/** Returns true if a ROM image is loaded. */
 	bool isLoaded() const;
 
 	/** Writes persistent cartridge data to disk. Done implicitly on ROM close. */
 	void saveSavedata();
+
+	/** Writes persistent cartridge data to buffer.
+	  * Deterministic emulation will ignore RTC data, if any.
+	  */
+	void saveSavedata(char* dest, bool isDeterministic);
+
+	/** Loads persistent cartridge data from buffer. 
+	  * Deterministic emulation will ignore RTC data, if any.
+	  */
+	void loadSavedata(char const *data, bool isDeterministic);
+
+	/** Returns save data length expected.
+	  * Deterministic emulation will ignore RTC data, if any.
+	  */
+	int saveSavedataLength(bool isDeterministic);
+
+	/** 0 = vram, 1 = rom, 2 = wram, 3 = cartram, 4 = oam, 5 = hram */
+	bool getMemoryArea(int which, unsigned char **data, int *length);
 
 	/**
 	  * Saves emulator state to the state slot selected with selectState().
@@ -240,6 +354,9 @@ public:
 	  */
 	void externalWrite(unsigned short addr, unsigned char val);
 
+	/** Link cable stuff; never touch for normal operation. */
+	int linkStatus(int which);
+
 	/**
 	  * Get reg and flag values.
 	  * @param dest length of at least 10, please
@@ -253,6 +370,20 @@ public:
 	  *            [pc, sp, a, b, c, d, e, f, h, l]
 	  */
 	void setRegs(int *src);
+
+	/**
+	  * Get MBC3 RTC reg values.
+	  * @param dest length of at least 11, please
+	  *             [dh, dl, h, m, s, c, dhl, dll, hl, ml, sl]
+	  */
+	void getRtcRegs(unsigned long *dest);
+
+	/**
+	  * Set MBC3 RTC reg values.
+	  * @param src length of at least 11, please
+	  *            [dh, dl, h, m, s, c, dhl, dll, hl, ml, sl]
+	  */
+	void setRtcRegs(unsigned long *src);
 
 	/**
 	  * Sets addresses the CPU will interrupt processing at before the instruction.
@@ -277,6 +408,8 @@ public:
 
 	/** Sets flags to control non-critical processes for CPU-concerned emulation. */
 	void setSpeedupFlags(unsigned flags);
+
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	struct Priv;

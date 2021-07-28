@@ -126,4 +126,12 @@ void InterruptRequester::setMinIntTime(unsigned long cc) {
 		eventTimes_.setValue<intevent_interrupts>(minIntTime_);
 }
 
+SYNCFUNC(InterruptRequester) {
+	SSS(eventTimes_);
+	NSS(minIntTime_);
+	NSS(ifreg_);
+	NSS(iereg_);
+	NSS(intFlags_.flags_);
+}
+
 }

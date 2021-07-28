@@ -20,6 +20,7 @@
 #define LY_COUNTER_H
 
 #include "lcddef.h"
+#include "newstate.h"
 
 namespace gambatte {
 
@@ -46,6 +47,7 @@ public:
 	void reset(unsigned long videoCycles, unsigned long lastUpdate);
 	void setDoubleSpeed(bool ds);
 	unsigned long time() const { return time_; }
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	unsigned long time_;

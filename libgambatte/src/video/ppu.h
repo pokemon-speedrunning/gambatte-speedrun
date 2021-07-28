@@ -23,11 +23,16 @@
 #include "ly_counter.h"
 #include "sprite_mapper.h"
 #include "gbint.h"
+#include "newstate.h"
 
 #include <cstddef>
 
 namespace gambatte {
 
+enum {
+	layer_mask_bg = 1,
+	layer_mask_obj = 2,
+	layer_mask_window = 4 };
 enum {
 	max_num_palettes = 8,
 	num_palette_entries = 4,
@@ -65,6 +70,7 @@ struct PPUPriv {
 	unsigned short spwordList[lcd_max_num_sprites_per_line + 1];
 	unsigned char nextSprite;
 	unsigned char currentSprite;
+	unsigned layersMask;
 
 	unsigned char const *vram;
 	PPUState const *nextCallPtr;
@@ -100,7 +106,6 @@ struct PPUPriv {
 	bool agb;
 	bool cgbDmg;
 	bool weMaster;
-	bool trueColors;
 	unsigned speedupFlags;
 
 	PPUPriv(NextM0Time &nextM0Time, unsigned char const *oamram, unsigned char const *vram);
@@ -117,7 +122,6 @@ public:
 	bool cgb() const { return p_.cgb; }
 	bool agb() const { return p_.agb; }
 	bool cgbDmg() const { return p_.cgbDmg; }
-	bool trueColors() const { return p_.trueColors; }
 	void doLyCountEvent() { p_.lyCounter.doEvent(); }
 	unsigned long doSpriteMapEvent(unsigned long time) { return p_.spriteMapper.doEvent(time); }
 	PPUFrameBuf const & frameBuf() const { return p_.framebuf; }
@@ -149,8 +153,9 @@ public:
 	void speedChange();
 	unsigned long * spPalette() { return p_.spPalette; }
 	void update(unsigned long cc);
-	void setTrueColors(bool trueColors) { p_.trueColors = trueColors; }
+	void setLayers(unsigned mask) { p_.layersMask = mask; }
 	void setSpeedupFlags(unsigned flags) { p_.speedupFlags = flags; }
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	PPUPriv p_;

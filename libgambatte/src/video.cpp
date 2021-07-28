@@ -26,21 +26,6 @@ using namespace gambatte;
 
 namespace {
 
-unsigned long gbcToRgb32(unsigned const bgr15, bool trueColor) {
-	unsigned long const r = bgr15       & 0x1F;
-	unsigned long const g = bgr15 >>  5 & 0x1F;
-	unsigned long const b = bgr15 >> 10 & 0x1F;
-
-	if (trueColor) {
-		return (0xFF << 24) | (r << 19) | (g << 11) | (b << 3);
-	}
-
-	return 0xFF << 24
-	| ((r * 13 + g * 2 + b) >> 1) << 16
-	| (g * 3 + b) << 9
-	| (r * 3 + g * 2 + b * 11) >> 1;
-}
-
 /*unsigned long gbcToRgb16(unsigned const bgr15) {
 	unsigned const r = bgr15 & 0x1F;
 	unsigned const g = bgr15 >> 5 & 0x1F;
@@ -107,18 +92,23 @@ bool isHdmaPeriod(LyCounter const &lyCounter,
 	&& cc >= m0TimeOfCurrentLy;
 }
 
-void doCgbColorChange(unsigned char *pdata,
-		unsigned long *palette, unsigned index, unsigned data, bool trueColor) {
-	pdata[index] = data;
-	index /= 2;
-	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] * 0x100l, trueColor);
-}
-
 } // unnamed namespace.
 
-void LCD::setDmgPalette(unsigned long palette[], unsigned short const dmgColors[], unsigned data, bool trueColor) {
-	for (int i = 0; i < num_palette_entries; ++i, data /= num_palette_entries)
-		palette[i] = gbcToRgb32(dmgColors[data % num_palette_entries], trueColor);
+unsigned long LCD::gbcToRgb32(unsigned const bgr15) {
+	return cgbColorsRgb32_[bgr15 & 0x7FFF];
+}
+
+void LCD::setDmgPalette(unsigned long palette[], const unsigned long dmgColors[], unsigned data) {
+	palette[0] = dmgColors[data      & 3];
+	palette[1] = dmgColors[data >> 2 & 3];
+	palette[2] = dmgColors[data >> 4 & 3];
+	palette[3] = dmgColors[data >> 6 & 3];
+}
+
+void LCD::setCgbPalette(unsigned *lut) {
+	for (int i = 0; i < 32768; i++)
+		cgbColorsRgb32_[i] = lut[i];
+	refreshPalettes();
 }
 
 LCD::LCD(unsigned char const *oamram, unsigned char const *vram,
@@ -128,8 +118,12 @@ LCD::LCD(unsigned char const *oamram, unsigned char const *vram,
 , objpData_()
 , eventTimes_(memEventRequester)
 , statReg_(0)
+, scanlinecallback(0)
+, scanlinecallbacksl(0)
 {
-	std::memset(dmgColorsBgr15_, 0, sizeof dmgColorsBgr15_);
+	for (std::size_t i = 0; i < sizeof dmgColorsRgb32_ / sizeof dmgColorsRgb32_[0]; ++i)
+		dmgColorsRgb32_[i] = (3 - (i & 3)) * 85 * 0x010101ul;
+
 	std::memset( bgpData_, 0, sizeof  bgpData_);
 	std::memset(objpData_, 0, sizeof objpData_);
 
@@ -144,7 +138,6 @@ void LCD::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb
 }
 
 void LCD::setStatePtrs(SaveState &state) {
-	state.ppu.dmgColorsBgr15.set(dmgColorsBgr15_, sizeof dmgColorsBgr15_ / sizeof dmgColorsBgr15_[0]);
 	state.ppu.bgpData.set(  bgpData_, sizeof  bgpData_);
 	state.ppu.objpData.set(objpData_, sizeof objpData_);
 	ppu_.setStatePtrs(state);
@@ -200,28 +193,23 @@ void LCD::loadState(SaveState const &state, unsigned char const *const oamram) {
 void LCD::refreshPalettes() {
 	if (isCgb() && !isCgbDmg()) {
 		for (int i = 0; i < max_num_palettes * num_palette_entries; ++i) {
-			ppu_.bgPalette()[i] = gbcToRgb32( bgpData_[2 * i] |  bgpData_[2 * i + 1] * 0x100l, isTrueColors());
-			ppu_.spPalette()[i] = gbcToRgb32(objpData_[2 * i] | objpData_[2 * i + 1] * 0x100l, isTrueColors());
+			ppu_.bgPalette()[i] = gbcToRgb32( bgpData_[2 * i] |  bgpData_[2 * i + 1] * 0x100l);
+			ppu_.spPalette()[i] = gbcToRgb32(objpData_[2 * i] | objpData_[2 * i + 1] * 0x100l);
 		}
 	} else {
-		setDmgPalette(ppu_.bgPalette()    , dmgColorsBgr15_    ,  bgpData_[0], isTrueColors());
-		setDmgPalette(ppu_.spPalette()    , dmgColorsBgr15_ + 4, objpData_[0], isTrueColors());
-		setDmgPalette(ppu_.spPalette() + 4, dmgColorsBgr15_ + 8, objpData_[1], isTrueColors());
+		setDmgPalette(ppu_.bgPalette()    , dmgColorsRgb32_    ,  bgpData_[0]);
+		setDmgPalette(ppu_.spPalette()    , dmgColorsRgb32_ + 4, objpData_[0]);
+		setDmgPalette(ppu_.spPalette() + 4, dmgColorsRgb32_ + 8, objpData_[1]);
 	}
 }
 
 void LCD::copyCgbPalettesToDmg() {
 	for(unsigned i = 0; i < 4; i++) {
-		dmgColorsBgr15_[i] = bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8;
+		dmgColorsRgb32_[i] = gbcToRgb32(bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8);
 	}
 	for(unsigned i = 0; i < 8; i++) {
-		dmgColorsBgr15_[i + 4] = objpData_[i * 2] | objpData_[i * 2 + 1] << 8;
+		dmgColorsRgb32_[i + 4] = gbcToRgb32(objpData_[i * 2] | objpData_[i * 2 + 1] << 8);
 	}
-}
-
-void LCD::setTrueColors(bool trueColors) {
-	ppu_.setTrueColors(trueColors);
-	refreshPalettes();
 }
 
 namespace {
@@ -262,10 +250,9 @@ void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter, un
 	case 0:
 		update(cycleCounter);
 
-		if (blanklcd && ppu_.frameBuf().fb()) {
-			unsigned long color = gbcToRgb32(ppu_.cgb() ? 0x7FFF : dmgColorsBgr15_[0], isTrueColors());
-			clear(ppu_.frameBuf().fb(), color, ppu_.frameBuf().pitch());
-		}
+		if (blanklcd)
+			whiteScreen();
+
 		break;
 	case 1:
 		if (ppu_.frameBuf().fb() && osdElement_) {
@@ -291,10 +278,16 @@ void LCD::updateScreen(bool const blanklcd, unsigned long const cycleCounter, un
 	}
 }
 
+void LCD::whiteScreen() {
+	// TODO: Use during DMG stop mode
+	if (ppu_.frameBuf().fb())
+		clear(ppu_.frameBuf().fb(), 0xFFFFFFFF, ppu_.frameBuf().pitch());
+}
+
 void LCD::blackScreen() {
-	if (ppu_.frameBuf().fb()) {
-		clear(ppu_.frameBuf().fb(), gbcToRgb32(0x0000, isTrueColors()), ppu_.frameBuf().pitch());
-	}
+	// TODO: Use during Mode 1 CGB stop mode
+	if (ppu_.frameBuf().fb())
+		clear(ppu_.frameBuf().fb(), 0xFF000000, ppu_.frameBuf().pitch());
 }
 
 void LCD::resetCc(unsigned long const oldCc, unsigned long const newCc) {
@@ -349,14 +342,19 @@ unsigned long LCD::m0TimeOfCurrentLine(unsigned long const cc) {
 		nextM0Time_.predictedNextM0Time());
 }
 
-void LCD::enableHdma(unsigned long const cc) {
-	if (cc >= eventTimes_.nextEventTime())
-		update(cc);
+void LCD::enableHdma(unsigned long const cc, bool lcden) {
+	if (lcden) {
+		if (cc >= eventTimes_.nextEventTime())
+			update(cc);
 
-	if (::isHdmaPeriod(ppu_.lyCounter(), m0TimeOfCurrentLine(cc), cc + 4))
+		if (::isHdmaPeriod(ppu_.lyCounter(), m0TimeOfCurrentLine(cc), cc + 4))
+			eventTimes_.flagHdmaReq();
+
+		eventTimes_.setm<memevent_hdma>(nextM0Time_.predictedNextM0Time());
+	} else {
 		eventTimes_.flagHdmaReq();
-
-	eventTimes_.setm<memevent_hdma>(nextM0Time_.predictedNextM0Time());
+		eventTimes_.setm<memevent_hdma>(disabled_time - 1);
+	}
 }
 
 void LCD::disableHdma(unsigned long const cycleCounter) {
@@ -384,6 +382,16 @@ bool LCD::vramReadable(unsigned long const cc) {
 	|| cc + 2 >= m0TimeOfCurrentLine(cc);
 }
 
+bool LCD::vramExactlyReadable(unsigned long const cc) {
+	if (vramHasBeenExactlyRead)
+		return false;
+
+	if (cc + 2 + isDoubleSpeed() == m0TimeOfCurrentLine(cc))
+		vramHasBeenExactlyRead = true;
+
+	return cc + 2 + isDoubleSpeed() == m0TimeOfCurrentLine(cc);
+}
+
 bool LCD::vramWritable(unsigned long const cc) {
 	if (cc >= eventTimes_.nextEventTime())
 		update(cc);
@@ -406,17 +414,24 @@ bool LCD::cgbpAccessible(unsigned long const cc) {
 	|| cc >= m0TimeOfCurrentLine(cc) + 2;
 }
 
+void LCD::doCgbColorChange(unsigned char *pdata,
+		unsigned long *palette, unsigned index, unsigned data) {
+	pdata[index] = data;
+	index /= 2;
+	palette[index] = gbcToRgb32(pdata[index * 2] | pdata[index * 2 + 1] * 0x100l);
+}
+
 void LCD::doCgbBgColorChange(unsigned index, unsigned data, unsigned long cc) {
 	if (cgbpAccessible(cc)) {
 		update(cc);
-		doCgbColorChange(bgpData_, ppu_.bgPalette(), index, data, isTrueColors());
+		doCgbColorChange(bgpData_, ppu_.bgPalette(), index, data);
 	}
 }
 
 void LCD::doCgbSpColorChange(unsigned index, unsigned data, unsigned long cc) {
 	if (cgbpAccessible(cc)) {
 		update(cc);
-		doCgbColorChange(objpData_, ppu_.spPalette(), index, data, isTrueColors());
+		doCgbColorChange(objpData_, ppu_.spPalette(), index, data);
 	}
 }
 
@@ -471,7 +486,7 @@ void LCD::wxChange(unsigned newValue, unsigned long cycleCounter) {
 
 void LCD::wyChange(unsigned const newValue, unsigned long const cc) {
 	update(cc + 1 + ppu_.cgb());
-	ppu_.setWy(newValue); 
+	ppu_.setWy(newValue);
 
 	// mode3CyclesChange();
 	// (should be safe to wait until after wy2 delay, because no mode3 events are
@@ -906,10 +921,22 @@ void LCD::setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long r
 	if (palNum > 2 || colorNum > 3)
 		return;
 
-	unsigned long const r = rgb32 >> 19 & 0x1F;
-	unsigned long const g = rgb32 >> 11 & 0x1F;
-	unsigned long const b = rgb32 >>  3 & 0x1F;
-
-	dmgColorsBgr15_[palNum * 4 + colorNum] = b << 10 | g << 5 | r;
+	dmgColorsRgb32_[palNum * 4 + colorNum] = rgb32;
 	refreshPalettes();
+}
+
+// don't need to save or load rgb32 color data
+
+SYNCFUNC(LCD) {
+	SSS(ppu_);
+	NSS(dmgColorsRgb32_);
+	NSS(cgbColorsRgb32_);
+	NSS(bgpData_);
+	NSS(objpData_);
+	SSS(eventTimes_);
+	SSS(mstatIrq_);
+	SSS(lycIrq_);
+	SSS(nextM0Time_);
+	NSS(statReg_);
+	NSS(vramHasBeenExactlyRead);
 }

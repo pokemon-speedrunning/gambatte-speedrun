@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <zlib.h>
 
 using namespace gambatte;
 
@@ -45,9 +46,12 @@ int serialCntFrom(unsigned long cyclesUntilDone, bool cgbFast) {
 
 Memory::Memory(Interrupter const &interrupter)
 : bios_(0)
+, biosSize_(0)
 , getInput_(0)
 , divLastUpdate_(0)
 , lastOamDmaUpdate_(disabled_time)
+, lastCartBusUpdate_(0)
+, cartBusPullUpTime_(8)
 , lcd_(ioamhram_, 0, VideoInterruptRequester(intreq_))
 , interrupter_(interrupter)
 , dmaSource_(0)
@@ -55,8 +59,16 @@ Memory::Memory(Interrupter const &interrupter)
 , oamDmaPos_(-2u & 0xFF)
 , oamDmaStartPos_(0)
 , serialCnt_(0)
+, cartBus_(0xFF)
 , blanklcd_(false)
 , haltHdmaState_(hdma_low)
+, readCallback_(0)
+, writeCallback_(0)
+, execCallback_(0)
+, cdCallback_(0)
+, linkCallback_(0)
+, linkCable_(false)
+, linkClockTrigger_(false)
 {
 	intreq_.setEventTime<intevent_blit>(1l * lcd_vres * lcd_cycles_per_line);
 	intreq_.setEventTime<intevent_end>(0);
@@ -108,6 +120,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cc) {
 void Memory::loadState(SaveState const &state) {
 	biosMode_ = state.mem.biosMode;
 	stopped_ = state.mem.stopped;
+	lastCartBusUpdate_ = state.mem.lastCartBusUpdate;
 	psg_.loadState(state);
 	lcd_.loadState(state, state.mem.oamDmaPos < oam_size ? cart_.rdisabledRam() : ioamhram_);
 	tima_.loadState(state, TimaInterruptRequester(intreq_));
@@ -127,12 +140,12 @@ void Memory::loadState(SaveState const &state) {
 	haltHdmaState_ = static_cast<HdmaState>(std::min(1u * state.mem.haltHdmaState, 1u * hdma_requested));
 	serialCnt_ = intreq_.eventTime(intevent_serial) != disabled_time
 		? serialCntFrom(intreq_.eventTime(intevent_serial) - state.cpu.cycleCounter,
-			ioamhram_[0x102] & isCgb() * 2)
+			ioamhram_[0x102] & (isCgb() & !isCgbDmg()) * 2)
 		: 8;
 
-	cart_.setVrambank(ioamhram_[0x14F] & isCgb());
+	cart_.setVrambank(ioamhram_[0x14F] & (isCgb() & !isCgbDmg()));
 	cart_.setOamDmaSrc(oam_dma_src_off);
-	cart_.setWrambank(isCgb() && (ioamhram_[0x170] & 0x07) ? ioamhram_[0x170] & 0x07 : 1);
+	cart_.setWrambank((isCgb() && !isCgbDmg()) && (ioamhram_[0x170] & 0x07) ? ioamhram_[0x170] & 0x07 : 1);
 
 	if (lastOamDmaUpdate_ != disabled_time) {
 		if (lastOamDmaUpdate_ > state.cpu.cycleCounter) {
@@ -151,7 +164,7 @@ void Memory::loadState(SaveState const &state) {
 		: state.cpu.cycleCounter);
 	blanklcd_ = false;
 
-	if (!isCgb())
+	if (!isCgb() || isCgbDmg())
 		std::fill_n(cart_.vramdata() + vrambank_size(), vrambank_size(), 0);
 }
 
@@ -165,17 +178,28 @@ void Memory::setEndtime(unsigned long cc, unsigned long inc) {
 }
 
 void Memory::updateSerial(unsigned long const cc) {
-	if (intreq_.eventTime(intevent_serial) != disabled_time) {
-		if (intreq_.eventTime(intevent_serial) <= cc) {
-			ioamhram_[0x101] = (((ioamhram_[0x101] + 1) << serialCnt_) - 1) & 0xFF;
-			ioamhram_[0x102] &= 0x7F;
-			intreq_.flagIrq(8, intreq_.eventTime(intevent_serial));
-			intreq_.setEventTime<intevent_serial>(disabled_time);
-		} else {
-			int const targetCnt = serialCntFrom(intreq_.eventTime(intevent_serial) - cc,
-				ioamhram_[0x102] & isCgb() * 2);
-			ioamhram_[0x101] = (((ioamhram_[0x101] + 1) << (serialCnt_ - targetCnt)) - 1) & 0xFF;
-			serialCnt_ = targetCnt;
+	if (!linkCable_) {
+		if (intreq_.eventTime(intevent_serial) != disabled_time) {
+			if (intreq_.eventTime(intevent_serial) <= cc) {
+				ioamhram_[0x101] = (((ioamhram_[0x101] + 1) << serialCnt_) - 1) & 0xFF;
+				ioamhram_[0x102] &= 0x7F;
+				intreq_.flagIrq(8, intreq_.eventTime(intevent_serial));
+				intreq_.setEventTime<intevent_serial>(disabled_time);
+			} else {
+				int const targetCnt = serialCntFrom(intreq_.eventTime(intevent_serial) - cc,
+					ioamhram_[0x102] & (isCgb() & !isCgbDmg()) * 2);
+				ioamhram_[0x101] = (((ioamhram_[0x101] + 1) << (serialCnt_ - targetCnt)) - 1) & 0xFF;
+				serialCnt_ = targetCnt;
+			}
+		}
+	} else {
+		if (intreq_.eventTime(intevent_serial) != disabled_time) {
+			if (intreq_.eventTime(intevent_serial) <= cc) {
+				linkClockTrigger_ = true;
+				intreq_.setEventTime<intevent_serial>(disabled_time);
+				if (linkCallback_)
+					linkCallback_();
+			}
 		}
 	}
 }
@@ -204,7 +228,6 @@ unsigned long Memory::event(unsigned long cc) {
 
 		intreq_.unhalt();
 		intreq_.setEventTime<intevent_unhalt>(disabled_time);
-		stopped_ = false;
 		break;
 	case intevent_end:
 		intreq_.setEventTime<intevent_end>(disabled_time - 1);
@@ -223,14 +246,10 @@ unsigned long Memory::event(unsigned long cc) {
 			unsigned long blitTime = intreq_.eventTime(intevent_blit);
 
 			if (lcden | blanklcd_) {
-				if (intreq_.eventTime(intevent_unhalt) == disabled_time) {
-					lcd_.updateScreen(blanklcd_, cc, 0);
-					if (isSgb())
-						sgb_.updateScreen();
-					lcd_.updateScreen(blanklcd_, cc, 1);
-				} else {
-					lcd_.blackScreen();
-				}
+				lcd_.updateScreen(blanklcd_, cc, 0);
+				if (isSgb())
+					sgb_.updateScreen();
+				lcd_.updateScreen(blanklcd_, cc, 1);
 
 				intreq_.setEventTime<intevent_blit>(disabled_time);
 				intreq_.setEventTime<intevent_end>(disabled_time);
@@ -320,7 +339,7 @@ unsigned long Memory::dma(unsigned long cc) {
 
 	dmaLength -= length;
 
-	if (!(ioamhram_[0x140] & lcdc_en))
+	if (!(ioamhram_[0x140] & lcdc_en) && gdmaReqFlagged(intreq_)) // FIXME: This is wrong for HDMA, but is it right for GDMA?
 		dmaLength = 0;
 
 	unsigned long lOamDmaUpdate = lastOamDmaUpdate_;
@@ -418,25 +437,25 @@ void Memory::ackIrq(unsigned bit, unsigned long cc) {
 	intreq_.ackIrq(bit);
 }
 
-unsigned long Memory::stop(unsigned long cc, bool &skip) {
+unsigned long Memory::stop(unsigned long cc, bool &prefetched) {
 	// FIXME: this is incomplete.
 	intreq_.setEventTime<intevent_unhalt>(cc + 0x20000 + 4);
 
 	// speed change.
-	if (ioamhram_[0x14D] & isCgb()) {
+	if (ioamhram_[0x14D] & (isCgb() & !isCgbDmg())) {
 		tima_.speedChange(TimaInterruptRequester(intreq_));
 		// DIV reset.
 		nontrivial_ff_write(0x04, 0, cc);
 		haltHdmaState_ = lcd_.hdmaIsEnabled() && lcd_.isHdmaPeriod(cc)
 			? hdma_high : hdma_low;
-		skip = hdmaReqFlagged(intreq_);
-		if (skip && isDoubleSpeed())
+		prefetched = hdmaReqFlagged(intreq_);
+		if (prefetched && isDoubleSpeed())
 			haltHdmaState_ = hdma_requested;
 		unsigned long const cc_ = cc + 8 * !isDoubleSpeed();
 		if (cc_ >= cc + 4) {
 			if (lastOamDmaUpdate_ != disabled_time)
 				updateOamDma(cc + 4);
-			if (!skip || isDoubleSpeed())
+			if (!prefetched || isDoubleSpeed())
 				ackDmaReq(intreq_);
 			intreq_.halt();
 		}
@@ -457,7 +476,7 @@ unsigned long Memory::stop(unsigned long cc, bool &skip) {
 		if (cc_ < cc + 4) {
 			if (lastOamDmaUpdate_ != disabled_time)
 				updateOamDma(cc + 4);
-			if (!skip || !isDoubleSpeed())
+			if (!prefetched || !isDoubleSpeed())
 				ackDmaReq(intreq_);
 			intreq_.halt();
 		}
@@ -465,7 +484,7 @@ unsigned long Memory::stop(unsigned long cc, bool &skip) {
 		cc += 8;
 	} else {
 		// FIXME: test and implement stop correctly.
-		skip = halt(cc);
+		prefetched = halt(cc);
 		cc += 4;
 
 		// GSR NOTE: "make stop really stop" (commit 9a79253, since r649)
@@ -496,6 +515,7 @@ unsigned long Memory::resetCounters(unsigned long cc) {
 		? 0
 		: (cc & -0x10000l) - 0x10000;
 	decCycles(lastOamDmaUpdate_, dec);
+	decCycles(lastCartBusUpdate_, dec);
 	decEventCycles(intevent_serial, dec);
 	decEventCycles(intevent_oam, dec);
 	decEventCycles(intevent_blit, dec);
@@ -652,10 +672,21 @@ unsigned Memory::nontrivial_ff_read(unsigned const p, unsigned long const cc) {
 		return ioamhram_[0x141] | lcd_.getStat(ioamhram_[0x145], cc);
 	case 0x44:
 		return lcd_.getLyReg(cc);
+	case 0x4C:
+		if (!biosMode_)
+			return 0xFF;
+
+		break;
 	case 0x69:
-		return lcd_.cgbBgColorRead(ioamhram_[0x168] & 0x3F, cc);
+		if (isCgb() && !isCgbDmg())
+			return lcd_.cgbBgColorRead(ioamhram_[0x168] & 0x3F, cc);
+
+		break;
 	case 0x6B:
-		return lcd_.cgbSpColorRead(ioamhram_[0x16A] & 0x3F, cc);
+		if (isCgb() && !isCgbDmg())
+			return lcd_.cgbSpColorRead(ioamhram_[0x16A] & 0x3F, cc);
+
+		break;
 	default:
 		break;
 	}
@@ -687,12 +718,21 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned long const cc) {
 				if (!lcd_.vramReadable(cc))
 					return 0xFF;
 
+				if (p < 0x9000) {
+					if (lcd_.vramExactlyReadable(cc)) {
+						return 0x00;
+					}
+				}
+
 				return cart_.vrambankptr()[p];
 			}
 
 			if (cart_.rsrambankptr())
 				return cart_.rsrambankptr()[p];
-            
+
+			if (cart_.disabledRam())
+				return cartBus_;
+
 			if (cart_.isHuC3())
 				return cart_.HuC3Read(p, cc);
 
@@ -707,6 +747,87 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned long const cc) {
 			return nontrivial_ff_read(ffp, cc);
 
 		if (!lcd_.oamReadable(cc) || oamDmaPos_ < oam_size)
+			return 0xFF;
+	}
+
+	return ioamhram_[p - mm_oam_begin];
+}
+
+unsigned Memory::nontrivial_ff_peek(unsigned const p, unsigned long const cc) {
+	// some regs might be wrong
+	switch (p) {
+	case 0x04:
+		return (cc - tima_.divLastUpdate()) >> 8 & 0xFF;
+	case 0x30:
+	case 0x31:
+	case 0x32:
+	case 0x33:
+	case 0x34:
+	case 0x35:
+	case 0x36:
+	case 0x37:
+	case 0x38:
+	case 0x39:
+	case 0x3A:
+	case 0x3B:
+	case 0x3C:
+	case 0x3D:
+	case 0x3E:
+	case 0x3F:
+		return psg_.waveRamRead(p & 0xF);
+	case 0x44:
+		return lcd_.peekLy();
+	case 0x4C:
+		if (!biosMode_)
+			return 0xFF;
+
+		break;
+	default:
+		break;
+	}
+
+	return ioamhram_[p + 0x100];
+}
+
+unsigned Memory::nontrivial_peek(unsigned const p, unsigned long const cc) {
+	if (p < mm_hram_begin) {
+		if (lastOamDmaUpdate_ != disabled_time) {
+			if (cart_.isInOamDmaConflictArea(p) && oamDmaPos_ < oam_size) {
+				int const r = isCgb() && cart_.oamDmaSrc() != oam_dma_src_wram && p >= mm_wram_begin
+					? cart_.wramdata(ioamhram_[0x146] >> 4 & 1)[p & 0xFFF]
+					: ioamhram_[oamDmaPos_];
+
+				return r;
+			}
+		}
+
+		if (p < mm_wram_begin) {
+			if (p < mm_vram_begin)
+				return cart_.romdata(p >> 14)[p];
+
+			if (p < mm_sram_begin)
+				return cart_.vrambankptr()[p];
+
+			if (cart_.rsrambankptr())
+				return cart_.rsrambankptr()[p];
+
+			if (cart_.disabledRam())
+				return cartBus_;
+
+			if (!cart_.isHuC3())
+				return cart_.rtcRead();
+
+			return 0xFF;
+		}
+
+		if (p < mm_oam_begin)
+			return cart_.wramdata(p >> 12 & 1)[p & 0xFFF];
+
+		long const ffp = static_cast<long>(p) - mm_io_begin;
+		if (ffp >= 0)
+			return nontrivial_ff_peek(ffp, cc);
+
+		if (oamDmaPos_ < oam_size)
 			return 0xFF;
 	}
 
@@ -737,13 +858,13 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		updateSerial(cc);
 		serialCnt_ = 8;
 		if ((data & 0x81) == 0x81) {
-			intreq_.setEventTime<intevent_serial>(data & isCgb() * 2
+			intreq_.setEventTime<intevent_serial>(data & (isCgb() & !isCgbDmg()) * 2
 				? cc - (cc - tima_.divLastUpdate()) % 8 + 0x10 * serialCnt_
 				: cc - (cc - tima_.divLastUpdate()) % 0x100 + 0x200 * serialCnt_);
 		} else
 			intreq_.setEventTime<intevent_serial>(disabled_time);
 
-		data |= 0x7E - isCgb() * 2;
+		data |= 0x7E - (isCgb() & !isCgbDmg()) * 2;
 		break;
 	case 0x04:
 		if (intreq_.eventTime(intevent_serial) != disabled_time
@@ -1066,6 +1187,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		if (isCgb() && (ioamhram_[0x14C] & 0x04)) {
 			lcd_.copyCgbPalettesToDmg();
 			lcd_.setCgbDmg(true);
+			ioamhram_[0x102] |= 0x02;
+			ioamhram_[0x14D] |= 0x81;
+			ioamhram_[0x156] |= 0xC1;
+			ioamhram_[0x16B] |= 0xFF;
+			ioamhram_[0x170] |= 0x07;
+			ioamhram_[0x174] |= 0xFF;
 		}
 
 		biosMode_ = false;
@@ -1083,7 +1210,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		dmaDestination_ = (dmaDestination_ & 0xFF00) | (data & 0xF0);
 		return;
 	case 0x55:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			ioamhram_[0x155] = data & 0x7F;
 
 			if (lcd_.hdmaIsEnabled()) {
@@ -1093,10 +1220,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 				}
 			} else {
 				if (data & 0x80) {
-					if (ioamhram_[0x140] & lcdc_en) {
-						lcd_.enableHdma(cc);
-					} else
-						flagHdmaReq(intreq_);
+					lcd_.enableHdma(cc, ioamhram_[0x140] & lcdc_en);
 				} else
 					flagGdmaReq(intreq_);
 			}
@@ -1104,17 +1228,17 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x56:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x156] = data | 0x3E;
 
 		return;
 	case 0x68:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x168] = data | 0x40;
 
 		return;
 	case 0x69:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			unsigned index = ioamhram_[0x168] & 0x3F;
 			lcd_.cgbBgColorChange(index, data, cc);
 			ioamhram_[0x168] = (ioamhram_[0x168] & ~0x3Fu)
@@ -1123,12 +1247,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6A:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x16A] = data | 0x40;
 
 		return;
 	case 0x6B:
-		if (isCgb()) {
+		if (isCgb() && !isCgbDmg()) {
 			unsigned index = ioamhram_[0x16A] & 0x3F;
 			lcd_.cgbSpColorChange(index, data, cc);
 			ioamhram_[0x16A] = (ioamhram_[0x16A] & ~0x3Fu)
@@ -1137,7 +1261,7 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 
 		return;
 	case 0x6C:
-		if (isCgb())
+		if (isCgb() && !isCgbDmg())
 			ioamhram_[0x16C] = data | 0xFE;
 
 		return;
@@ -1150,8 +1274,12 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 		return;
 	case 0x72:
 	case 0x73:
-	case 0x74:
 		if (isCgb())
+			break;
+
+		return;
+	case 0x74:
+		if (isCgb() && !isCgbDmg())
 			break;
 
 		return;
@@ -1213,7 +1341,8 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned lo
 			if (lcd_.oamWritable(cc) && oamDmaPos_ >= oam_size
 					&& (p < mm_oam_begin + oam_size || isCgb())) {
 				lcd_.oamChange(cc);
-				ioamhram_[p - mm_oam_begin] = data;
+				if (!agbFlag_ || (p < (mm_oam_begin + oam_size)))
+					ioamhram_[p - mm_oam_begin] = data;
 			}
 		} else
 			nontrivial_ff_write(ffp, data, cc);
@@ -1235,10 +1364,107 @@ LoadRes Memory::loadROM(std::string const &romfile, unsigned const flags) {
 	lcd_.reset(ioamhram_, cart_.vramdata(), cart_.isCgb(), agbFlag_);
 	interrupter_.setGameShark(std::string());
 
+	if (agbFlag_ && (crc32(0, bios_, biosSize_) == 0x41884E46)) { // patch cgb bios to re'd agb bios equal 
+		bios_[0xF3] ^= 0x03;
+		for (int i = 0xF5; i < 0xFB; i++)
+			bios_[i] = bios_[i + 1];
+
+		bios_[0xFB] ^= 0x74;
+	}
+
+	return LOADRES_OK;
+}
+
+LoadRes Memory::loadROM(char const *romfiledata, unsigned romfilelength, unsigned const flags) {
+	bool const cgbMode = flags & GB::LoadFlag::CGB_MODE;
+	bool const multicartCompat = flags & GB::LoadFlag::MULTICART_COMPAT;
+
+	if (LoadRes const fail = cart_.loadROM(romfiledata, romfilelength, cgbMode, multicartCompat))
+		return fail;
+
+	agbFlag_ = flags & GB::LoadFlag::GBA_FLAG;
+	gbIsSgb_ = flags & GB::LoadFlag::SGB_MODE;
+
+	psg_.init(cart_.isCgb());
+	lcd_.reset(ioamhram_, cart_.vramdata(), cart_.isCgb(), agbFlag_);
+
 	return LOADRES_OK;
 }
 
 std::size_t Memory::fillSoundBuffer(unsigned long cc) {
 	psg_.generateSamples(cc, isDoubleSpeed());
 	return psg_.fillBuffer();
+}
+
+bool Memory::getMemoryArea(int which, unsigned char **data, int *length) {
+	if (!data || !length)
+		return false;
+
+	switch (which) {
+	case 4: // oam
+		*data = &ioamhram_[0];
+		*length = 160;
+		return true;
+	case 5: // hram
+		*data = &ioamhram_[384];
+		*length = 127;
+		return true;
+	case 6: // bgpal
+		*data = (unsigned char *)lcd_.bgPalette();
+		*length = 32;
+		return true;
+	case 7: // sppal
+		*data = (unsigned char *)lcd_.spPalette();
+		*length = 32;
+		return true;
+	default: // pass to cartridge
+		return cart_.getMemoryArea(which, data, length);
+	}
+}
+
+int Memory::linkStatus(int which) {
+	switch (which) {
+	case 256: // ClockSignaled
+		return linkClockTrigger_;
+	case 257: // AckClockSignal
+		linkClockTrigger_ = false;
+		return 0;
+	case 258: // GetOut
+		return ioamhram_[0x101] & 0xff;
+	case 259: // connect link cable
+		linkCable_ = true;
+		return 0;
+	default: // ShiftIn
+		if (ioamhram_[0x102] & 0x80) { // was enabled
+			ioamhram_[0x101] = which;
+			ioamhram_[0x102] &= 0x7F;
+			intreq_.flagIrq(8);
+		}
+		return 0;
+	}
+
+	return -1;
+}
+
+SYNCFUNC(Memory)
+{
+	SSS(cart_);
+	NSS(ioamhram_);
+	NSS(divLastUpdate_);
+	NSS(lastOamDmaUpdate_);
+	NSS(lastCartBusUpdate_);
+	SSS(intreq_);
+	SSS(tima_);
+	SSS(lcd_);
+	SSS(psg_);
+	NSS(dmaSource_);
+	NSS(dmaDestination_);
+	NSS(oamDmaPos_);
+	NSS(serialCnt_);
+	NSS(cartBus_);
+	NSS(blanklcd_);
+	NSS(biosMode_);
+	NSS(stopped_);
+	NSS(linkCable_);
+	NSS(linkClockTrigger_);
 }

@@ -3,6 +3,7 @@
 
 #include "lcddef.h"
 #include "../savestate.h"
+#include "../newstate.h"
 
 #include <algorithm>
 
@@ -57,6 +58,12 @@ public:
 	void loadState(SaveState const &state) {
 		lycReg_ = state.ppu.m0lyc;
 		statReg_ = state.mem.ioamhram.get()[0x141];
+	}
+
+	template<bool isReader>
+	void SyncState(NewState *ns) {
+		NSS(statReg_);
+		NSS(lycReg_);
 	}
 
 private:

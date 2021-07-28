@@ -146,3 +146,21 @@ void Channel2::update(uint_least32_t *buf, unsigned long const soBaseVol, unsign
 		envelopeUnit_.resetCounters(cc);
 	}
 }
+
+SYNCFUNC(Channel2) {
+	SSS(lengthCounter_);
+	SSS(dutyUnit_);
+	SSS(envelopeUnit_);
+
+	EBS(nextEventUnit, 0);
+	EVS(nextEventUnit, &dutyUnit_, 1);
+	EVS(nextEventUnit, &envelopeUnit_, 2);
+	EVS(nextEventUnit, &lengthCounter_, 3);
+	EES(nextEventUnit, NULL);
+
+	NSS(soMask_);
+	NSS(prevOut_);
+
+	NSS(nr4_);
+	NSS(master_);
+}

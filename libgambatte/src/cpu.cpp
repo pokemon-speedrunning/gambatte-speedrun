@@ -23,15 +23,15 @@
 namespace gambatte {
 
 CPU::CPU()
-: mem_(Interrupter(sp, pc_, opcode_, prefetched_))
+: mem_(Interrupter(sp, pc, opcode_, prefetched_))
 , cycleCounter_(0)
-, pc_(0x100)
+, pc(0x100)
 , sp(0xFFFE)
 , hf1(0xF)
 , hf2(0xF)
 , zf(0)
 , cf(0x100)
-, a_(0x01)
+, a(0x01)
 , b(0x00)
 , c(0x13)
 , d(0x00)
@@ -41,10 +41,12 @@ CPU::CPU()
 , opcode_(0)
 , prefetched_(false)
 , numInterruptAddresses(0)
+, tracecallback(0)
 {
 }
 
 long CPU::runFor(unsigned long const cycles) {
+	mem_.setBasetime(cycleCounter_);
 	process(cycles);
 
 	long const csb = mem_.cyclesSinceBlit(cycleCounter_);
@@ -91,9 +93,9 @@ void CPU::saveState(SaveState &state) {
 	hf2 = updateHf2FromHf1(hf1, hf2);
 
 	state.cpu.cycleCounter = cycleCounter_;
-	state.cpu.pc = pc_;
+	state.cpu.pc = pc;
 	state.cpu.sp = sp;
-	state.cpu.a = a_;
+	state.cpu.a = a;
 	state.cpu.b = b;
 	state.cpu.c = c;
 	state.cpu.d = d;
@@ -110,9 +112,9 @@ void CPU::loadState(SaveState const &state) {
 	mem_.loadState(state);
 
 	cycleCounter_ = state.cpu.cycleCounter;
-	pc_ = state.cpu.pc & 0xFFFF;
+	pc = state.cpu.pc & 0xFFFF;
 	sp = state.cpu.sp & 0xFFFF;
-	a_ = state.cpu.a & 0xFF;
+	a = state.cpu.a & 0xFF;
 	b = state.cpu.b & 0xFF;
 	c = state.cpu.c & 0xFF;
 	d = state.cpu.d & 0xFF;
@@ -125,7 +127,7 @@ void CPU::loadState(SaveState const &state) {
 	opcode_ = state.cpu.opcode;
 	prefetched_ = state.cpu.prefetched;
 	if (state.cpu.skip) {
-		opcode_ = mem_.read(pc_, cycleCounter_);
+		opcode_ = mem_.read(pc, cycleCounter_);
 		prefetched_ = true;
 	}
 }
@@ -140,7 +142,8 @@ void CPU::loadState(SaveState const &state) {
 #define hl() ( h * 0x100u | l )
 
 #define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); cycleCounter += 4; } while (0)
-#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
+#define PC_READ_OPCODE(dest) do { (dest) = mem_.read_excb(pc, cycleCounter, true); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
+#define PC_READ_OPERAND(dest, operand) do { (operand) = (dest) = mem_.read_excb(pc, cycleCounter, false); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
 #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
 
 #define WRITE(addr, data) do { mem_.write(addr, data, cycleCounter); cycleCounter += 4; } while (0)
@@ -291,9 +294,9 @@ void CPU::loadState(SaveState const &state) {
 // 16-BIT LOADS:
 // ld rr,nn (12 cycles)
 // set rr to 16-bit value of next 2 bytes in memory
-#define ld_rr_nn(r1, r2) do { \
-	PC_READ(r2); \
-	PC_READ(r1); \
+#define ld_rr_nn(r1, operandLow, r2, operandHigh) do { \
+	PC_READ_OPERAND(r2, operandHigh); \
+	PC_READ_OPERAND(r1, operandLow); \
 } while (0)
 
 // push rr (16 cycles):
@@ -441,7 +444,7 @@ void CPU::loadState(SaveState const &state) {
 
 #define sp_plus_n(sumout) do { \
 	unsigned disp; \
-	PC_READ(disp); \
+	PC_READ_OPERAND(disp, operandHigh); \
 	disp = (disp ^ 0x80) - 0x80; \
 \
 	unsigned const res = sp + disp; \
@@ -457,8 +460,8 @@ void CPU::loadState(SaveState const &state) {
 // Jump to address stored in the next two bytes in memory:
 #define jp_nn() do { \
 	unsigned imm0, imm1; \
-	PC_READ(imm0); \
-	PC_READ(imm1); \
+	PC_READ_OPERAND(imm0, operandHigh); \
+	PC_READ_OPERAND(imm1, operandLow); \
 	PC_MOD(imm1 << 8 | imm0); \
 } while (0)
 
@@ -466,7 +469,7 @@ void CPU::loadState(SaveState const &state) {
 // Jump to value of next (signed) byte in memory+current address:
 #define jr_disp() do { \
 	unsigned disp; \
-	PC_READ(disp); \
+	PC_READ_OPERAND(disp, operandHigh); \
 	disp = (disp ^ 0x80) - 0x80; \
 	PC_MOD((pc + disp) & 0xFFFF); \
 } while (0)
@@ -515,11 +518,9 @@ void CPU::process(unsigned long const cycles) {
 
 	hitInterruptAddress = -1;
 
-	unsigned char a = a_;
 	unsigned long cycleCounter = cycleCounter_;
 
 	while (mem_.isActive()) {
-		unsigned short pc = pc_;
 
 		if (mem_.halted()) {
 			if (cycleCounter < mem_.nextEventTime()) {
@@ -528,6 +529,8 @@ void CPU::process(unsigned long const cycles) {
 			}
 		} else while (cycleCounter < mem_.nextEventTime()) {
 			unsigned char opcode;
+			unsigned char operandHigh;
+			unsigned char operandLow;
 
 			for (int i = 0; i < numInterruptAddresses; ++i) {
 				if (pc == (interruptAddresses[i] & 0xFFFF)) {
@@ -544,8 +547,26 @@ void CPU::process(unsigned long const cycles) {
 			if (hitInterruptAddress != -1)
 				break;
 
+			int result[14];
+			if (tracecallback) {
+				result[0] = cycleCounter;
+				result[1] = pc;
+				result[2] = sp;
+				result[3] = a;
+				result[4] = b;
+				result[5] = c;
+				result[6] = d;
+				result[7] = e;
+				result[8] = toF(hf2, cf, zf);
+				result[9] = h;
+				result[10] = l;
+				result[11] = prefetched_;
+				result[13] = mem_.getLy(cycleCounter);
+			}
+
+
 			if (!prefetched_) {
-				PC_READ(opcode);
+				PC_READ_OPCODE(opcode);
 			} else {
 				opcode = opcode_;
 				cycleCounter += 4;
@@ -556,7 +577,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0x00:
 				break;
 			case 0x01:
-				ld_rr_nn(b, c);
+				ld_rr_nn(b, operandLow, c, operandHigh);
 				break;
 			case 0x02:
 				WRITE(bc(), a);
@@ -571,7 +592,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(b); 
 				break;
 			case 0x06:
-				PC_READ(b);
+				PC_READ_OPERAND(b, operandHigh);
 				break;
 
 				// rlca (4 cycles):
@@ -588,8 +609,8 @@ void CPU::process(unsigned long const cycles) {
 			case 0x08:
 				{
 					unsigned imml, immh;
-					PC_READ(imml);
-					PC_READ(immh);
+					PC_READ_OPERAND(imml, operandHigh);
+					PC_READ_OPERAND(immh, operandLow);
 
 					unsigned const addr = immh << 8 | imml;
 					WRITE(addr, sp & 0xFF);
@@ -614,7 +635,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(c);
 				break;
 			case 0x0E:
-				PC_READ(c);
+				PC_READ_OPERAND(c, operandHigh);
 				break;
 
 				// rrca (4 cycles):
@@ -629,7 +650,7 @@ void CPU::process(unsigned long const cycles) {
 				// stop (4 cycles):
 				// Halt CPU and LCD display until button pressed:
 			case 0x10:
-				PC_READ(opcode_);
+				PC_READ_OPERAND(opcode_, operandHigh);
 				cycleCounter = mem_.stop(cycleCounter - 4, prefetched_);
 				if (cycleCounter < mem_.nextEventTime()) {
 					unsigned long cycles = mem_.nextEventTime() - cycleCounter;
@@ -639,7 +660,7 @@ void CPU::process(unsigned long const cycles) {
 				break;
 
 			case 0x11:
-				ld_rr_nn(d, e);
+				ld_rr_nn(d, operandLow, e, operandHigh);
 				break;
 			case 0x12:
 				WRITE(de(), a);
@@ -654,7 +675,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(d);
 				break;
 			case 0x16:
-				PC_READ(d);
+				PC_READ_OPERAND(d, operandHigh);
 				break;
 
 				// rla (4 cycles):
@@ -690,7 +711,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(e);
 				break;
 			case 0x1E:
-				PC_READ(e);
+				PC_READ_OPERAND(e, operandHigh);
 				break;
 
 				// rra (4 cycles):
@@ -713,12 +734,13 @@ void CPU::process(unsigned long const cycles) {
 				if (zf & 0xFF) {
 					jr_disp();
 				} else {
-					PC_MOD((pc + 1) & 0xFFFF);
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
 				}
 
 				break;
 
-			case 0x21: ld_rr_nn(h, l); break;
+			case 0x21: ld_rr_nn(h, operandLow, l, operandHigh); break;
 
 				// ldi (hl),a (8 cycles):
 				// Put A into memory address in hl. Increment HL:
@@ -744,7 +766,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(h);
 				break;
 			case 0x26:
-				PC_READ(h);
+				PC_READ_OPERAND(h, operandHigh);
 				break;
 
 				// daa (4 cycles):
@@ -779,7 +801,8 @@ void CPU::process(unsigned long const cycles) {
 				// Jump to value of next (signed) byte in memory+current address if ZF is set:
 			case 0x28:
 				if (zf & 0xFF) {
-					PC_MOD((pc + 1) & 0xFFFF);
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
 				} else {
 					jr_disp();
 				}
@@ -814,7 +837,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(l);
 				break;
 			case 0x2E:
-				PC_READ(l);
+				PC_READ_OPERAND(l, operandHigh);
 				break;
 
 				// cpl (4 cycles):
@@ -828,7 +851,8 @@ void CPU::process(unsigned long const cycles) {
 				// Jump to value of next (signed) byte in memory+current address if CF is unset:
 			case 0x30:
 				if (cf & 0x100) {
-					PC_MOD((pc + 1) & 0xFFFF);
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
 				} else {
 					jr_disp();
 				}
@@ -840,8 +864,8 @@ void CPU::process(unsigned long const cycles) {
 			case 0x31:
 				{
 					unsigned imml, immh;
-					PC_READ(imml);
-					PC_READ(immh);
+					PC_READ_OPERAND(imml, operandHigh);
+					PC_READ_OPERAND(immh, operandLow);
 
 					sp = immh << 8 | imml;
 				}
@@ -898,7 +922,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0x36:
 				{
 					unsigned imm;
-					PC_READ(imm);
+					PC_READ_OPERAND(imm, operandHigh);
 					WRITE(hl(), imm);
 				}
 
@@ -917,7 +941,8 @@ void CPU::process(unsigned long const cycles) {
 				if (cf & 0x100) {
 					jr_disp();
 				} else {
-					PC_MOD((pc + 1) & 0xFFFF);
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
 				}
 
 				break;
@@ -962,7 +987,7 @@ void CPU::process(unsigned long const cycles) {
 				dec_r(a);
 				break;
 			case 0x3E:
-				PC_READ(a);
+				PC_READ_OPERAND(a, operandHigh);
 				break;
 
 				// ccf (4 cycles):
@@ -1174,8 +1199,9 @@ void CPU::process(unsigned long const cycles) {
 				if (zf & 0xFF) {
 					jp_nn();
 				} else {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				}
 
 				break;
@@ -1191,8 +1217,9 @@ void CPU::process(unsigned long const cycles) {
 				if (zf & 0xFF) {
 					call_nn();
 				} else {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				}
 
 				break;
@@ -1203,7 +1230,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xC6:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					add_a_u8(data);
 				}
 
@@ -1233,8 +1260,9 @@ void CPU::process(unsigned long const cycles) {
 				// Jump to address stored in next two bytes in memory if ZF is set:
 			case 0xCA:
 				if (zf & 0xFF) {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				} else {
 					jp_nn();
 				}
@@ -1244,9 +1272,10 @@ void CPU::process(unsigned long const cycles) {
 
 				// CB OPCODES (Shifts, rotates and bits):
 			case 0xCB:
-				PC_READ(opcode);
+				unsigned char temp;
+				PC_READ_OPERAND(temp, operandHigh);
 
-				switch (opcode) {
+				switch (operandHigh) {
 				case 0x00: rlc_r(b); break;
 				case 0x01: rlc_r(c); break;
 				case 0x02: rlc_r(d); break;
@@ -1663,8 +1692,9 @@ void CPU::process(unsigned long const cycles) {
 				// address stored in next two bytes in memory, if ZF is set:
 			case 0xCC:
 				if (zf & 0xFF) {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				} else {
 					call_nn();
 				}
@@ -1678,7 +1708,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xCE:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					adc_a_u8(data);
 				}
 
@@ -1706,8 +1736,9 @@ void CPU::process(unsigned long const cycles) {
 				// Jump to address stored in next two bytes in memory if CF is unset:
 			case 0xD2:
 				if (cf & 0x100) {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				} else {
 					jp_nn();
 				}
@@ -1723,8 +1754,9 @@ void CPU::process(unsigned long const cycles) {
 				// address stored in next two bytes in memory, if CF is unset:
 			case 0xD4:
 				if (cf & 0x100) {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				} else {
 					call_nn();
 				}
@@ -1738,7 +1770,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xD6:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					sub_a_u8(data);
 				}
 
@@ -1776,8 +1808,9 @@ void CPU::process(unsigned long const cycles) {
 				if (cf & 0x100) {
 					jp_nn();
 				} else {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				}
 
 				break;
@@ -1786,15 +1819,16 @@ void CPU::process(unsigned long const cycles) {
 				cycleCounter = freeze(mem_, cycleCounter);
 				break;
 
-				// call z,nn (24;12 cycles):
+				// call c,nn (24;12 cycles):
 				// Push address of next instruction onto stack and then jump to
 				// address stored in next two bytes in memory, if CF is set:
 			case 0xDC:
 				if (cf & 0x100) {
 					call_nn();
 				} else {
-					PC_MOD((pc + 2) & 0xFFFF);
-					cycleCounter += 4;
+					unsigned char temp;
+					PC_READ_OPERAND(temp, operandHigh);
+					PC_READ_OPERAND(temp, operandLow);
 				}
 
 				break;
@@ -1806,7 +1840,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xDE:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					sbc_a_u8(data);
 				}
 
@@ -1821,7 +1855,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xE0:
 				{
 					unsigned imm;
-					PC_READ(imm);
+					PC_READ_OPERAND(imm, operandHigh);
 					FF_WRITE(imm, a);
 				}
 
@@ -1849,7 +1883,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xE6:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					and_a_u8(data);
 				}
 
@@ -1878,8 +1912,8 @@ void CPU::process(unsigned long const cycles) {
 			case 0xEA:
 				{
 					unsigned imml, immh;
-					PC_READ(imml);
-					PC_READ(immh);
+					PC_READ_OPERAND(imml, operandHigh);
+					PC_READ_OPERAND(immh, operandLow);
 					WRITE(immh << 8 | imml, a);
 				}
 
@@ -1894,7 +1928,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xEE:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					xor_a_u8(data);
 				}
 
@@ -1909,7 +1943,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xF0:
 				{
 					unsigned imm;
-					PC_READ(imm);
+					PC_READ_OPERAND(imm, operandHigh);
 					FF_READ(a, imm);
 				}
 
@@ -1954,7 +1988,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xF6:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 					or_a_u8(data);
 				}
 
@@ -1988,8 +2022,8 @@ void CPU::process(unsigned long const cycles) {
 			case 0xFA:
 				{
 					unsigned imml, immh;
-					PC_READ(imml);
-					PC_READ(immh);
+					PC_READ_OPERAND(imml, operandHigh);
+					PC_READ_OPERAND(immh, operandLow);
 
 					READ(a, immh << 8 | imml);
 				}
@@ -2010,7 +2044,7 @@ void CPU::process(unsigned long const cycles) {
 			case 0xFE:
 				{
 					unsigned data;
-					PC_READ(data);
+					PC_READ_OPERAND(data, operandHigh);
 
 					cp_a_u8(data);
 				}
@@ -2021,22 +2055,24 @@ void CPU::process(unsigned long const cycles) {
 				rst_n(0x38);
 				break;
 			}
-		}
 
-		pc_ = pc;
+			if (tracecallback) {
+				result[12] = opcode << 16 | operandHigh << 8 | operandLow;
+				tracecallback((void*)result);
+			}
+		}
 		cycleCounter = mem_.event(cycleCounter);
 	}
 
-	a_ = a;
 	cycleCounter_ = cycleCounter;
 }
 
 void CPU::getRegs(int *dest) {
 	hf2 = updateHf2FromHf1(hf1, hf2);
 
-	dest[0] = pc_;
+	dest[0] = pc;
 	dest[1] = sp;
-	dest[2] = a_;
+	dest[2] = a;
 	dest[3] = b;
 	dest[4] = c;
 	dest[5] = d;
@@ -2047,9 +2083,9 @@ void CPU::getRegs(int *dest) {
 }
 
 void CPU::setRegs(int *src) {
-	pc_ = src[0];
+	pc = src[0];
 	sp = src[1];
-	a_ = src[2];
+	a = src[2];
 	b = src[3];
 	c = src[4];
 	d = src[5];
@@ -2068,6 +2104,26 @@ void CPU::setInterruptAddresses(int *addrs, int numAddrs) {
 
 int CPU::getHitInterruptAddress() {
 	return hitInterruptAddress;
+}
+
+SYNCFUNC(CPU) {	
+	SSS(mem_);
+	NSS(cycleCounter_);
+	NSS(pc);
+	NSS(sp);
+	NSS(hf1);
+	NSS(hf2);
+	NSS(zf);
+	NSS(cf);
+	NSS(a);
+	NSS(b);
+	NSS(c);
+	NSS(d);
+	NSS(e);
+	NSS(h);
+	NSS(l);
+	NSS(opcode_);
+	NSS(prefetched_);
 }
 
 }

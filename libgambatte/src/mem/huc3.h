@@ -47,6 +47,7 @@ public:
     
 	unsigned char read(unsigned p, unsigned long const cc);
 	void write(unsigned p, unsigned data, unsigned long cycleCounter);
+	template<bool isReader>void SyncState(NewState *ns);
 
 private:
 	Time &time_;
