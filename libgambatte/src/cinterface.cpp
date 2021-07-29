@@ -130,7 +130,6 @@ GBEXPORT void gambatte_setcdcallback(GB *g, CDCallback cdc) {
 	g->setCDCallback(cdc);
 }
 
-
 GBEXPORT void gambatte_settracecallback(GB *g, void (*callback)(void *)) {
 	g->setTraceCallback(callback);
 }

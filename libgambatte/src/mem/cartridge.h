@@ -96,7 +96,7 @@ public:
 		time_.setTimeMode(useCycles, cc, isHuC3);
 	}
 	void setRtcDivisorOffset(long const rtcDivisorOffset) { time_.setRtcDivisorOffset(rtcDivisorOffset); }
-	unsigned timeNow(unsigned long const cc) const { return time_.timeNow(cc); }	
+	unsigned timeNow(unsigned long const cc) const { return huc3_.isHuC3() ? time_.timeNow(cc) : rtc_.timeNow(); }	
 	void getRtcRegs(unsigned long *dest, unsigned long cc) { rtc_.getRtcRegs(dest, cc); }
 	void setRtcRegs(unsigned long *src) { rtc_.setRtcRegs(src); }
 	void rtcWrite(unsigned data, unsigned long const cc) { rtc_.write(data, cc); }

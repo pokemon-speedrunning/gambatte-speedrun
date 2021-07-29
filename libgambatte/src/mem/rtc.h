@@ -55,6 +55,8 @@ public:
 	}
 
 	void update(unsigned long const cc);
+	unsigned timeNow() const;
+
 	template<bool isReader>void SyncState(NewState *ns);
 
 private:

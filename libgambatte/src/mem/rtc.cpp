@@ -78,6 +78,10 @@ void Rtc::update(unsigned long const cc) {
 	}
 }
 
+unsigned Rtc::timeNow() const {
+	return (((((((dataDh_ & 0x01) << 8) | dataDl_) * 86400) + (dataH_ * 3600) + (dataM_ * 60) + dataS_) * time_.getRtcDivisor()) + dataC_) >> 1;
+}
+
 void Rtc::doLatch(unsigned long const cc) {
 	update(cc);
 	latchDh_ = dataDh_;
