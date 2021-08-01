@@ -1725,7 +1725,7 @@ void PPU::saveState(SaveState &ss) const {
 void PPU::loadState(SaveState const &ss, unsigned char const *const oamram) {
 	PPUState const *const m3loopState = decodeM3LoopState(ss.ppu.state);
 	long const videoCycles = std::min(ss.ppu.videoCycles, lcd_cycles_per_frame - 1ul);
-	bool const ds = p_.cgb & ss.mem.ioamhram.get()[0x14D] >> 7;
+	bool const ds = ss.ppu.notCgbDmg && (p_.cgb & ss.mem.ioamhram.get()[0x14D] >> 7);
 	long const lineCycles = static_cast<unsigned long>(videoCycles) % lcd_cycles_per_line;
 
 	p_.now = ss.cpu.cycleCounter;

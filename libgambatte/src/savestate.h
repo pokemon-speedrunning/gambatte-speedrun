@@ -105,6 +105,7 @@ struct SaveState {
 	} mem;
 
 	struct PPU {
+		Ptr<unsigned short> dmgColorsBgr15;
 		Ptr<unsigned char> bgpData;
 		Ptr<unsigned char> objpData;
 		//SpriteMapper::OamReader

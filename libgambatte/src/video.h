@@ -68,19 +68,19 @@ public:
 	void dmgBgPaletteChange(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		bgpData_[0] = data;
-		setDmgPalette(ppu_.bgPalette(), dmgColorsRgb32_, data);
+		setDmgPalette(ppu_.bgPalette(), dmgColorsBgr15_, data);
 	}
 
 	void dmgSpPalette1Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[0] = data;
-		setDmgPalette(ppu_.spPalette(), dmgColorsRgb32_ + 4, data);
+		setDmgPalette(ppu_.spPalette(), dmgColorsBgr15_ + 4, data);
 	}
 
 	void dmgSpPalette2Change(unsigned data, unsigned long cycleCounter) {
 		update(cycleCounter);
 		objpData_[1] = data;
-		setDmgPalette(ppu_.spPalette() + 4, dmgColorsRgb32_ + 8, data);
+		setDmgPalette(ppu_.spPalette() + 4, dmgColorsBgr15_ + 8, data);
 	}
 
 	void cgbBgColorChange(unsigned index, unsigned data, unsigned long cycleCounter) {
@@ -226,8 +226,8 @@ private:
 	};
 
 	PPU ppu_;
-	unsigned long dmgColorsRgb32_[3 * 4];
-	unsigned long cgbColorsRgb32_[32768];
+	unsigned short dmgColorsBgr15_[3 * 4];
+	unsigned long  cgbColorsRgb32_[32768];
 	unsigned char  bgpData_[2 * max_num_palettes * num_palette_entries];
 	unsigned char objpData_[2 * max_num_palettes * num_palette_entries];
 	EventTimes eventTimes_;
@@ -238,9 +238,9 @@ private:
 	unsigned char statReg_;
 	bool vramHasBeenExactlyRead = false;
 
-	static void setDmgPalette(unsigned long palette[],
-	                          unsigned long const dmgColors[],
-	                          unsigned data);
+	void setDmgPalette(unsigned long palette[],
+	                   unsigned short const dmgColors[],
+	                   unsigned data);
 
 	unsigned long gbcToRgb32(const unsigned bgr15);
 	void doCgbColorChange(unsigned char *const pdata, unsigned long *const palette, unsigned index, const unsigned data);

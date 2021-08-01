@@ -98,11 +98,9 @@ unsigned long LCD::gbcToRgb32(unsigned const bgr15) {
 	return cgbColorsRgb32_[bgr15 & 0x7FFF];
 }
 
-void LCD::setDmgPalette(unsigned long palette[], const unsigned long dmgColors[], unsigned data) {
-	palette[0] = dmgColors[data      & 3];
-	palette[1] = dmgColors[data >> 2 & 3];
-	palette[2] = dmgColors[data >> 4 & 3];
-	palette[3] = dmgColors[data >> 6 & 3];
+void LCD::setDmgPalette(unsigned long palette[], unsigned short const dmgColors[], unsigned data) {
+	for (int i = 0; i < num_palette_entries; ++i, data /= num_palette_entries)
+		palette[i] = gbcToRgb32(dmgColors[data % num_palette_entries]);
 }
 
 void LCD::setCgbPalette(unsigned *lut) {
@@ -121,8 +119,15 @@ LCD::LCD(unsigned char const *oamram, unsigned char const *vram,
 , scanlinecallback(0)
 , scanlinecallbacksl(0)
 {
-	for (std::size_t i = 0; i < sizeof dmgColorsRgb32_ / sizeof dmgColorsRgb32_[0]; ++i)
-		dmgColorsRgb32_[i] = (3 - (i & 3)) * 85 * 0x010101ul;
+	for (int i = 0; i < 3 * 4; ++i)
+		dmgColorsBgr15_[i] = (3 - (i & 3)) * 0x294A + !(i & 3) * 0x421;
+
+	// FIXME: this code is ugly
+	int i = 0;
+	for (int b = 0; b < 32; b++)
+		for (int g = 0; g < 32; g++)
+			for (int r = 0; r < 32; r++)
+				cgbColorsRgb32_[i++] = ((r * 3 + g * 2 + b * 11) >> 1) | ((g * 3 + b) << 1) << 8 | ((r * 13 + g * 2 + b) >> 1) << 16 | 255 << 24;
 
 	std::memset( bgpData_, 0, sizeof  bgpData_);
 	std::memset(objpData_, 0, sizeof objpData_);
@@ -138,6 +143,7 @@ void LCD::reset(unsigned char const *oamram, unsigned char const *vram, bool cgb
 }
 
 void LCD::setStatePtrs(SaveState &state) {
+	state.ppu.dmgColorsBgr15.set(dmgColorsBgr15_, sizeof dmgColorsBgr15_ / sizeof dmgColorsBgr15_[0]);
 	state.ppu.bgpData.set(  bgpData_, sizeof  bgpData_);
 	state.ppu.objpData.set(objpData_, sizeof objpData_);
 	ppu_.setStatePtrs(state);
@@ -197,18 +203,18 @@ void LCD::refreshPalettes() {
 			ppu_.spPalette()[i] = gbcToRgb32(objpData_[2 * i] | objpData_[2 * i + 1] * 0x100l);
 		}
 	} else {
-		setDmgPalette(ppu_.bgPalette()    , dmgColorsRgb32_    ,  bgpData_[0]);
-		setDmgPalette(ppu_.spPalette()    , dmgColorsRgb32_ + 4, objpData_[0]);
-		setDmgPalette(ppu_.spPalette() + 4, dmgColorsRgb32_ + 8, objpData_[1]);
+		setDmgPalette(ppu_.bgPalette()    , dmgColorsBgr15_    ,  bgpData_[0]);
+		setDmgPalette(ppu_.spPalette()    , dmgColorsBgr15_ + 4, objpData_[0]);
+		setDmgPalette(ppu_.spPalette() + 4, dmgColorsBgr15_ + 8, objpData_[1]);
 	}
 }
 
 void LCD::copyCgbPalettesToDmg() {
 	for(unsigned i = 0; i < 4; i++) {
-		dmgColorsRgb32_[i] = gbcToRgb32(bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8);
+		dmgColorsBgr15_[i] = bgpData_[i * 2] | bgpData_[i * 2 + 1] << 8;
 	}
 	for(unsigned i = 0; i < 8; i++) {
-		dmgColorsRgb32_[i + 4] = gbcToRgb32(objpData_[i * 2] | objpData_[i * 2 + 1] << 8);
+		dmgColorsBgr15_[i + 4] = objpData_[i * 2] | objpData_[i * 2 + 1] << 8;
 	}
 }
 
@@ -921,7 +927,11 @@ void LCD::setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long r
 	if (palNum > 2 || colorNum > 3)
 		return;
 
-	dmgColorsRgb32_[palNum * 4 + colorNum] = rgb32;
+	unsigned long const r = rgb32 >> 19 & 0x1F;
+	unsigned long const g = rgb32 >> 11 & 0x1F;
+	unsigned long const b = rgb32 >>  3 & 0x1F;
+
+	dmgColorsBgr15_[palNum * 4 + colorNum] = b << 10 | g << 5 | r;
 	refreshPalettes();
 }
 
@@ -929,7 +939,7 @@ void LCD::setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long r
 
 SYNCFUNC(LCD) {
 	SSS(ppu_);
-	NSS(dmgColorsRgb32_);
+	NSS(dmgColorsBgr15_);
 	NSS(cgbColorsRgb32_);
 	NSS(bgpData_);
 	NSS(objpData_);
