@@ -26,10 +26,10 @@ QMAKE_CFLAGS   += -fomit-frame-pointer
 QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
 
 DESTDIR = ../bin
-INCLUDEPATH += ../../libgambatte/include
-DEPENDPATH  += ../../libgambatte/include
+INCLUDEPATH += ../../gambatte_core/libgambatte/include
+DEPENDPATH  += ../../gambatte_core/libgambatte/include
 QT += widgets gui-private
-LIBS += ../../libgambatte/libgambatte.a -lz
+LIBS += ../../gambatte_core/libgambatte/libgambatte.a -lz
 win32 {
 	LIBS += -lole32
 	#RC_FILE = gambatteicon.rc
