@@ -111,7 +111,22 @@ public:
 	virtual void generateVideoFrame(PixelBuffer const &fb);
 
 public slots:
-	void setTrueColors(bool trueColors) { gb_.setTrueColors(trueColors); }
+	void setTrueColors(bool trueColor) {
+		unsigned lut[32768];
+		int i = 0;
+		if (trueColor) {
+			for (int b = 0; b < 32; b++)
+				for (int g = 0; g < 32; g++)
+					for (int r = 0; r < 32; r++)
+						lut[i++] = ((b * 255 + 15) / 31) | (((g * 255 + 15) / 31) << 8) | (((r * 255 + 15) / 31) << 16) | 255 << 24;
+		} else {
+			for (int b = 0; b < 32; b++)
+				for (int g = 0; g < 32; g++)
+					for (int r = 0; r < 32; r++)
+						lut[i++] = ((r * 3 + g * 2 + b * 11) >> 1) | ((g * 3 + b) << 1) << 8 | ((r * 13 + g * 2 + b) >> 1) << 16 | 255 << 24;
+		}
+		gb_.setCgbPalette(lut);
+	}
 	void setTimeMode(bool useCycles) { gb_.setTimeMode(useCycles); }
 
 signals:

@@ -1,0 +1,3 @@
+[submodule "gambatte_core"]
+	path = gambatte_core
+	url = https://github.com/pokemon-speedrunning/gambatte-core
