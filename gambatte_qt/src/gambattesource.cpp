@@ -32,14 +32,46 @@ struct ButtonInfo {
 	unsigned char defaultFpp;
 };
 
-static ButtonInfo const buttonInfoGbUp = { "Up", "Game", Qt::Key_Up, 0, 0 };
-static ButtonInfo const buttonInfoGbDown = { "Down", "Game", Qt::Key_Down, 0, 0 };
-static ButtonInfo const buttonInfoGbLeft = { "Left", "Game", Qt::Key_Left, 0, 0 };
-static ButtonInfo const buttonInfoGbRight = { "Right", "Game", Qt::Key_Right, 0, 0 };
-static ButtonInfo const buttonInfoGbA = { "A", "Game", Qt::Key_D, 0, 0 };
-static ButtonInfo const buttonInfoGbB = { "B", "Game", Qt::Key_C, 0, 0 };
-static ButtonInfo const buttonInfoGbStart = { "Start", "Game", Qt::Key_Return, 0, 0 };
-static ButtonInfo const buttonInfoGbSelect = { "Select", "Game", Qt::Key_Shift, 0, 0 };
+static ButtonInfo const buttonInfoGbUp[4] = {
+{ "Up", "Game", Qt::Key_Up, 0, 0 },
+{ "Up", "Player 2 (SGB)", 0, 0, 0 },
+{ "Up", "Player 3 (SGB)", 0, 0, 0 },
+{ "Up", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbDown[4] = {
+{ "Down", "Game", Qt::Key_Down, 0, 0 },
+{ "Down", "Player 2 (SGB)", 0, 0, 0 },
+{ "Down", "Player 3 (SGB)", 0, 0, 0 },
+{ "Down", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbLeft[4] = {
+{ "Left", "Game", Qt::Key_Left, 0, 0 },
+{ "Left", "Player 2 (SGB)", 0, 0, 0 },
+{ "Left", "Player 3 (SGB)", 0, 0, 0 },
+{ "Left", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbRight[4] = {
+{ "Right", "Game", Qt::Key_Right, 0, 0 },
+{ "Right", "Player 2 (SGB)", 0, 0, 0 },
+{ "Right", "Player 3 (SGB)", 0, 0, 0 },
+{ "Right", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbA[4] = {
+{ "A", "Game", Qt::Key_D, 0, 0 },
+{ "A", "Player 2 (SGB)", 0, 0, 0 },
+{ "A", "Player 3 (SGB)", 0, 0, 0 },
+{ "A", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbB[4] = {
+{ "B", "Game", Qt::Key_C, 0, 0 },
+{ "B", "Player 2 (SGB)", 0, 0, 0 },
+{ "B", "Player 3 (SGB)", 0, 0, 0 },
+{ "B", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbStart[4] = {
+{ "Start", "Game", Qt::Key_Return, 0, 0 },
+{ "Start", "Player 2 (SGB)", 0, 0, 0 },
+{ "Start", "Player 3 (SGB)", 0, 0, 0 },
+{ "Start", "Player 4 (SGB)", 0, 0, 0 } };
+static ButtonInfo const buttonInfoGbSelect[4] = {
+{ "Select", "Game", Qt::Key_Shift, 0, 0 },
+{ "Select", "Player 2 (SGB)", 0, 0, 0 },
+{ "Select", "Player 3 (SGB)", 0, 0, 0 },
+{ "Select", "Player 4 (SGB)", 0, 0, 0 } };
 static ButtonInfo const buttonInfoPause = { "Pause", "Play", Qt::Key_Pause, 0, 0 };
 static ButtonInfo const buttonInfoFrameStep = { "Frame step", "Play", Qt::Key_F1, 0, 0 };
 static ButtonInfo const buttonInfoDecFrameRate = { "Decrease frame rate", "Play", Qt::Key_F2, 0, 0 };
@@ -146,39 +178,54 @@ enum { a_but, b_but, select_but, start_but, right_but, left_but, up_but, down_bu
 
 GambatteSource::GambatteSource()
 : MediaSource(2064)
+, inputGetter_(gb_)
 , inputDialog_(createInputDialog())
 , pxformat_(PixelBuffer::RGB32)
 , vsrci_(0)
 , inputState_()
-, dpadUp_(false)
-, dpadDown_(false)
-, dpadLeft_(false)
-, dpadRight_(false)
-, dpadUpLast_(false)
-, dpadLeftLast_(false)
 , tryReset_(false)
 , isResetting_(false)
 , resetStage_(RESET_NOT)
 , resetCounter_(0)
 , resetFade_(1234567)
 , resetStall_(101 * (2 << 14))
+, sgbSampRm_(0)
 , rng_(std::random_device()())
 , dist35112_(0, 35111)
 {
+	std::memset(dpadUp_,       0, sizeof dpadUp_);
+	std::memset(dpadDown_,     0, sizeof dpadDown_);
+	std::memset(dpadLeft_,     0, sizeof dpadLeft_);
+	std::memset(dpadRight_,    0, sizeof dpadRight_);
+	std::memset(dpadUpLast_,   0, sizeof dpadUpLast_);
+	std::memset(dpadLeftLast_, 0, sizeof dpadLeftLast_);
 	gb_.setInputGetter((gambatte::InputGetter *)&GetInput::get, &inputGetter_);
 	setBreakpoint(-1);
 }
 
 InputDialog * GambatteSource::createInputDialog() {
 	auto_vector<InputDialog::Button> v;
-	addButton(v, &buttonInfoGbUp, GbDirAct<true>(dpadUp_, dpadUpLast_));
-	addButton(v, &buttonInfoGbDown, GbDirAct<false>(dpadDown_, dpadUpLast_));
-	addButton(v, &buttonInfoGbLeft, GbDirAct<true>(dpadLeft_, dpadLeftLast_));
-	addButton(v, &buttonInfoGbRight, GbDirAct<false>(dpadRight_, dpadLeftLast_));
-	addButton(v, &buttonInfoGbA, SetPressedAct(inputState_[a_but]));
-	addButton(v, &buttonInfoGbB, SetPressedAct(inputState_[b_but]));
-	addButton(v, &buttonInfoGbStart, SetPressedAct(inputState_[start_but]));
-	addButton(v, &buttonInfoGbSelect, SetPressedAct(inputState_[select_but]));
+#ifdef SHOW_PLATFORM_SGB
+	for (unsigned i = 0; i < 4; i++) {
+		addButton(v, &buttonInfoGbUp[i], GbDirAct<true>(dpadUp_[i], dpadUpLast_[i]));
+		addButton(v, &buttonInfoGbDown[i], GbDirAct<false>(dpadDown_[i], dpadUpLast_[i]));
+		addButton(v, &buttonInfoGbLeft[i], GbDirAct<true>(dpadLeft_[i], dpadLeftLast_[i]));
+		addButton(v, &buttonInfoGbRight[i], GbDirAct<false>(dpadRight_[i], dpadLeftLast_[i]));
+		addButton(v, &buttonInfoGbA[i], SetPressedAct(inputState_[i][a_but]));
+		addButton(v, &buttonInfoGbB[i], SetPressedAct(inputState_[i][b_but]));
+		addButton(v, &buttonInfoGbStart[i], SetPressedAct(inputState_[i][start_but]));
+		addButton(v, &buttonInfoGbSelect[i], SetPressedAct(inputState_[i][select_but]));
+	}
+#else
+	addButton(v, &buttonInfoGbUp[0], GbDirAct<true>(dpadUp_[0], dpadUpLast_[0]));
+	addButton(v, &buttonInfoGbDown[0], GbDirAct<false>(dpadDown_[0], dpadUpLast_[0]));
+	addButton(v, &buttonInfoGbLeft[0], GbDirAct<true>(dpadLeft_[0], dpadLeftLast_[0]));
+	addButton(v, &buttonInfoGbRight[0], GbDirAct<false>(dpadRight_[0], dpadLeftLast_[0]));
+	addButton(v, &buttonInfoGbA[0], SetPressedAct(inputState_[0][a_but]));
+	addButton(v, &buttonInfoGbB[0], SetPressedAct(inputState_[0][b_but]));
+	addButton(v, &buttonInfoGbStart[0], SetPressedAct(inputState_[0][start_but]));
+	addButton(v, &buttonInfoGbSelect[0], SetPressedAct(inputState_[0][select_but]));
+#endif
 	addButton(v, &buttonInfoPause, &GambatteSource::emitPause, this);
 	addButton(v, &buttonInfoFrameStep, &GambatteSource::emitFrameStep, this);
 #ifdef ENABLE_TURBO_BUTTONS
@@ -259,7 +306,7 @@ GambatteSource::GbVidBuf GambatteSource::setPixelBuffer(
 }
 
 static void setGbDir(bool &a, bool &b,
-		bool const aPressed, bool const bPressed, bool const preferA) {
+		bool const aPressed, bool const bPressed, bool const /*preferA*/) {
 	if (aPressed & bPressed) {
 		a = false;
 		b = false;
@@ -295,28 +342,78 @@ std::ptrdiff_t GambatteSource::update(
 		return -1;
 	}
 
-	setGbDir(inputState_[up_but], inputState_[down_but],
-	         dpadUp_, dpadDown_, dpadUpLast_);
-	setGbDir(inputState_[left_but], inputState_[right_but],
-	         dpadLeft_, dpadRight_, dpadLeftLast_);
-	inputGetter_.is = packedInputState(inputState_, sizeof inputState_ / sizeof inputState_[0]);
+	unsigned const players = gb_.isSgb() ? 4 : 1;
+	for (unsigned i = 0; i < players; i++) {
+		setGbDir(inputState_[i][up_but], inputState_[i][down_but],
+				 dpadUp_[i], dpadDown_[i], dpadUpLast_[i]);
+		setGbDir(inputState_[i][left_but], inputState_[i][right_but],
+				 dpadLeft_[i], dpadRight_[i], dpadLeftLast_[i]);
+
+		inputGetter_.is[i] = packedInputState(inputState_[i], sizeof inputState_[0] / sizeof inputState_[0][0]);
+	}
 
 	samples -= overUpdate;
 
 	resetStepPre(samples);
 
+	uint_least32_t *gbPixels;
+	if (gb_.isSgb() && gbvidbuf.pitch == (256 + 3))
+		gbPixels = &gbvidbuf.pixels[40 * (256 + 3) + 48];
+	else
+		gbPixels = gbvidbuf.pixels;
+
 	std::ptrdiff_t const vidFrameSampleNo =
-		runFor(gbvidbuf.pixels, gbvidbuf.pitch,
+		runFor(gbPixels, gbvidbuf.pitch,
 		       ptr_cast<quint32>(soundBuf), samples);
 
+	if (gb_.isSgb()) {
+		std::size_t sgbSamples;
+		qint16 sgbSoundBuf[2048 * 2];
+		unsigned t = 65 - sgbSampRm_;
+		sgbSampRm_ = gb_.generateSgbSamples(sgbSoundBuf, sgbSamples);
+		if (!soundBuf || !sgbSamples)
+			goto end;
+
+		short ls = sgbSoundBuf[0];
+		short rs = sgbSoundBuf[1];
+		for (unsigned i = 0; i < t; i++) {
+			int sumLs = soundBuf[i * 2] + ls;
+			soundBuf[(i * 2)] = std::clamp(sumLs, -0x8000, 0x7FFF);
+			int sumRs = soundBuf[(i * 2) + 1] + rs;
+			soundBuf[(i * 2) + 1] = std::clamp(sumRs, -0x8000, 0x7FFF);
+		}
+		for (unsigned i = 1; i < (sgbSamples - 1); i++, t += 65) {
+			ls = sgbSoundBuf[i * 2];
+			rs = sgbSoundBuf[(i * 2) + 1];
+			for (unsigned j = 0; j < 65; j++) {
+				int sumLs = soundBuf[(t + j) * 2] + ls;
+				soundBuf[(t + j) * 2] = std::clamp(sumLs, -0x8000, 0x7FFF);
+				int sumRs = soundBuf[((t + j) * 2) + 1] + rs;
+				soundBuf[((t + j) * 2) + 1] = std::clamp(sumRs, -0x8000, 0x7FFF);
+			}
+		}
+		ls = sgbSoundBuf[(sgbSamples - 1) * 2];
+		rs = sgbSoundBuf[((sgbSamples - 1) * 2) + 1];
+		for (unsigned i = 0; i < (samples - t); i++) {
+			int sumLs = soundBuf[(t + i) * 2] + ls;
+			soundBuf[(t + i) * 2] = std::clamp(sumLs, -0x8000, 0x7FFF);
+			int sumRs = soundBuf[((t + i) * 2) + 1] + rs;
+			soundBuf[((t + i) * 2) + 1] = std::clamp(sumRs, -0x8000, 0x7FFF);
+		}
+	}
+end:
+
 #ifdef ENABLE_INPUT_LOG
-	inputLog_.push(samples, inputGetter_.is);
+	inputLog_.push(samples, inputGetter_.is[0]);
 #endif
 
 	resetStepPost(pb, soundBuf, samples);
 
-	if (vidFrameSampleNo >= 0)
+	if (vidFrameSampleNo >= 0) {
 		inputDialog_->consumeAutoPress();
+		if (gbPixels != gbvidbuf.pixels)
+			gb_.updateScreenBorder(gbvidbuf.pixels, gbvidbuf.pitch);
+	}
 
 	return vidFrameSampleNo;
 }
@@ -377,12 +474,12 @@ void GambatteSource::setVideoSource(std::size_t const videoSourceIndex) {
 
 void GambatteSource::saveState(PixelBuffer const &pb) {
 	GbVidBuf gbvidbuf = setPixelBuffer(getpbdata(pb, vsrci_), pb.pixelFormat, pb.pitch);
-	gb_.saveState(gbvidbuf.pixels, gbvidbuf.pitch);
+	gb_.saveState((gb_.isSgb() && gbvidbuf.pitch == (256 + 3)) ? &gbvidbuf.pixels[40 * (256 + 3) + 48] : gbvidbuf.pixels, gbvidbuf.pitch);
 }
 
 void GambatteSource::saveState(PixelBuffer const &pb, std::string const &filepath) {
 	GbVidBuf gbvidbuf = setPixelBuffer(getpbdata(pb, vsrci_), pb.pixelFormat, pb.pitch);
-	gb_.saveState(gbvidbuf.pixels, gbvidbuf.pitch, filepath);
+	gb_.saveState((gb_.isSgb() && gbvidbuf.pitch == (256 + 3)) ? &gbvidbuf.pixels[40 * (256 + 3) + 48] : gbvidbuf.pixels, gbvidbuf.pitch, filepath);
 }
 
 void GambatteSource::tryReset() {
@@ -428,7 +525,8 @@ void GambatteSource::resetStepPost(
 		}
 	}
 
-	applyFade(pb, soundBuf, samples);
+	if (!gb_.isSgb())
+		applyFade(pb, soundBuf, samples);
 }
 
 void GambatteSource::applyFade(

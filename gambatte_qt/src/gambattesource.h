@@ -149,9 +149,10 @@ private:
 
 	struct GbVidBuf;
 	struct GetInput {
-		unsigned is;
-		GetInput() : is(0) {}
-		static unsigned get(GetInput *p) { return p->is; }
+		unsigned is[4];
+		gambatte::GB *gb_;
+		GetInput(gambatte::GB &gb) : gb_(&gb) { std::memset(is, 0, sizeof is); }
+		static unsigned get(GetInput *p) { return p->is[p->gb_->getJoypadIndex() * p->gb_->isSgb()]; }
 	};
 
 	struct InputLog {
@@ -185,10 +186,10 @@ private:
 	scoped_ptr<VideoLink> vfilter_;
 	PixelBuffer::PixelFormat pxformat_;
 	std::size_t vsrci_;
-	bool inputState_[10];
-	bool dpadUp_, dpadDown_;
-	bool dpadLeft_, dpadRight_;
-	bool dpadUpLast_, dpadLeftLast_;
+	bool inputState_[4][10];
+	bool dpadUp_[4], dpadDown_[4];
+	bool dpadLeft_[4], dpadRight_[4];
+	bool dpadUpLast_[4], dpadLeftLast_[4];
 	int breakpoint_[1];
 	bool tryReset_;
 	bool isResetting_;
@@ -196,6 +197,7 @@ private:
 	signed resetCounter_;
 	unsigned resetFade_;
 	unsigned resetStall_;
+	unsigned sgbSampRm_;
 
 	std::mt19937 rng_;
 	std::uniform_int_distribution<std::mt19937::result_type> dist35112_;
