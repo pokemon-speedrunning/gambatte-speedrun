@@ -1,4 +1,4 @@
-COMMONPATH = ../../common
+COMMONPATH = ../../gambatte_core/common
 include(framework/framework.pro)
 
 SOURCES += main.cpp \
@@ -12,6 +12,7 @@ SOURCES += main.cpp \
 HEADERS += *.h
 SOURCES += $$COMMONPATH/videolink/rgb32conv.cpp \
     $$COMMONPATH/videolink/vfilterinfo.cpp \
+    $$COMMONPATH/videolink/vfilters/sgbborder.cpp \
     $$COMMONPATH/videolink/vfilters/catrom2x.cpp \
     $$COMMONPATH/videolink/vfilters/catrom3x.cpp \
     $$COMMONPATH/videolink/vfilters/kreed2xsai.cpp \
@@ -23,7 +24,7 @@ TEMPLATE = app
 CONFIG += warn_on \
     release
 QMAKE_CFLAGS   += -fomit-frame-pointer
-QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
+QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti -std=c++17
 
 DESTDIR = ../bin
 INCLUDEPATH += ../../gambatte_core/libgambatte/include
@@ -42,9 +43,16 @@ TARGET = "gambatte_speedrun"
 macx:TARGET = "Gambatte-Speedrun"
 VERSION_STR = interim  # default to interim in case there's an issue getting revision count
 
-exists(../../.git) {
-	MY_GIT_REVNO = $$system(git rev-list HEAD --count)
-	!isEmpty(MY_GIT_REVNO) {
+exists(../../.git):exists(../../gambatte_core/.git) {
+	QT_GIT_REVNO = $$system(git rev-list HEAD --count)
+	CORE_GIT_REVNO = $$system(cd ../../gambatte_core/ && git rev-list HEAD --count)
+	SUBMODULE_SPLIT_REVNO = 743
+	!isEmpty(QT_GIT_REVNO):!isEmpty(CORE_GIT_REVNO) {
+		win32 {
+			MY_GIT_REVNO = $$system(set /a $$QT_GIT_REVNO + $$CORE_GIT_REVNO - $$SUBMODULE_SPLIT_REVNO)
+		} else:unix {
+			MY_GIT_REVNO = $$system(echo $(($$QT_GIT_REVNO + $$CORE_GIT_REVNO - $$SUBMODULE_SPLIT_REVNO)))
+		}
 		VERSION_STR = r$$MY_GIT_REVNO
 	}
 }
