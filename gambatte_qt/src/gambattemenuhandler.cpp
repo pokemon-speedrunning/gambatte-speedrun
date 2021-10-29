@@ -408,6 +408,7 @@ GambatteMenuHandler::GambatteMenuHandler(MainWindow &mw,
 		fileMenu->addSeparator();
 		romLoadedActions->addAction(fileMenu->addAction(tr("Save State &As..."), this, SLOT(saveStateAs())));
 		romLoadedActions->addAction(fileMenu->addAction(tr("Load State &From..."), this, SLOT(loadStateFrom())));
+		romLoadedActions->addAction(fileMenu->addAction(tr("Load BESS State &From..."), this, SLOT(loadBessStateFrom())));
 		fileMenu->addSeparator();
 		romLoadedActions->addAction(fileMenu->addAction(tr("&Save State"),
 		                            this, SLOT(saveState()), QString("Ctrl+S")));
@@ -1010,6 +1011,14 @@ struct LoadStateFromFun {
 	}
 };
 
+struct LoadBessStateFromFun {
+	GambatteSource &source;
+	QString fileName;
+	void operator()() const {
+		source.loadBessState(fileName.toLocal8Bit().constData());
+	}
+};
+
 struct SaveInputLogAsFun {
 	GambatteSource &source;
 	QString fileName;
@@ -1096,6 +1105,21 @@ void GambatteMenuHandler::loadStateFrom() {
 		tr("Gambatte Quick Save Files (*.gqs);;All Files (*)"));
 	if (!fileName.isEmpty()) {
 		LoadStateFromFun fun = { source_, fileName };
+		mw_.callInWorkerThread(fun);
+	}
+}
+
+void GambatteMenuHandler::loadBessStateFrom() {
+	if (isResetting_)
+		return;
+	TmpPauser tmpPauser(mw_, 4);
+	mw_.waitUntilPaused();
+
+	QString const &fileName = QFileDialog::getOpenFileName(
+		&mw_, tr("Load BESS State"), QString(),
+		tr("BESS Save Files (*.s*, *.sn*);;All Files (*)"));
+	if (!fileName.isEmpty()) {
+		LoadBessStateFromFun fun = { source_, fileName };
 		mw_.callInWorkerThread(fun);
 	}
 }
