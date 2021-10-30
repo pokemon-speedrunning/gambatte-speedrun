@@ -85,6 +85,13 @@ public:
 	#endif
 	}
 
+	void loadBessState(std::string const &filepath) {
+		gb_.loadBessState(filepath);
+	#ifdef ENABLE_INPUT_LOG
+		inputLog_.restart(gb_);
+	#endif
+	}
+
 	InputDialog * inputDialog() const { return inputDialog_; }
 	void saveState(PixelBuffer const &fb);
 
