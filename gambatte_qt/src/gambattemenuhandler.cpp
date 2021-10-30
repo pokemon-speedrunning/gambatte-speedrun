@@ -1117,7 +1117,7 @@ void GambatteMenuHandler::loadBessStateFrom() {
 
 	QString const &fileName = QFileDialog::getOpenFileName(
 		&mw_, tr("Load BESS State"), QString(),
-		tr("BESS Save Files (*.s*, *.sn*);;All Files (*)"));
+		tr("BESS Save Files (*.s?; *.sn?);;All Files (*)"));
 	if (!fileName.isEmpty()) {
 		LoadBessStateFromFun fun = { source_, fileName };
 		mw_.callInWorkerThread(fun);
