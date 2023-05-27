@@ -16,7 +16,7 @@
 //   51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#include "coreaudioengine.h"
+#include "audiotoolboxengine.h"
 #include <cmath>
 #include <cstdio>
 
@@ -81,8 +81,8 @@ public:
 
 }
 
-CoreAudioEngine::CoreAudioEngine()
-: AudioEngine("CoreAudio"),
+AudioToolboxEngine::AudioToolboxEngine()
+: AudioEngine("AudioToolbox"),
   outUnit(0),
   outUnitState(unit_closed),
   mutex(0),
@@ -92,11 +92,11 @@ CoreAudioEngine::CoreAudioEngine()
 {
 }
 
-CoreAudioEngine::~CoreAudioEngine() {
+AudioToolboxEngine::~AudioToolboxEngine() {
 	uninit();
 }
 
-std::size_t CoreAudioEngine::read(
+std::size_t AudioToolboxEngine::read(
 		void *const stream, std::size_t frames,
 		Float64 const rateScalar) {
 	MutexLocker mutlock(mutex);
@@ -113,7 +113,7 @@ std::size_t CoreAudioEngine::read(
 	return frames;
 }
 
-OSStatus CoreAudioEngine::renderProc(void *refCon,
+OSStatus AudioToolboxEngine::renderProc(void *refCon,
                                      AudioUnitRenderActionFlags *,
                                      AudioTimeStamp const *timeStamp,
                                      UInt32 /*busNumber*/,
@@ -121,13 +121,13 @@ OSStatus CoreAudioEngine::renderProc(void *refCon,
                                      AudioBufferList *ioData)
 {
 	ioData->mBuffers[0].mDataByteSize =
-		static_cast<CoreAudioEngine *>(refCon)->read(ioData->mBuffers[0].mData,
+		static_cast<AudioToolboxEngine *>(refCon)->read(ioData->mBuffers[0].mData,
 		                                             numFrames,
 		                                             timeStamp->mRateScalar) * 4;
  	return 0;
 }
 
-long CoreAudioEngine::doInit(long const rate, int const latency, int const volume) {
+long AudioToolboxEngine::doInit(long const rate, int const latency, int const volume) {
 	{
 		AudioComponentDescription desc;
 		desc.componentType = kAudioUnitType_Output;
@@ -225,7 +225,7 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 	return rate;
 }
 
-void CoreAudioEngine::uninit() {
+void AudioToolboxEngine::uninit() {
 	if (outUnitState >= unit_inited)
 		AudioUnitUninitialize(outUnit);
 	if (outUnitState >= unit_opened)
@@ -238,14 +238,14 @@ void CoreAudioEngine::uninit() {
 	rbuf.reset(0);
 }
 
-void CoreAudioEngine::pause() {
+void AudioToolboxEngine::pause() {
 	if (running) {
 		AudioOutputUnitStop(outUnit);
 		running = false;
 	}
 }
 
-int CoreAudioEngine::doWrite(void *const buffer, std::size_t samples) {
+int AudioToolboxEngine::doWrite(void *const buffer, std::size_t samples) {
 	if (!running) {
 		OSStatus err = AudioOutputUnitStart(outUnit);
 		if (err != noErr) {
@@ -270,7 +270,7 @@ int CoreAudioEngine::doWrite(void *const buffer, std::size_t samples) {
 	return 0;
 }
 
-int CoreAudioEngine::write(
+int AudioToolboxEngine::write(
 		void *buffer, std::size_t samples,
 		BufferState &preBufState_out, long &rate_out) {
 	MutexLocker mutlock(mutex);
@@ -283,7 +283,7 @@ int CoreAudioEngine::write(
 	return doWrite(buffer, samples);
 }
 
-int CoreAudioEngine::write(void *buffer, std::size_t samples) {
+int AudioToolboxEngine::write(void *buffer, std::size_t samples) {
 	MutexLocker mutlock(mutex);
 	if (mutlock.err)
 		return -1;
@@ -291,7 +291,7 @@ int CoreAudioEngine::write(void *buffer, std::size_t samples) {
 	return doWrite(buffer, samples);
 }
 
-AudioEngine::BufferState CoreAudioEngine::bufferState() const {
+AudioEngine::BufferState AudioToolboxEngine::bufferState() const {
 	MutexLocker mutlock(mutex);
 	BufferState bstate = { 0, 0 };
 	bstate.fromUnderrun = rbuf.used() / 2;
@@ -299,7 +299,7 @@ AudioEngine::BufferState CoreAudioEngine::bufferState() const {
 	return bstate;
 }
 
-long CoreAudioEngine::rateEstimate() const {
+long AudioToolboxEngine::rateEstimate() const {
 	MutexLocker mutlock(mutex);
 	return rateEst + 0.5;
 }

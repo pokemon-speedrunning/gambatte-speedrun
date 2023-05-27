@@ -64,7 +64,7 @@ macx {
         framework/src/getfullmodetoggler_macx.cpp
     SOURCES += framework/src/SDL_Joystick/src/darwin/SDL_sysjoystick.c \
 #        framework/src/audioengines/openalengine.cpp \
-        framework/src/audioengines/coreaudioengine.cpp \
+        framework/src/audioengines/audiotoolboxengine.cpp \
         framework/src/fullmodetogglers/quartztoggler.cpp
     HEADERS += framework/src/fullmodetogglers/quartztoggler.h
 #	LIBS += -dead_strip
