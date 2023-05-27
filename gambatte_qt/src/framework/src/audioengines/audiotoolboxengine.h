@@ -21,13 +21,13 @@
 
 #include "../audioengine.h"
 #include "ringbuffer.h"
-#include <AudioUnit/AudioUnit.h>
+#include <AudioToolbox/AudioUnit.h>
 #include <pthread.h>
 
-class CoreAudioEngine : public AudioEngine {
+class AudioToolboxEngine : public AudioEngine {
 public:
-	CoreAudioEngine();
-	virtual ~CoreAudioEngine();
+	AudioToolboxEngine();
+	virtual ~AudioToolboxEngine();
 	virtual void uninit();
 	virtual int write(void *buffer, std::size_t frames);
 	virtual int write(void *buffer, std::size_t samples,

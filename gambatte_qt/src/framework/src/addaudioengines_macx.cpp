@@ -18,9 +18,9 @@
 
 #include "addaudioengines.h"
 //#include "audioengines/openalengine.h"
-#include "audioengines/coreaudioengine.h"
+#include "audioengines/audiotoolboxengine.h"
 
 void addAudioEngines(auto_vector<AudioEngine> &audioEngines, WId /*winId*/) {
-	audioEngines.push_back(new CoreAudioEngine);
+	audioEngines.push_back(new AudioToolboxEngine);
 //	audioEngines.push_back(createOpenAlEngine().release());
 }

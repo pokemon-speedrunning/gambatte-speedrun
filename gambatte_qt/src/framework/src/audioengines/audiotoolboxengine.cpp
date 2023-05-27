@@ -16,8 +16,7 @@
 //   51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#include "coreaudioengine.h"
-#include <CoreServices/CoreServices.h>
+#include "audiotoolboxengine.h"
 #include <cmath>
 #include <cstdio>
 
@@ -82,8 +81,8 @@ public:
 
 }
 
-CoreAudioEngine::CoreAudioEngine()
-: AudioEngine("CoreAudio"),
+AudioToolboxEngine::AudioToolboxEngine()
+: AudioEngine("AudioToolbox"),
   outUnit(0),
   outUnitState(unit_closed),
   mutex(0),
@@ -93,11 +92,11 @@ CoreAudioEngine::CoreAudioEngine()
 {
 }
 
-CoreAudioEngine::~CoreAudioEngine() {
+AudioToolboxEngine::~AudioToolboxEngine() {
 	uninit();
 }
 
-std::size_t CoreAudioEngine::read(
+std::size_t AudioToolboxEngine::read(
 		void *const stream, std::size_t frames,
 		Float64 const rateScalar) {
 	MutexLocker mutlock(mutex);
@@ -114,7 +113,7 @@ std::size_t CoreAudioEngine::read(
 	return frames;
 }
 
-OSStatus CoreAudioEngine::renderProc(void *refCon,
+OSStatus AudioToolboxEngine::renderProc(void *refCon,
                                      AudioUnitRenderActionFlags *,
                                      AudioTimeStamp const *timeStamp,
                                      UInt32 /*busNumber*/,
@@ -122,28 +121,29 @@ OSStatus CoreAudioEngine::renderProc(void *refCon,
                                      AudioBufferList *ioData)
 {
 	ioData->mBuffers[0].mDataByteSize =
-		static_cast<CoreAudioEngine *>(refCon)->read(ioData->mBuffers[0].mData,
+		static_cast<AudioToolboxEngine *>(refCon)->read(ioData->mBuffers[0].mData,
 		                                             numFrames,
 		                                             timeStamp->mRateScalar) * 4;
  	return 0;
 }
 
-long CoreAudioEngine::doInit(long const rate, int const latency, int const volume) {
+long AudioToolboxEngine::doInit(long const rate, int const latency, int const volume) {
 	{
-		ComponentDescription desc;
+		AudioComponentDescription desc;
 		desc.componentType = kAudioUnitType_Output;
 		desc.componentSubType = kAudioUnitSubType_DefaultOutput;
 		desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 		desc.componentFlags = 0;
 		desc.componentFlagsMask = 0;
 
-		Component comp;
-		if ((comp = FindNextComponent(0, &desc)) == 0) {
+		AudioComponent comp;
+		if ((comp = AudioComponentFindNext(nil, &desc)) == nil) {
 			std::fprintf(stderr, "Failed to find output unit component\n");
 			return -1;
 		}
 
-		if (ComponentResult err = OpenAComponent(comp, &outUnit)) {
+		OSStatus err = AudioComponentInstanceNew(comp, &outUnit);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to open output unit component: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -152,7 +152,8 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 		outUnitState = unit_opened;
 	}
 
-	if (ComponentResult err = AudioUnitInitialize(outUnit)) {
+	OSStatus err = AudioUnitInitialize(outUnit);
+	if (err != noErr) {
 		std::fprintf(stderr, "Failed to initialize output unit component: %d\n",
 		             static_cast<int>(err));
 		return -1;
@@ -172,9 +173,9 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 #ifdef WORDS_BIGENDIAN
 		desc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
 #endif
-		if (ComponentResult err =
-				AudioUnitSetProperty(outUnit, kAudioUnitProperty_StreamFormat,
-				                     kAudioUnitScope_Input, 0, &desc, sizeof desc)) {
+		OSStatus err = AudioUnitSetProperty(outUnit, kAudioUnitProperty_StreamFormat,
+				                     						kAudioUnitScope_Input, 0, &desc, sizeof desc);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set the input format: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -182,9 +183,11 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 	}
 
 	{
-		if (ComponentResult err =
-				AudioUnitSetParameter(outUnit, kHALOutputParam_Volume, kAudioUnitScope_Global, 0,
-				                      pow(10, (log2(volume) - log2(100.0))/2.0), 0)) {
+		AudioUnitParameterValue param = pow(10, (log2(volume) - log2(100.0))/2.0);
+		OSStatus err = AudioUnitSetParameter(outUnit, kHALOutputParam_Volume, 
+																				 kAudioUnitScope_Global, 0,
+				                        				 param, 0);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set volume: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -196,10 +199,10 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 		renderCallback.inputProc = renderProc;
 		renderCallback.inputProcRefCon = this;
 
-		if (ComponentResult err =
-				AudioUnitSetProperty(outUnit, kAudioUnitProperty_SetRenderCallback,
-				                     kAudioUnitScope_Input, 0,
-				                     &renderCallback, sizeof renderCallback)) {
+		OSStatus err = AudioUnitSetProperty(outUnit, kAudioUnitProperty_SetRenderCallback,
+				                       					kAudioUnitScope_Input, 0,
+				                        				&renderCallback, sizeof renderCallback);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set render callback: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -222,11 +225,11 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 	return rate;
 }
 
-void CoreAudioEngine::uninit() {
+void AudioToolboxEngine::uninit() {
 	if (outUnitState >= unit_inited)
 		AudioUnitUninitialize(outUnit);
 	if (outUnitState >= unit_opened)
-		CloseComponent(outUnit);
+		AudioComponentInstanceDispose(outUnit);
 
 	destroyMutex(mutex);
 	destroyCond(availCond);
@@ -235,16 +238,17 @@ void CoreAudioEngine::uninit() {
 	rbuf.reset(0);
 }
 
-void CoreAudioEngine::pause() {
+void AudioToolboxEngine::pause() {
 	if (running) {
 		AudioOutputUnitStop(outUnit);
 		running = false;
 	}
 }
 
-int CoreAudioEngine::doWrite(void *const buffer, std::size_t samples) {
+int AudioToolboxEngine::doWrite(void *const buffer, std::size_t samples) {
 	if (!running) {
-		if (ComponentResult err = AudioOutputUnitStart(outUnit)) {
+		OSStatus err = AudioOutputUnitStart(outUnit);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to start output unit: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -266,7 +270,7 @@ int CoreAudioEngine::doWrite(void *const buffer, std::size_t samples) {
 	return 0;
 }
 
-int CoreAudioEngine::write(
+int AudioToolboxEngine::write(
 		void *buffer, std::size_t samples,
 		BufferState &preBufState_out, long &rate_out) {
 	MutexLocker mutlock(mutex);
@@ -279,7 +283,7 @@ int CoreAudioEngine::write(
 	return doWrite(buffer, samples);
 }
 
-int CoreAudioEngine::write(void *buffer, std::size_t samples) {
+int AudioToolboxEngine::write(void *buffer, std::size_t samples) {
 	MutexLocker mutlock(mutex);
 	if (mutlock.err)
 		return -1;
@@ -287,7 +291,7 @@ int CoreAudioEngine::write(void *buffer, std::size_t samples) {
 	return doWrite(buffer, samples);
 }
 
-AudioEngine::BufferState CoreAudioEngine::bufferState() const {
+AudioEngine::BufferState AudioToolboxEngine::bufferState() const {
 	MutexLocker mutlock(mutex);
 	BufferState bstate = { 0, 0 };
 	bstate.fromUnderrun = rbuf.used() / 2;
@@ -295,7 +299,7 @@ AudioEngine::BufferState CoreAudioEngine::bufferState() const {
 	return bstate;
 }
 
-long CoreAudioEngine::rateEstimate() const {
+long AudioToolboxEngine::rateEstimate() const {
 	MutexLocker mutlock(mutex);
 	return rateEst + 0.5;
 }

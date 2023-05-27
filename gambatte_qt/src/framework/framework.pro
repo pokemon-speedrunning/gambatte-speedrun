@@ -64,17 +64,16 @@ macx {
         framework/src/getfullmodetoggler_macx.cpp
     SOURCES += framework/src/SDL_Joystick/src/darwin/SDL_sysjoystick.c \
 #        framework/src/audioengines/openalengine.cpp \
-        framework/src/audioengines/coreaudioengine.cpp \
+        framework/src/audioengines/audiotoolboxengine.cpp \
         framework/src/fullmodetogglers/quartztoggler.cpp
     HEADERS += framework/src/fullmodetogglers/quartztoggler.h
 #	LIBS += -dead_strip
     LIBS += -framework IOKit \
-            -framework CoreServices \
+            -framework AudioToolbox \
             -framework CoreFoundation \
             -framework Carbon \
             -framework ApplicationServices \
 #	    -framework OpenAL \
-            -framework AudioUnit
 }
 else:unix { 
     DEFINES += PLATFORM_UNIX
