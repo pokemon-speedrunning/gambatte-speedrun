@@ -17,7 +17,6 @@
 //
 
 #include "coreaudioengine.h"
-#include <CoreServices/CoreServices.h>
 #include <cmath>
 #include <cstdio>
 
@@ -130,20 +129,21 @@ OSStatus CoreAudioEngine::renderProc(void *refCon,
 
 long CoreAudioEngine::doInit(long const rate, int const latency, int const volume) {
 	{
-		ComponentDescription desc;
+		AudioComponentDescription desc;
 		desc.componentType = kAudioUnitType_Output;
 		desc.componentSubType = kAudioUnitSubType_DefaultOutput;
 		desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 		desc.componentFlags = 0;
 		desc.componentFlagsMask = 0;
 
-		Component comp;
-		if ((comp = FindNextComponent(0, &desc)) == 0) {
+		AudioComponent comp;
+		if ((comp = AudioComponentFindNext(nil, &desc)) == nil) {
 			std::fprintf(stderr, "Failed to find output unit component\n");
 			return -1;
 		}
 
-		if (ComponentResult err = OpenAComponent(comp, &outUnit)) {
+		OSStatus err = AudioComponentInstanceNew(comp, &outUnit);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to open output unit component: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -152,7 +152,8 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 		outUnitState = unit_opened;
 	}
 
-	if (ComponentResult err = AudioUnitInitialize(outUnit)) {
+	OSStatus err = AudioUnitInitialize(outUnit);
+	if (err != noErr) {
 		std::fprintf(stderr, "Failed to initialize output unit component: %d\n",
 		             static_cast<int>(err));
 		return -1;
@@ -172,9 +173,9 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 #ifdef WORDS_BIGENDIAN
 		desc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
 #endif
-		if (ComponentResult err =
-				AudioUnitSetProperty(outUnit, kAudioUnitProperty_StreamFormat,
-				                     kAudioUnitScope_Input, 0, &desc, sizeof desc)) {
+		OSStatus err = AudioUnitSetProperty(outUnit, kAudioUnitProperty_StreamFormat,
+				                     						kAudioUnitScope_Input, 0, &desc, sizeof desc);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set the input format: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -182,9 +183,11 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 	}
 
 	{
-		if (ComponentResult err =
-				AudioUnitSetParameter(outUnit, kHALOutputParam_Volume, kAudioUnitScope_Global, 0,
-				                      pow(10, (log2(volume) - log2(100.0))/2.0), 0)) {
+		AudioUnitParameterValue param = pow(10, (log2(volume) - log2(100.0))/2.0);
+		OSStatus err = AudioUnitSetParameter(outUnit, kHALOutputParam_Volume, 
+																				 kAudioUnitScope_Global, 0,
+				                        				 param, 0);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set volume: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -196,10 +199,10 @@ long CoreAudioEngine::doInit(long const rate, int const latency, int const volum
 		renderCallback.inputProc = renderProc;
 		renderCallback.inputProcRefCon = this;
 
-		if (ComponentResult err =
-				AudioUnitSetProperty(outUnit, kAudioUnitProperty_SetRenderCallback,
-				                     kAudioUnitScope_Input, 0,
-				                     &renderCallback, sizeof renderCallback)) {
+		OSStatus err = AudioUnitSetProperty(outUnit, kAudioUnitProperty_SetRenderCallback,
+				                       					kAudioUnitScope_Input, 0,
+				                        				&renderCallback, sizeof renderCallback);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to set render callback: %d\n",
 			             static_cast<int>(err));
 			return -1;
@@ -226,7 +229,7 @@ void CoreAudioEngine::uninit() {
 	if (outUnitState >= unit_inited)
 		AudioUnitUninitialize(outUnit);
 	if (outUnitState >= unit_opened)
-		CloseComponent(outUnit);
+		AudioComponentInstanceDispose(outUnit);
 
 	destroyMutex(mutex);
 	destroyCond(availCond);
@@ -244,7 +247,8 @@ void CoreAudioEngine::pause() {
 
 int CoreAudioEngine::doWrite(void *const buffer, std::size_t samples) {
 	if (!running) {
-		if (ComponentResult err = AudioOutputUnitStart(outUnit)) {
+		OSStatus err = AudioOutputUnitStart(outUnit);
+		if (err != noErr) {
 			std::fprintf(stderr, "Failed to start output unit: %d\n",
 			             static_cast<int>(err));
 			return -1;

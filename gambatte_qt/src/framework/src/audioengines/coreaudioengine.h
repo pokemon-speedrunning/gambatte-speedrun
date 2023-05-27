@@ -21,7 +21,7 @@
 
 #include "../audioengine.h"
 #include "ringbuffer.h"
-#include <AudioUnit/AudioUnit.h>
+#include <AudioToolbox/AudioUnit.h>
 #include <pthread.h>
 
 class CoreAudioEngine : public AudioEngine {
