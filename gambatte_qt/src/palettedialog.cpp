@@ -40,7 +40,6 @@
 #include <QDrag>
 #include <algorithm>
 #include <cstring>
-#include <functional>
 
 namespace {
 
@@ -701,8 +700,8 @@ static void setSchemeList(QStringListModel &model, QString const &savedir, bool 
 	         QDir::Name | QDir::IgnoreCase,
 	         QDir::Files | QDir::Readable);
 	QStringList dirlisting(dir.entryList());
-	std::for_each(dirlisting.begin(), dirlisting.end(), 
-	              std::bind2nd(std::mem_fun_ref(&QString::chop), 4));
+	static auto chopFunc = [](QString &str) { str.chop(4); };
+	std::for_each(dirlisting.begin(), dirlisting.end(), chopFunc);
 	model.setStringList(makeStaticStringList(hasGlobal) + dirlisting);
 }
 
