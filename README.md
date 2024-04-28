@@ -1,3 +1,5 @@
+# This project has been superseded by the [GSR emulator](https://github.com/CasualPokePlayer/GSR).
+----
 # Gambatte-Speedrun
 
 Fork of [Gambatte](https://github.com/sinamas/gambatte) (authored by sinamas), with local changes for Pokémon Speedruns, as well as other speedrunning communities. Under GPLv2.
