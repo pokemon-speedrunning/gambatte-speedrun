@@ -21,7 +21,8 @@ HEADERS += $$COMMONPATH/videolink/*.h \
            $$COMMONPATH/videolink/vfilters/*.h
 TEMPLATE = app
 CONFIG += warn_on \
-    release
+    release \
+    c++11
 QMAKE_CFLAGS   += -fomit-frame-pointer
 QMAKE_CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti
 

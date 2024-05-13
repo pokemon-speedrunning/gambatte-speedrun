@@ -23,7 +23,6 @@
 
 #include <windows.h>
 #include <algorithm>
-#include <functional>
 #include <QWindow>
 #include <QGuiApplication>
 #include <qpa/qplatformnativeinterface.h>
@@ -169,8 +168,12 @@ bool DwmControl::winEvent(void const *const msg) {
 	//enum { WM_DWMCOMPOSITIONCHANGED = 0x031E };
 
 	if (static_cast<MSG const *>(msg)->message == WM_DWMCOMPOSITIONCHANGED) {
+		static auto compositionEnabledChangeFunc =
+				[](BlitterWidget &widget) {
+					widget.compositionEnabledChange();
+				};
 		std::for_each(blitters_.begin(), blitters_.end(),
-		              std::mem_fun(&BlitterWidget::compositionEnabledChange));
+									compositionEnabledChangeFunc);
 		if (dwmapi_.isCompositionEnabled()) {
 			for (std::vector<BlitterWidget*>::const_iterator it =
 					blitters_.begin(); it != blitters_.end(); ++it) {

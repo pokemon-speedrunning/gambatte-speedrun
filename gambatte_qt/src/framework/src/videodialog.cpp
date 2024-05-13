@@ -27,7 +27,6 @@
 #include <QRadioButton>
 #include <QSettings>
 #include <QVBoxLayout>
-#include <functional>
 
 VideoDialog::ScalingMethodSelector::ScalingMethodSelector(QWidget *parent)
 : unrestrictedScalingButton_(new QRadioButton(QObject::tr("None"), parent))
@@ -323,10 +322,9 @@ void VideoDialog::accept() {
 	engineSelector_.accept();
 	scalingMethodSelector_.accept();
 	sourceSelector_.accept();
-	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::accept));
-	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::accept));
+	static auto acceptFunc = [](PersistComboBox *const box) { box->accept(); };
+	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(), acceptFunc);
+	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(), acceptFunc);
 	QDialog::accept();
 }
 
@@ -337,10 +335,9 @@ void VideoDialog::reject() {
 	engineSelector_.reject();
 	scalingMethodSelector_.reject();
 	sourceSelector_.reject();
-	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::reject));
-	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(),
-	              std::mem_fun(&PersistComboBox::reject));
+	static auto rejectFunc = [](PersistComboBox *const box) { box->reject(); };
+	std::for_each(fullResSelectors_.begin(), fullResSelectors_.end(), rejectFunc);
+	std::for_each(fullHzSelectors_.begin(), fullHzSelectors_.end(), rejectFunc);
 	QDialog::reject();
 }
 
