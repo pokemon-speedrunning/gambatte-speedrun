@@ -11,6 +11,7 @@ Running the hwtests suite requires installing an additional dependency (`libpng`
 * [Windows](#windows)
 * [macOS](#macos)
 * [Debian/Ubuntu](#debianubuntu)
+* [Fedora/RHEL](#fedorarhel)
 
 ---
 ## Windows
@@ -117,4 +118,31 @@ $ sudo apt install qt5-default libqt5x11extras5-dev libxrandr-dev libxv-dev liba
 \- Install the `libpng-dev` package:
 ```
 $ sudo apt install libpng-dev
+```
+
+## Fedora/RHEL
+
+### Basic steps
+
+*Open a terminal and do the following:*
+
+\- Install build dependencies
+```
+$ sudo dnf groupinstall 'Development Tools'
+$ sudo dnf install git python3-scons zlibrary
+```
+
+### Qt-specific steps
+
+\- Install Qt5 development packages, plus Gambatte-Speedrun dependencies that aren't build with Qt5, then add the Qt5 development tools to PATH:
+```
+sudo dnf install qt5-qtbase qt5-qtx11extras-devel libXrandr-devel libXv-devel alsa-lib-devel
+export PATH="$PATH:/usr/lib64/qt5/bin"
+```
+
+### Testrunner-specific steps
+
+\- Install the `libpng-devel` package:
+```
+$ sudo dnf install libpng-devel
 ```
